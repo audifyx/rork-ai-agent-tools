@@ -6,9 +6,11 @@ import {
   Animated,
   Dimensions,
   Platform,
+  TouchableOpacity,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Zap } from "lucide-react-native";
+import { useRouter } from "expo-router";
+import { Zap, ArrowRight } from "lucide-react-native";
 import Colors from "@/constants/colors";
 
 const { width } = Dimensions.get("window");
@@ -114,6 +116,7 @@ function FloatingParticle({
 
 export default function WelcomeScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const titleOpacity = useRef(new Animated.Value(0)).current;
   const titleTranslateY = useRef(new Animated.Value(20)).current;
   const subtitleOpacity = useRef(new Animated.Value(0)).current;
@@ -278,7 +281,14 @@ export default function WelcomeScreen() {
             { opacity: footerOpacity, paddingBottom: insets.bottom + 32 },
           ]}
         >
-          <View style={styles.divider} />
+          <TouchableOpacity
+            style={styles.enterButton}
+            onPress={() => router.replace("/(auth)/login")}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.enterButtonText}>Get Started</Text>
+            <ArrowRight size={18} color={Colors.background} />
+          </TouchableOpacity>
           <Text style={styles.footerText}>
             Powered by advanced AI agents
           </Text>
@@ -396,6 +406,36 @@ const styles = StyleSheet.create({
   footer: {
     alignItems: "center" as const,
     paddingHorizontal: 32,
+  },
+  enterButton: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    gap: 10,
+    backgroundColor: Colors.accent,
+    paddingVertical: 18,
+    paddingHorizontal: 40,
+    borderRadius: 16,
+    width: "100%" as any,
+    marginBottom: 20,
+    ...Platform.select({
+      ios: {
+        shadowColor: Colors.accent,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 6,
+      },
+      default: {},
+    }),
+  },
+  enterButtonText: {
+    fontSize: 17,
+    fontWeight: "700" as const,
+    color: Colors.background,
+    letterSpacing: 0.3,
   },
   divider: {
     width: 40,
