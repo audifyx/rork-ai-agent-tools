@@ -66,7 +66,7 @@ const tools: Tool[] = [
     name: "ClawVault",
     description: "Secure API key storage — store once, agent reads when needed",
     icon: FolderOpen,
-    color: "#F472B6",
+    color: Colors.accent,
     action: { type: "route", path: "/vault" },
     badge: "New",
   },

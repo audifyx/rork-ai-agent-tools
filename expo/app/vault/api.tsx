@@ -6,8 +6,9 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   Key, Eye, EyeOff, Copy, RefreshCw, Shield, ExternalLink,
-  ChevronDown, ChevronUp, KeyRound, Bot, Trash2,
+  ChevronDown, ChevronUp, KeyRound, Bot, Trash2, Check,
 } from "lucide-react-native";
+import * as Clipboard from "expo-clipboard";
 import { supabase, SUPABASE_URL } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/authStore";
 import Colors from "@/constants/colors";
@@ -16,7 +17,7 @@ const API_URL = `${SUPABASE_URL}/functions/v1/clawvault-api`;
 
 const ENDPOINTS = [
   {
-    category: "Secrets", color: "#F472B6",
+    category: "Secrets", color: Colors.accent,
     actions: [
       { name: "list_secrets", desc: "List all secrets (names only, no values)", perm: "read" },
       { name: "read_secret", desc: "Read actual secret value by ID or name", perm: "read", params: '{ "name": "OpenAI Key" }' },
@@ -39,6 +40,14 @@ export default function VaultAPI() {
   const [apiKey, setApiKey] = useState<any>(null);
   const [showKey, setShowKey] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [copied, setCopied] = useState(false);
+
+  const copyToClipboard = async (text: string) => {
+    await Clipboard.setStringAsync(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   const [expanded, setExpanded] = useState<string | null>(null);
 
   const fetchKey = async () => {
@@ -77,10 +86,10 @@ export default function VaultAPI() {
 
       {/* API Key */}
       {loading ? (
-        <ActivityIndicator color="#F472B6" style={{ marginTop: 40 }} />
+        <ActivityIndicator color="Colors.accent" style={{ marginTop: 40 }} />
       ) : !apiKey ? (
         <View style={styles.emptyCard}>
-          <KeyRound size={32} color="#F472B6" />
+          <KeyRound size={32} color="Colors.accent" />
           <Text style={styles.emptyText}>No Vault API key yet</Text>
           <TouchableOpacity style={styles.genBtn} onPress={generateKey} activeOpacity={0.7}>
             <Text style={styles.genBtnText}>Generate Vault Key</Text>
@@ -89,7 +98,7 @@ export default function VaultAPI() {
       ) : (
         <View style={styles.keyCard}>
           <View style={styles.keyHeader}>
-            <Key size={16} color="#F472B6" />
+            <Key size={16} color="Colors.accent" />
             <Text style={styles.keyLabel}>Vault API Key (cv_)</Text>
           </View>
           <Text style={[styles.keyValue, { fontFamily: mono }]}>{showKey ? apiKey.key_value : masked}</Text>
@@ -98,9 +107,9 @@ export default function VaultAPI() {
               {showKey ? <EyeOff size={13} color={Colors.textSecondary} /> : <Eye size={13} color={Colors.textSecondary} />}
               <Text style={styles.keyBtnText}>{showKey ? "Hide" : "Show"}</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.keyBtn} onPress={() => Alert.alert("Vault Key", apiKey.key_value)}>
-              <Copy size={13} color={Colors.textSecondary} />
-              <Text style={styles.keyBtnText}>Copy</Text>
+            <TouchableOpacity style={styles.keyBtn} onPress={() => copyToClipboard(apiKey.key_value)}>
+              {copied ? <Check size={13} color={Colors.success} /> : <Copy size={13} color={Colors.textSecondary} />}
+              <Text style={styles.keyBtnText}>{copied ? "Copied!" : "Copy"}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.keyBtn} onPress={regenerateKey}>
               <RefreshCw size={13} color={Colors.textSecondary} />
@@ -112,7 +121,7 @@ export default function VaultAPI() {
 
       {/* Endpoint */}
       <View style={styles.endpointCard}>
-        <ExternalLink size={14} color="#F472B6" />
+        <ExternalLink size={14} color="Colors.accent" />
         <Text style={styles.endpointLabel}>POST</Text>
         <Text style={[styles.endpointUrl, { fontFamily: mono }]} numberOfLines={2}>{API_URL}</Text>
       </View>
@@ -163,7 +172,7 @@ const styles = StyleSheet.create({
 
   emptyCard: { padding: 40, alignItems: "center", gap: 14, backgroundColor: "rgba(255,255,255,0.02)", borderRadius: 20, borderWidth: 1, borderColor: Colors.border },
   emptyText: { fontSize: 14, color: Colors.textSecondary },
-  genBtn: { backgroundColor: "#F472B6", borderRadius: 14, paddingVertical: 14, paddingHorizontal: 24 },
+  genBtn: { backgroundColor: "Colors.accent", borderRadius: 14, paddingVertical: 14, paddingHorizontal: 24 },
   genBtnText: { fontSize: 15, fontWeight: "700", color: "#fff" },
 
   keyCard: { backgroundColor: "rgba(244,114,182,0.05)", borderRadius: 18, padding: 16, borderWidth: 1, borderColor: "rgba(244,114,182,0.12)" },
@@ -175,7 +184,7 @@ const styles = StyleSheet.create({
   keyBtnText: { fontSize: 11, fontWeight: "600", color: Colors.textSecondary },
 
   endpointCard: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 14, padding: 14, borderWidth: 1, borderColor: "rgba(255,255,255,0.06)", marginTop: 12 },
-  endpointLabel: { fontSize: 10, fontWeight: "800", color: "#F472B6" },
+  endpointLabel: { fontSize: 10, fontWeight: "800", color: Colors.accent },
   endpointUrl: { fontSize: 10, color: Colors.textSecondary, flex: 1 },
 
   groupCard: { backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 16, borderWidth: 1, borderColor: "rgba(255,255,255,0.06)", marginBottom: 10, overflow: "hidden" },
@@ -188,7 +197,7 @@ const styles = StyleSheet.create({
   actionParams: { fontSize: 10, color: Colors.textSecondary, backgroundColor: "rgba(255,255,255,0.03)", padding: 8, borderRadius: 6 },
 
   promptCard: { backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 16, padding: 16, borderWidth: 1, borderColor: "rgba(255,255,255,0.06)", marginTop: 10, marginBottom: 20 },
-  promptTitle: { fontSize: 13, fontWeight: "700", color: "#F472B6", marginBottom: 10 },
+  promptTitle: { fontSize: 13, fontWeight: "700", color: Colors.accent, marginBottom: 10 },
   codeBox: { backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 10, padding: 12, gap: 2 },
   codeText: { fontSize: 11, color: Colors.textSecondary, lineHeight: 18 },
 });

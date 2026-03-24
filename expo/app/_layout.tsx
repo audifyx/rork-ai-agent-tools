@@ -89,7 +89,7 @@ export default function RootLayout() {
                 headerTitle: "🔐 ClawVault",
                 headerBackTitle: "Hub",
                 headerStyle: { backgroundColor: "#000" },
-                headerTintColor: "#F472B6",
+                headerTintColor: Colors.accent,
                 headerTitleStyle: { fontSize: 16, fontWeight: "700" },
               }}
             />

@@ -8,6 +8,7 @@ import {
   Plus, KeyRound, Eye, EyeOff, Trash2, Shield, Clock, Bot,
   X, Check, Copy, Star, StarOff,
 } from "lucide-react-native";
+import * as Clipboard from "expo-clipboard";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/authStore";
 import Colors from "@/constants/colors";
@@ -106,7 +107,7 @@ export default function SecretsScreen() {
     <ScrollView
       style={styles.container}
       contentContainerStyle={{ paddingTop: 16, paddingBottom: 120 }}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#F472B6" />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="Colors.accent" />}
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.headerRow}>
@@ -122,8 +123,19 @@ export default function SecretsScreen() {
       {/* Show once banner */}
       {showOnce && (
         <View style={styles.showOnceBanner}>
-          <Text style={styles.showOnceTitle}>⚠️ Shown once — copy now</Text>
-          <Text style={styles.showOnceKey} selectable>{showOnce}</Text>
+          <Text style={styles.showOnceTitle}>⚠️ Shown once — tap to copy</Text>
+          <TouchableOpacity
+            onPress={async () => {
+              await Clipboard.setStringAsync(showOnce);
+              Alert.alert("Copied!", "Secret copied to clipboard");
+            }}
+            activeOpacity={0.7}
+          >
+            <View style={styles.showOnceKeyRow}>
+              <Text style={styles.showOnceKey} numberOfLines={1}>{showOnce}</Text>
+              <Copy size={14} color="#FBBF24" />
+            </View>
+          </TouchableOpacity>
           <TouchableOpacity style={styles.showOnceDismiss} onPress={() => setShowOnce(null)}>
             <Text style={styles.showOnceDismissText}>I've copied it — dismiss</Text>
           </TouchableOpacity>
@@ -269,14 +281,18 @@ const styles = StyleSheet.create({
   headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 },
   title: { fontSize: 24, fontWeight: "800", color: Colors.text, letterSpacing: -0.8 },
   subtitle: { fontSize: 12, color: Colors.textMuted, marginTop: 3 },
-  addBtn: { width: 44, height: 44, borderRadius: 14, backgroundColor: "#F472B6", alignItems: "center", justifyContent: "center" },
+  addBtn: { width: 44, height: 44, borderRadius: 14, backgroundColor: "Colors.accent", alignItems: "center", justifyContent: "center" },
 
   showOnceBanner: {
     backgroundColor: "rgba(251,191,36,0.08)", borderRadius: 16, padding: 16,
     borderWidth: 1, borderColor: "rgba(251,191,36,0.2)", marginBottom: 16,
   },
   showOnceTitle: { fontSize: 14, fontWeight: "700", color: "#FBBF24", marginBottom: 8 },
-  showOnceKey: { fontSize: 12, fontFamily: mono, color: Colors.text, backgroundColor: "rgba(0,0,0,0.3)", padding: 10, borderRadius: 8, marginBottom: 10 },
+  showOnceKeyRow: {
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    backgroundColor: "rgba(0,0,0,0.3)", padding: 12, borderRadius: 8, marginBottom: 10,
+  },
+  showOnceKey: { fontSize: 12, fontFamily: mono, color: Colors.text, flex: 1, marginRight: 8 },
   showOnceDismiss: { alignSelf: "center" },
   showOnceDismissText: { fontSize: 13, fontWeight: "600", color: "#FBBF24" },
 
@@ -301,10 +317,10 @@ const styles = StyleSheet.create({
   servicePillActive: { backgroundColor: "rgba(244,114,182,0.12)", borderColor: "rgba(244,114,182,0.25)" },
   serviceEmoji: { fontSize: 14 },
   serviceText: { fontSize: 11, fontWeight: "600", color: Colors.textMuted, textTransform: "capitalize" },
-  serviceTextActive: { color: "#F472B6" },
+  serviceTextActive: { color: Colors.accent },
   saveBtn: {
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
-    backgroundColor: "#F472B6", borderRadius: 14, paddingVertical: 14, marginTop: 14,
+    backgroundColor: "Colors.accent", borderRadius: 14, paddingVertical: 14, marginTop: 14,
   },
   saveBtnText: { fontSize: 15, fontWeight: "700", color: "#fff" },
   disclaimer: { fontSize: 11, color: Colors.textMuted, textAlign: "center", marginTop: 10, lineHeight: 16 },
@@ -336,7 +352,7 @@ const styles = StyleSheet.create({
     flexDirection: "row", alignItems: "center", gap: 4,
     backgroundColor: "rgba(244,114,182,0.08)", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8,
   },
-  metaText: { fontSize: 10, fontWeight: "600", color: "#F472B6", textTransform: "capitalize" },
+  metaText: { fontSize: 10, fontWeight: "600", color: Colors.accent, textTransform: "capitalize" },
   metaTime: { fontSize: 10, color: Colors.textMuted },
 
   secretActions: { flexDirection: "row", gap: 12, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.04)", paddingTop: 10 },

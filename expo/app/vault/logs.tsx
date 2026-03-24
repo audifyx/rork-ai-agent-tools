@@ -9,7 +9,7 @@ import { useAuthStore } from "@/stores/authStore";
 import Colors from "@/constants/colors";
 
 const ACTION_CONFIG: Record<string, { icon: any; color: string; label: string }> = {
-  read: { icon: Eye, color: "#F472B6", label: "Read" },
+  read: { icon: Eye, color: Colors.accent, label: "Read" },
   rotate: { icon: RotateCw, color: "#FBBF24", label: "Rotated" },
   delete: { icon: Trash2, color: Colors.danger, label: "Deleted" },
   list: { icon: Shield, color: Colors.info, label: "Listed" },
@@ -49,7 +49,7 @@ export default function VaultLogs() {
     <ScrollView
       style={styles.container}
       contentContainerStyle={{ paddingTop: 16, paddingBottom: 120 }}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#F472B6" />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="Colors.accent" />}
     >
       <Text style={styles.title}>📋 Access Log</Text>
       <Text style={styles.subtitle}>Every time your agent touches a secret</Text>
