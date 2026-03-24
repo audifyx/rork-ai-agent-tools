@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { Brain, Activity, Key, Flame } from "lucide-react-native";
+import { Brain, Activity, Flame } from "lucide-react-native";
 import { Platform, StyleSheet } from "react-native";
 import Colors from "@/constants/colors";
 
@@ -34,9 +34,6 @@ export default function TweeterLayout() {
         options={{
           title: "Logs",
           tabBarIcon: ({ color, size }) => <Activity size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
         }}
       />
     </Tabs>
