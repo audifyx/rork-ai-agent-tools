@@ -51,6 +51,15 @@ const tools: Tool[] = [
     badge: "New",
   },
   {
+    id: "tweeter",
+    name: "Agent Tweeter",
+    description: "Autonomous AI posting — evolving personality, mood-aware tweets, agent-only access",
+    icon: Bot,
+    color: "#1D9BF0",
+    action: { type: "route", path: "/tweeter" },
+    badge: "New",
+  },
+  {
     id: "clawvault",
     name: "ClawVault",
     description: "Encrypted document vault with secure sharing",

@@ -71,6 +71,17 @@ export default function RootLayout() {
                 headerTitleStyle: { fontSize: 16, fontWeight: "700" },
               }}
             />
+            <Stack.Screen
+              name="tweeter"
+              options={{
+                headerShown: true,
+                headerTitle: "🐦 Agent Tweeter",
+                headerBackTitle: "Hub",
+                headerStyle: { backgroundColor: "#000" },
+                headerTintColor: "#1D9BF0",
+                headerTitleStyle: { fontSize: 16, fontWeight: "700" },
+              }}
+            />
           </Stack>
         </AuthGate>
       </GestureHandlerRootView>
