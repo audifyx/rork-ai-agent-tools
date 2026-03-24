@@ -1,0 +1,10 @@
+{
+  "$schema": "https://rork.com/schema/rork.json",
+  "apps": [
+    {
+      "name": "AI Agent Tools",
+      "path": "expo",
+      "framework": "react-native"
+    }
+  ]
+}
