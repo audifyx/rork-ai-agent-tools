@@ -1,4 +1,5 @@
 import { Tabs } from "expo-router";
+import { LayoutDashboard, FolderOpen, Users, Webhook, FileText } from "lucide-react-native";
 import { Platform, StyleSheet } from "react-native";
 import Colors from "@/constants/colors";
 
@@ -47,9 +48,6 @@ export default function OpenClawLayout() {
         options={{
           title: "Docs",
           tabBarIcon: ({ color, size }) => <FileText size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
         }}
       />
     </Tabs>

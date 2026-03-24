@@ -9,7 +9,7 @@ export default function VaultLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: styles.tabBar,
-        tabBarActiveTintColor: "Colors.accent",
+        tabBarActiveTintColor: Colors.accent,
         tabBarInactiveTintColor: Colors.textMuted,
         tabBarLabelStyle: styles.tabLabel,
         tabBarItemStyle: styles.tabItem,
@@ -27,9 +27,6 @@ export default function VaultLayout() {
         options={{
           title: "Access Log",
           tabBarIcon: ({ color, size }) => <Activity size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
         }}
       />
     </Tabs>
