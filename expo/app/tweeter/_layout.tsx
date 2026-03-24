@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { Brain, Activity, Flame } from "lucide-react-native";
+import { Brain, Activity, Flame, BarChart3, Calendar, Sliders } from "lucide-react-native";
 import { Platform, StyleSheet } from "react-native";
 import Colors from "@/constants/colors";
 
@@ -34,6 +34,27 @@ export default function TweeterLayout() {
         options={{
           title: "Logs",
           tabBarIcon: ({ color, size }) => <Activity size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="analytics"
+        options={{
+          title: "Analytics",
+          tabBarIcon: ({ color, size }) => <BarChart3 size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="calendar"
+        options={{
+          title: "Calendar",
+          tabBarIcon: ({ color, size }) => <Calendar size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="tuner"
+        options={{
+          title: "Tuner",
+          tabBarIcon: ({ color, size }) => <Sliders size={size} color={color} />,
         }}
       />
     </Tabs>
