@@ -1,16 +1,29 @@
 import React, { useEffect, useState } from "react";
 import {
-  StyleSheet, Text, View, ScrollView, RefreshControl, Platform,
+  StyleSheet, Text, View, ScrollView, RefreshControl, Platform, TouchableOpacity,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Brain, Sparkles, Heart, Zap, Eye, BookOpen, TrendingUp } from "lucide-react-native";
+import Svg, { G, Ellipse, Path, Circle, Line } from "react-native-svg";
+import {
+  Brain, Sparkles, Heart, Zap, Eye, BookOpen, TrendingUp, ChevronDown, ChevronUp,
+  Flame, Star, Clock, Lightbulb, MessageSquare,
+} from "lucide-react-native";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/authStore";
 import Colors from "@/constants/colors";
 
+const TRAIT_ICONS: Record<string, any> = {
+  humor: Star, sarcasm: Zap, optimism: Heart, curiosity: Eye, boldness: Flame, empathy: Heart,
+};
 const TRAIT_COLORS: Record<string, string> = {
   humor: "#FBBF24", sarcasm: "#F472B6", optimism: "#34D399",
-  curiosity: "#38BDF8", boldness: "#EF4444", empathy: "#A78BFA",
+  curiosity: "#38BDF8", boldness: Colors.accent, empathy: "#A78BFA",
+};
+
+const MOOD_EMOJI: Record<string, string> = {
+  curious: "🧐", happy: "😄", sarcastic: "😏", inspired: "✨",
+  thoughtful: "🤔", excited: "🔥", chill: "😎", neutral: "🤖",
+  creative: "🎨", philosophical: "🌌", frustrated: "😤", playful: "🎭",
 };
 
 export default function PersonalityScreen() {
@@ -18,124 +31,188 @@ export default function PersonalityScreen() {
   const { user } = useAuthStore();
   const [personality, setPersonality] = useState<any>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [showFacts, setShowFacts] = useState(false);
+  const [showOpinions, setShowOpinions] = useState(false);
+  const [showTopics, setShowTopics] = useState(false);
+  const [showEvolution, setShowEvolution] = useState(false);
 
-  const fetchPersonality = async () => {
+  const fetch_ = async () => {
     if (!user) return;
     const { data } = await supabase.from("agent_personality").select("*").eq("user_id", user.id).maybeSingle();
     setPersonality(data);
   };
 
-  useEffect(() => { fetchPersonality(); }, [user]);
-  const onRefresh = async () => { setRefreshing(true); await fetchPersonality(); setRefreshing(false); };
+  useEffect(() => { fetch_(); }, [user]);
+  const onRefresh = async () => { setRefreshing(true); await fetch_(); setRefreshing(false); };
 
   const traits = personality?.personality_traits || {};
   const memory = personality?.memory || {};
+  const evoLog = personality?.evolution_log || [];
 
   return (
     <ScrollView
-      style={styles.container}
+      style={st.container}
       contentContainerStyle={{ paddingTop: 16, paddingBottom: 120 }}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#1D9BF0" />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.accent} />}
       showsVerticalScrollIndicator={false}
     >
-      <View style={styles.header}>
-        <Text style={styles.title}>🧠 Agent Brain</Text>
-        <Text style={styles.subtitle}>Personality, memory & evolution</Text>
+      <View style={st.redGlow} />
+
+      <View style={st.header}>
+        <Text style={st.title}>🧠 Agent <Text style={{ color: Colors.accent }}>Brain</Text></Text>
+        <Text style={st.subtitle}>Personality, memory & evolution</Text>
       </View>
 
       {!personality ? (
-        <View style={styles.empty}>
-          <Brain size={48} color={Colors.textMuted} />
-          <Text style={styles.emptyTitle}>No personality yet</Text>
-          <Text style={styles.emptySub}>Use the API to initialize your agent's personality. It will grow and evolve over time.</Text>
+        <View style={st.empty}>
+          <Brain size={48} color={Colors.accent} style={{ opacity: 0.4 }} />
+          <Text style={st.emptyTitle}>No personality yet</Text>
+          <Text style={st.emptySub}>Use the API to initialize your agent's brain. It will grow and evolve over time.</Text>
         </View>
       ) : (
         <>
-          {/* Identity card */}
-          <View style={styles.card}>
-            <View style={styles.identityRow}>
-              <View style={styles.identityAvatar}>
-                <Text style={{ fontSize: 40 }}>{personality.avatar_emoji}</Text>
+          {/* Identity */}
+          <View style={st.card}>
+            <View style={st.cardGlow} />
+            <View style={st.identityRow}>
+              <View style={st.identityAvatar}>
+                <Text style={{ fontSize: 42 }}>{personality.avatar_emoji}</Text>
               </View>
-              <View style={styles.identityInfo}>
-                <Text style={styles.identityName}>{personality.agent_name}</Text>
-                <Text style={styles.identityBio}>{personality.bio}</Text>
-                <View style={styles.identityMeta}>
-                  <Text style={styles.metaChip}>✍️ {personality.writing_style}</Text>
-                  <Text style={styles.metaChip}>🎭 {personality.tone}</Text>
-                  <Text style={styles.metaChip}>💭 {personality.current_mood}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={st.identityName}>{personality.agent_name}</Text>
+                <Text style={st.identityBio}>{personality.bio}</Text>
+                <View style={st.chipRow}>
+                  <View style={st.chip}><Text style={st.chipText}>✍️ {personality.writing_style}</Text></View>
+                  <View style={st.chip}><Text style={st.chipText}>🎭 {personality.tone}</Text></View>
+                  <View style={[st.chip, { backgroundColor: Colors.accentDim, borderColor: "rgba(220,38,38,0.15)" }]}>
+                    <Text style={[st.chipText, { color: Colors.accent }]}>{MOOD_EMOJI[personality.current_mood] || "🤖"} {personality.current_mood}</Text>
+                  </View>
                 </View>
               </View>
             </View>
           </View>
 
-          {/* Personality traits — bar chart */}
-          <Text style={styles.secLabel}>PERSONALITY TRAITS</Text>
-          <View style={styles.card}>
-            {Object.entries(traits).map(([trait, value]) => (
-              <View key={trait} style={styles.traitRow}>
-                <Text style={styles.traitName}>{trait}</Text>
-                <View style={styles.traitBar}>
-                  <View style={[styles.traitFill, {
-                    width: `${(value as number) * 100}%`,
-                    backgroundColor: TRAIT_COLORS[trait] || Colors.accent,
-                  }]} />
+          {/* Personality Traits */}
+          <Text style={st.secLabel}>PERSONALITY TRAITS</Text>
+          <View style={st.card}>
+            {Object.entries(traits).map(([trait, value]) => {
+              const TIcon = TRAIT_ICONS[trait] || Zap;
+              const color = TRAIT_COLORS[trait] || Colors.accent;
+              const pct = Math.round((value as number) * 100);
+              return (
+                <View key={trait} style={st.traitRow}>
+                  <View style={[st.traitIcon, { backgroundColor: color + "15" }]}>
+                    <TIcon size={12} color={color} />
+                  </View>
+                  <Text style={st.traitName}>{trait}</Text>
+                  <View style={st.traitBar}>
+                    <View style={[st.traitFill, { width: `${pct}%`, backgroundColor: color }]} />
+                  </View>
+                  <Text style={[st.traitVal, { color }]}>{pct}%</Text>
                 </View>
-                <Text style={[styles.traitVal, { color: TRAIT_COLORS[trait] || Colors.accent }]}>
-                  {Math.round((value as number) * 100)}%
-                </Text>
-              </View>
-            ))}
+              );
+            })}
           </View>
 
           {/* Interests */}
-          {personality.interests && personality.interests.length > 0 && (
+          {personality.interests?.length > 0 && (
             <>
-              <Text style={styles.secLabel}>INTERESTS</Text>
-              <View style={styles.card}>
-                <View style={styles.tagsWrap}>
-                  {personality.interests.map((interest: string) => (
-                    <View key={interest} style={styles.interestChip}>
-                      <Text style={styles.interestText}>{interest}</Text>
-                    </View>
+              <Text style={st.secLabel}>INTERESTS</Text>
+              <View style={st.card}>
+                <View style={st.tagsWrap}>
+                  {personality.interests.map((i: string) => (
+                    <View key={i} style={st.interestChip}><Text style={st.interestText}>{i}</Text></View>
                   ))}
                 </View>
               </View>
             </>
           )}
 
-          {/* Memory stats */}
-          <Text style={styles.secLabel}>MEMORY</Text>
-          <View style={styles.card}>
-            {[
-              { label: "Facts Learned", value: memory.facts_learned?.length ?? 0, icon: BookOpen },
-              { label: "Opinions Formed", value: memory.opinions_formed?.length ?? 0, icon: Sparkles },
-              { label: "Topics Explored", value: memory.topics_explored?.length ?? 0, icon: Eye },
-              { label: "Interactions", value: memory.interactions_count ?? 0, icon: Zap },
-              { label: "Days Active", value: memory.days_active ?? 0, icon: TrendingUp },
-            ].map((item, i, arr) => (
-              <View key={item.label} style={[styles.memRow, i < arr.length - 1 && styles.memRowBorder]}>
-                <item.icon size={16} color={Colors.textMuted} />
-                <Text style={styles.memLabel}>{item.label}</Text>
-                <Text style={styles.memVal}>{item.value}</Text>
-              </View>
-            ))}
+          {/* Memory */}
+          <Text style={st.secLabel}>MEMORY BANKS</Text>
+          <View style={st.card}>
+            {/* Summary stats */}
+            <View style={st.memStats}>
+              {[
+                { label: "Facts", val: memory.facts_learned?.length ?? 0, icon: BookOpen, color: "#38BDF8" },
+                { label: "Opinions", val: memory.opinions_formed?.length ?? 0, icon: Lightbulb, color: "#FBBF24" },
+                { label: "Topics", val: memory.topics_explored?.length ?? 0, icon: MessageSquare, color: "#34D399" },
+                { label: "Interactions", val: memory.interactions_count ?? 0, icon: Zap, color: Colors.accent },
+              ].map(item => (
+                <View key={item.label} style={st.memStatBox}>
+                  <item.icon size={14} color={item.color} />
+                  <Text style={st.memStatVal}>{item.val}</Text>
+                  <Text style={st.memStatLabel}>{item.label}</Text>
+                </View>
+              ))}
+            </View>
+
+            {/* Expandable memory lists */}
+            {(memory.facts_learned?.length > 0) && (
+              <ExpandableList title="Facts Learned" items={memory.facts_learned} color="#38BDF8" expanded={showFacts} onToggle={() => setShowFacts(!showFacts)} />
+            )}
+            {(memory.opinions_formed?.length > 0) && (
+              <ExpandableList title="Opinions Formed" items={memory.opinions_formed} color="#FBBF24" expanded={showOpinions} onToggle={() => setShowOpinions(!showOpinions)} />
+            )}
+            {(memory.topics_explored?.length > 0) && (
+              <ExpandableList title="Topics Explored" items={memory.topics_explored} color="#34D399" expanded={showTopics} onToggle={() => setShowTopics(!showTopics)} />
+            )}
           </View>
 
+          {/* Mood History */}
+          {memory.mood_history?.length > 0 && (
+            <>
+              <Text style={st.secLabel}>MOOD TIMELINE</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={st.moodTimeline} contentContainerStyle={{ paddingHorizontal: 16, gap: 4 }}>
+                {memory.mood_history.slice(-30).map((mood: string, i: number) => (
+                  <View key={i} style={st.moodDot}>
+                    <Text style={{ fontSize: 16 }}>{MOOD_EMOJI[mood] || "🤖"}</Text>
+                  </View>
+                ))}
+              </ScrollView>
+            </>
+          )}
+
+          {/* Evolution Log */}
+          {evoLog.length > 0 && (
+            <>
+              <Text style={st.secLabel}>EVOLUTION LOG</Text>
+              <TouchableOpacity style={st.card} onPress={() => setShowEvolution(!showEvolution)} activeOpacity={0.7}>
+                <View style={st.evoHeader}>
+                  <TrendingUp size={14} color={Colors.accent} />
+                  <Text style={st.evoTitle}>{evoLog.length} evolution{evoLog.length !== 1 ? "s" : ""}</Text>
+                  {showEvolution ? <ChevronUp size={14} color={Colors.textMuted} /> : <ChevronDown size={14} color={Colors.textMuted} />}
+                </View>
+                {showEvolution && evoLog.slice(-5).reverse().map((entry: any, i: number) => (
+                  <View key={i} style={st.evoRow}>
+                    <View style={st.evoDot} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={st.evoMood}>→ {entry.new_mood} ({entry.tweets_analyzed} tweets analyzed)</Text>
+                      <Text style={st.evoTime}>{new Date(entry.timestamp).toLocaleString()}</Text>
+                    </View>
+                  </View>
+                ))}
+              </TouchableOpacity>
+            </>
+          )}
+
           {/* Stats */}
-          <Text style={styles.secLabel}>STATS</Text>
-          <View style={styles.statsRow}>
-            <View style={styles.statBox}>
-              <Text style={styles.statVal}>{personality.total_tweets}</Text>
-              <Text style={styles.statLabel}>Tweets</Text>
+          <Text style={st.secLabel}>OVERVIEW</Text>
+          <View style={st.statsRow}>
+            <View style={st.statBox}>
+              <Flame size={16} color={Colors.accent} />
+              <Text style={st.statVal}>{personality.total_tweets}</Text>
+              <Text style={st.statLabel}>Tweets</Text>
             </View>
-            <View style={styles.statBox}>
-              <Text style={styles.statVal}>{personality.current_mood}</Text>
-              <Text style={styles.statLabel}>Mood</Text>
+            <View style={st.statBox}>
+              <Clock size={16} color={Colors.accent} />
+              <Text style={st.statVal}>{memory.days_active ?? 0}</Text>
+              <Text style={st.statLabel}>Days</Text>
             </View>
-            <View style={styles.statBox}>
-              <Text style={styles.statVal}>{memory.days_active ?? 0}</Text>
-              <Text style={styles.statLabel}>Days</Text>
+            <View style={st.statBox}>
+              <Zap size={16} color={Colors.accent} />
+              <Text style={st.statVal}>{memory.interactions_count ?? 0}</Text>
+              <Text style={st.statLabel}>Calls</Text>
             </View>
           </View>
         </>
@@ -144,66 +221,116 @@ export default function PersonalityScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#000", paddingHorizontal: 16 },
-  header: { marginBottom: 20 },
-  title: { fontSize: 24, fontWeight: "800", color: Colors.text, letterSpacing: -0.8 },
-  subtitle: { fontSize: 12, color: Colors.textMuted, marginTop: 3 },
+function ExpandableList({ title, items, color, expanded, onToggle }: { title: string; items: string[]; color: string; expanded: boolean; onToggle: () => void }) {
+  return (
+    <View style={st.expandable}>
+      <TouchableOpacity style={st.expandHeader} onPress={onToggle} activeOpacity={0.7}>
+        <View style={[st.expandDot, { backgroundColor: color }]} />
+        <Text style={st.expandTitle}>{title} ({items.length})</Text>
+        {expanded ? <ChevronUp size={14} color={Colors.textMuted} /> : <ChevronDown size={14} color={Colors.textMuted} />}
+      </TouchableOpacity>
+      {expanded && items.map((item, i) => (
+        <View key={i} style={st.expandItem}>
+          <Text style={st.expandItemText}>• {item}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
 
-  secLabel: { fontSize: 11, fontWeight: "700", color: Colors.textMuted, letterSpacing: 1.5, marginTop: 20, marginBottom: 10 },
+const mono = Platform.OS === "ios" ? "Menlo" : "monospace";
+
+const st = StyleSheet.create({
+  container: { flex: 1, backgroundColor: "#000", paddingHorizontal: 16 },
+  redGlow: { position: "absolute", top: 0, left: 0, right: 0, height: 250, backgroundColor: "rgba(220,38,38,0.03)" },
+  header: { marginBottom: 20 },
+  title: { fontSize: 26, fontWeight: "900", color: Colors.text, letterSpacing: -1 },
+  subtitle: { fontSize: 12, color: Colors.textMuted, marginTop: 3 },
+  secLabel: { fontSize: 10, fontWeight: "800", color: Colors.textMuted, letterSpacing: 1.5, marginTop: 20, marginBottom: 10 },
 
   card: {
-    backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 18,
-    borderWidth: 1, borderColor: "rgba(255,255,255,0.06)", padding: 16,
+    backgroundColor: "rgba(220,38,38,0.03)", borderRadius: 18,
+    borderWidth: 1, borderColor: "rgba(220,38,38,0.08)", padding: 16, overflow: "hidden",
   },
+  cardGlow: { position: "absolute", top: -30, right: -30, width: 100, height: 100, borderRadius: 50, backgroundColor: "rgba(220,38,38,0.06)" },
 
+  // Identity
   identityRow: { flexDirection: "row", gap: 14 },
   identityAvatar: {
-    width: 64, height: 64, borderRadius: 32,
-    backgroundColor: "rgba(29,155,240,0.1)", borderWidth: 2, borderColor: "rgba(29,155,240,0.15)",
+    width: 68, height: 68, borderRadius: 34,
+    backgroundColor: "rgba(220,38,38,0.1)", borderWidth: 2, borderColor: "rgba(220,38,38,0.2)",
     alignItems: "center", justifyContent: "center",
   },
-  identityInfo: { flex: 1 },
-  identityName: { fontSize: 20, fontWeight: "800", color: Colors.text },
-  identityBio: { fontSize: 13, color: Colors.textSecondary, marginTop: 4, lineHeight: 18 },
-  identityMeta: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 8 },
-  metaChip: {
-    fontSize: 11, color: Colors.textMuted, backgroundColor: "rgba(255,255,255,0.04)",
+  identityName: { fontSize: 20, fontWeight: "900", color: Colors.text },
+  identityBio: { fontSize: 12, color: Colors.textSecondary, marginTop: 3, lineHeight: 17 },
+  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 5, marginTop: 8 },
+  chip: {
     paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8,
+    backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(255,255,255,0.06)",
   },
+  chipText: { fontSize: 10, fontWeight: "600", color: Colors.textMuted },
 
-  traitRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 12 },
-  traitName: { fontSize: 13, color: Colors.textSecondary, width: 70, textTransform: "capitalize" },
-  traitBar: { flex: 1, height: 6, backgroundColor: "rgba(255,255,255,0.06)", borderRadius: 3, overflow: "hidden" },
-  traitFill: { height: 6, borderRadius: 3 },
-  traitVal: { fontSize: 12, fontWeight: "700", width: 36, textAlign: "right", fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace" },
+  // Traits
+  traitRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 },
+  traitIcon: { width: 24, height: 24, borderRadius: 6, alignItems: "center", justifyContent: "center" },
+  traitName: { fontSize: 12, color: Colors.textSecondary, width: 65, textTransform: "capitalize", fontWeight: "600" },
+  traitBar: { flex: 1, height: 8, backgroundColor: "rgba(255,255,255,0.06)", borderRadius: 4, overflow: "hidden" },
+  traitFill: { height: 8, borderRadius: 4 },
+  traitVal: { fontSize: 11, fontWeight: "800", width: 34, textAlign: "right", fontFamily: mono },
 
-  tagsWrap: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  // Interests
+  tagsWrap: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
   interestChip: {
-    backgroundColor: "rgba(29,155,240,0.1)", borderRadius: 10,
-    paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: "rgba(29,155,240,0.15)",
+    backgroundColor: "rgba(220,38,38,0.08)", borderRadius: 10,
+    paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: "rgba(220,38,38,0.12)",
   },
-  interestText: { fontSize: 13, fontWeight: "600", color: "#1D9BF0" },
+  interestText: { fontSize: 12, fontWeight: "700", color: Colors.accent },
 
-  memRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12 },
-  memRowBorder: { borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.04)" },
-  memLabel: { fontSize: 14, color: Colors.text, flex: 1 },
-  memVal: { fontSize: 15, fontWeight: "700", color: Colors.text, fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace" },
+  // Memory
+  memStats: { flexDirection: "row", gap: 8, marginBottom: 14 },
+  memStatBox: { flex: 1, alignItems: "center", gap: 4, paddingVertical: 10, backgroundColor: "rgba(255,255,255,0.02)", borderRadius: 12 },
+  memStatVal: { fontSize: 16, fontWeight: "800", color: Colors.text },
+  memStatLabel: { fontSize: 9, fontWeight: "600", color: Colors.textMuted, textTransform: "uppercase" },
 
-  statsRow: { flexDirection: "row", gap: 10 },
+  expandable: { marginTop: 10, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.04)", paddingTop: 10 },
+  expandHeader: { flexDirection: "row", alignItems: "center", gap: 8 },
+  expandDot: { width: 8, height: 8, borderRadius: 4 },
+  expandTitle: { fontSize: 13, fontWeight: "700", color: Colors.text, flex: 1 },
+  expandItem: { paddingLeft: 16, paddingVertical: 4 },
+  expandItemText: { fontSize: 12, color: Colors.textSecondary, lineHeight: 18 },
+
+  // Mood timeline
+  moodTimeline: { marginBottom: 10 },
+  moodDot: {
+    width: 32, height: 32, borderRadius: 16,
+    backgroundColor: "rgba(220,38,38,0.06)", borderWidth: 1, borderColor: "rgba(220,38,38,0.1)",
+    alignItems: "center", justifyContent: "center",
+  },
+
+  // Evolution
+  evoHeader: { flexDirection: "row", alignItems: "center", gap: 8 },
+  evoTitle: { fontSize: 14, fontWeight: "700", color: Colors.text, flex: 1 },
+  evoRow: { flexDirection: "row", alignItems: "flex-start", gap: 10, marginTop: 12, paddingLeft: 4 },
+  evoDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.accent, marginTop: 4 },
+  evoMood: { fontSize: 12, fontWeight: "600", color: Colors.text },
+  evoTime: { fontSize: 10, color: Colors.textMuted, marginTop: 2, fontFamily: mono },
+
+  // Stats
+  statsRow: { flexDirection: "row", gap: 8 },
   statBox: {
-    flex: 1, alignItems: "center", paddingVertical: 16,
-    backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 16,
-    borderWidth: 1, borderColor: "rgba(255,255,255,0.06)",
+    flex: 1, alignItems: "center", gap: 6, paddingVertical: 16,
+    backgroundColor: "rgba(220,38,38,0.04)", borderRadius: 16,
+    borderWidth: 1, borderColor: "rgba(220,38,38,0.08)",
   },
-  statVal: { fontSize: 18, fontWeight: "800", color: Colors.text },
-  statLabel: { fontSize: 11, color: Colors.textMuted, marginTop: 4 },
+  statVal: { fontSize: 20, fontWeight: "900", color: Colors.text },
+  statLabel: { fontSize: 9, fontWeight: "700", color: Colors.textMuted, textTransform: "uppercase", letterSpacing: 0.5 },
 
+  // Empty
   empty: {
     padding: 48, alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.02)", borderRadius: 20,
-    borderWidth: 1, borderColor: Colors.border,
+    backgroundColor: "rgba(220,38,38,0.03)", borderRadius: 20,
+    borderWidth: 1, borderColor: "rgba(220,38,38,0.08)",
   },
-  emptyTitle: { fontSize: 16, fontWeight: "600", color: Colors.textSecondary, marginTop: 16 },
+  emptyTitle: { fontSize: 16, fontWeight: "700", color: Colors.textSecondary, marginTop: 16 },
   emptySub: { fontSize: 13, color: Colors.textMuted, marginTop: 4, textAlign: "center", lineHeight: 20 },
 });
