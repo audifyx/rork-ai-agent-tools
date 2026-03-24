@@ -4,7 +4,6 @@ import {
   KeyboardAvoidingView, Platform, ActivityIndicator, Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Zap } from "lucide-react-native";
 import { useAuthStore } from "@/stores/authStore";
 import Colors from "@/constants/colors";
 
@@ -33,10 +32,8 @@ export default function LoginScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <View style={styles.hero}>
-        <View style={styles.iconBox}>
-          <Zap size={28} color={Colors.accent} strokeWidth={2.5} />
-        </View>
-        <Text style={styles.title}>AI Agent Tools</Text>
+        <Text style={styles.emoji}>🦞</Text>
+        <Text style={styles.title}>OpenClaw</Text>
         <Text style={styles.subtitle}>
           {isSignUp ? "Create your account" : "Sign in to continue"}
         </Text>
@@ -76,10 +73,7 @@ export default function LoginScreen() {
           )}
         </TouchableOpacity>
 
-        <TouchableOpacity
-          onPress={() => setIsSignUp(!isSignUp)}
-          style={styles.switchBtn}
-        >
+        <TouchableOpacity onPress={() => setIsSignUp(!isSignUp)} style={styles.switchBtn}>
           <Text style={styles.switchText}>
             {isSignUp ? "Already have an account? " : "Don't have an account? "}
             <Text style={styles.switchTextAccent}>
@@ -95,27 +89,20 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: "#000",
     paddingHorizontal: 24,
   },
   hero: {
     alignItems: "center",
     marginBottom: 48,
   },
-  iconBox: {
-    width: 64,
-    height: 64,
-    borderRadius: 18,
-    backgroundColor: Colors.accentDim,
-    borderWidth: 1,
-    borderColor: Colors.accentGlow,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 24,
+  emoji: {
+    fontSize: 48,
+    marginBottom: 12,
   },
   title: {
-    fontSize: 32,
-    fontWeight: "700",
+    fontSize: 36,
+    fontWeight: "800",
     color: Colors.text,
     letterSpacing: -0.5,
     marginBottom: 8,
@@ -143,12 +130,20 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: "center",
     marginTop: 8,
+    ...Platform.select({
+      ios: {
+        shadowColor: Colors.accent,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 12,
+      },
+      android: { elevation: 6 },
+      default: {},
+    }),
   },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
+  buttonDisabled: { opacity: 0.6 },
   buttonText: {
-    color: Colors.background,
+    color: "#fff",
     fontSize: 16,
     fontWeight: "700",
   },
