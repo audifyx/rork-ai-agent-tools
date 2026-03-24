@@ -108,6 +108,67 @@ Optional: endpoint, method, status_code, request_body, response_body
 
 ---
 
+## PAGES (ClawPages)
+
+### add_deployment [write]
+Track a deployed site.
+{ "action": "add_deployment", "params": { "title": "My Site", "url": "https://mysite.vercel.app", "platform": "vercel", "agent_name": "claude" } }
+Required: title, url
+Optional: platform (vercel/netlify/cloudflare/github-pages/lovable/replit/custom/unknown), description, tags, agent_name, deploy_source
+
+### list_deployments [read]
+List all deployment links.
+{ "action": "list_deployments", "params": { "status": "live" } }
+Optional: status (live/down/archived), platform, limit
+
+### update_deployment [write]
+Update a deployment.
+{ "action": "update_deployment", "params": { "id": "uuid", "status": "archived", "is_pinned": true } }
+Required: id
+Optional: title, url, platform, status, description, tags, is_pinned, agent_name, deploy_source
+
+### delete_deployment [delete]
+Delete a deployment.
+{ "action": "delete_deployment", "params": { "id": "uuid" } }
+Required: id
+
+### create_session [write]
+Create a live HTML preview session.
+{ "action": "create_session", "params": { "session_name": "My Build" } }
+Optional: session_name, html_content, css_content, js_content, agent_name
+
+### push [write]
+Push HTML to a live session (user sees it render in real-time).
+{ "action": "push", "params": { "session_id": "uuid", "html_content": "<html>...</html>" } }
+Required: session_id, html_content
+Optional: css_content, js_content, agent_name
+
+### get_session [read]
+Get session details + current HTML.
+{ "action": "get_session", "params": { "session_id": "uuid" } }
+Required: session_id
+
+### list_sessions [read]
+List all live preview sessions.
+{ "action": "list_sessions" }
+
+### get_history [read]
+Get version history for a session.
+{ "action": "get_history", "params": { "session_id": "uuid" } }
+Required: session_id. Optional: limit
+
+### get_version [read]
+Get a specific version snapshot.
+{ "action": "get_version", "params": { "session_id": "uuid", "version": 3 } }
+Required: session_id, version
+
+### delete_session [delete]
+Delete a live session and all versions.
+{ "action": "delete_session", "params": { "session_id": "uuid" } }
+Required: session_id
+
+---
+
 ## Agent System Prompt (paste into your AI agent)
 
 You have access to a database command center via the OpenClaw API.

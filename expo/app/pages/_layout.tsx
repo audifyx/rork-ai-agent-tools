@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { Globe, Radio, Activity, Key } from "lucide-react-native";
+import { Globe, Radio, Activity } from "lucide-react-native";
 import { Platform, StyleSheet } from "react-native";
 import Colors from "@/constants/colors";
 
@@ -34,13 +34,6 @@ export default function PagesLayout() {
         options={{
           title: "Logs",
           tabBarIcon: ({ color, size }) => <Activity size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="api"
-        options={{
-          title: "API",
-          tabBarIcon: ({ color, size }) => <Key size={size} color={color} />,
         }}
       />
     </Tabs>

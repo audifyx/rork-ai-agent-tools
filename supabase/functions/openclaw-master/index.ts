@@ -346,15 +346,121 @@ Deno.serve(async (req) => {
       result = data;
     }
     else if (action === "get_dashboard") {
-      const [{ count: fc }, { count: lc }, { count: wc }, { count: tc }, { count: sc }, { data: act }] = await Promise.all([
+      const [{ count: fc }, { count: lc }, { count: wc }, { count: tc }, { count: sc }, { count: dc }, { data: act }] = await Promise.all([
         sb.from("stored_files").select("id", { count: "exact", head: true }).eq("user_id", userId),
         sb.from("leads").select("id", { count: "exact", head: true }).eq("user_id", userId),
         sb.from("webhook_logs").select("id", { count: "exact", head: true }).eq("user_id", userId),
         sb.from("agent_tweets").select("id", { count: "exact", head: true }).eq("user_id", userId),
         sb.from("vault_entries").select("id", { count: "exact", head: true }).eq("user_id", userId).eq("is_active", true),
+        sb.from("pages_deployments").select("id", { count: "exact", head: true }).eq("user_id", userId).eq("status", "live"),
         sb.from("agent_activity").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(10),
       ]);
-      result = { files: fc ?? 0, leads: lc ?? 0, api_calls: wc ?? 0, tweets: tc ?? 0, secrets: sc ?? 0, recent_activity: act ?? [] };
+      result = { files: fc ?? 0, leads: lc ?? 0, api_calls: wc ?? 0, tweets: tc ?? 0, secrets: sc ?? 0, deployments: dc ?? 0, recent_activity: act ?? [] };
+    }
+
+    // ════════════════════════════════════════
+    // PAGES — Deployments & Live Preview
+    // ════════════════════════════════════════
+
+    else if (action === "add_deployment") {
+      if (!perms.pages) return json({ success: false, error: "Pages access denied" }, 403);
+      if (!params?.title || !params?.url) return json({ success: false, error: "title and url required" }, 400);
+      const { data, error } = await sb.from("pages_deployments").insert({
+        user_id: userId, title: params.title as string, url: params.url as string,
+        platform: (params.platform as string) || "unknown", description: (params.description as string) || null,
+        tags: (params.tags as string[]) || [], agent_name: (params.agent_name as string) || null,
+        deploy_source: (params.deploy_source as string) || null,
+      }).select().single();
+      if (error) throw error;
+      await sb.from("pages_logs").insert({ user_id: userId, action: "add_deployment", description: `Deployed: ${params.title}`, metadata: { url: params.url, platform: params.platform || "unknown" } });
+      result = data;
+    }
+    else if (action === "list_deployments") {
+      if (!perms.pages) return json({ success: false, error: "Pages access denied" }, 403);
+      let q = sb.from("pages_deployments").select("*").eq("user_id", userId).order("is_pinned", { ascending: false }).order("created_at", { ascending: false }).limit((params?.limit as number) || 50);
+      if (params?.status) q = q.eq("status", params.status as string);
+      if (params?.platform) q = q.eq("platform", params.platform as string);
+      const { data, error } = await q;
+      if (error) throw error;
+      result = { deployments: data, count: data?.length ?? 0 };
+    }
+    else if (action === "update_deployment") {
+      if (!perms.pages) return json({ success: false, error: "Pages access denied" }, 403);
+      if (!params?.id) return json({ success: false, error: "id required" }, 400);
+      const allowed = ["title", "url", "platform", "status", "description", "tags", "is_pinned", "agent_name", "deploy_source"];
+      const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+      for (const k of allowed) { if (params[k] !== undefined) updates[k] = params[k]; }
+      const { data, error } = await sb.from("pages_deployments").update(updates).eq("id", params.id as string).eq("user_id", userId).select().single();
+      if (error) throw error;
+      result = data;
+    }
+    else if (action === "delete_deployment") {
+      if (!perms.pages) return json({ success: false, error: "Pages access denied" }, 403);
+      if (!params?.id) return json({ success: false, error: "id required" }, 400);
+      await sb.from("pages_deployments").delete().eq("id", params.id as string).eq("user_id", userId);
+      result = { deleted: true };
+    }
+    else if (action === "create_session") {
+      if (!perms.pages) return json({ success: false, error: "Pages access denied" }, 403);
+      const html = (params?.html_content as string) || "<!DOCTYPE html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'></head><body><h1>Ready...</h1></body></html>";
+      const { data, error } = await sb.from("pages_live_sessions").insert({
+        user_id: userId, session_name: (params?.session_name as string) || "Live Preview",
+        html_content: html, css_content: (params?.css_content as string) || null,
+        js_content: (params?.js_content as string) || null, agent_name: (params?.agent_name as string) || null, version: 1,
+      }).select().single();
+      if (error) throw error;
+      await sb.from("pages_live_history").insert({ session_id: data.id, user_id: userId, html_content: html, css_content: data.css_content, js_content: data.js_content, version: 1, agent_name: data.agent_name });
+      await sb.from("pages_logs").insert({ user_id: userId, action: "create_session", description: `Created: ${data.session_name}`, metadata: { session_id: data.id } });
+      result = data;
+    }
+    else if (action === "push") {
+      if (!perms.pages) return json({ success: false, error: "Pages access denied" }, 403);
+      if (!params?.session_id || !params?.html_content) return json({ success: false, error: "session_id and html_content required" }, 400);
+      const { data: cur } = await sb.from("pages_live_sessions").select("version").eq("id", params.session_id as string).eq("user_id", userId).maybeSingle();
+      if (!cur) return json({ success: false, error: "Session not found" }, 404);
+      const nv = (cur.version || 0) + 1;
+      const { data, error } = await sb.from("pages_live_sessions").update({
+        html_content: params.html_content as string, css_content: (params.css_content as string) || null,
+        js_content: (params.js_content as string) || null, version: nv,
+        agent_name: (params.agent_name as string) || null, last_push_at: new Date().toISOString(),
+      }).eq("id", params.session_id as string).eq("user_id", userId).select().single();
+      if (error) throw error;
+      await sb.from("pages_live_history").insert({ session_id: params.session_id as string, user_id: userId, html_content: params.html_content as string, css_content: (params.css_content as string) || null, js_content: (params.js_content as string) || null, version: nv, agent_name: (params.agent_name as string) || null });
+      await sb.from("pages_logs").insert({ user_id: userId, action: "push", description: `Pushed v${nv} to ${data.session_name}`, metadata: { session_id: params.session_id, version: nv } });
+      result = { session: data, version: nv };
+    }
+    else if (action === "get_session") {
+      if (!perms.pages) return json({ success: false, error: "Pages access denied" }, 403);
+      if (!params?.session_id) return json({ success: false, error: "session_id required" }, 400);
+      const { data, error } = await sb.from("pages_live_sessions").select("*").eq("id", params.session_id as string).eq("user_id", userId).maybeSingle();
+      if (error || !data) return json({ success: false, error: "Session not found" }, 404);
+      result = data;
+    }
+    else if (action === "list_sessions") {
+      if (!perms.pages) return json({ success: false, error: "Pages access denied" }, 403);
+      const { data, error } = await sb.from("pages_live_sessions").select("id, session_name, version, agent_name, is_active, last_push_at, created_at").eq("user_id", userId).order("last_push_at", { ascending: false }).limit(20);
+      if (error) throw error;
+      result = { sessions: data, count: data?.length ?? 0 };
+    }
+    else if (action === "get_history") {
+      if (!perms.pages) return json({ success: false, error: "Pages access denied" }, 403);
+      if (!params?.session_id) return json({ success: false, error: "session_id required" }, 400);
+      const { data, error } = await sb.from("pages_live_history").select("id, version, agent_name, pushed_at").eq("session_id", params.session_id as string).eq("user_id", userId).order("version", { ascending: false }).limit((params?.limit as number) || 20);
+      if (error) throw error;
+      result = { history: data };
+    }
+    else if (action === "get_version") {
+      if (!perms.pages) return json({ success: false, error: "Pages access denied" }, 403);
+      if (!params?.session_id || !params?.version) return json({ success: false, error: "session_id and version required" }, 400);
+      const { data, error } = await sb.from("pages_live_history").select("*").eq("session_id", params.session_id as string).eq("user_id", userId).eq("version", params.version as number).maybeSingle();
+      if (error || !data) return json({ success: false, error: "Version not found" }, 404);
+      result = data;
+    }
+    else if (action === "delete_session") {
+      if (!perms.pages) return json({ success: false, error: "Pages access denied" }, 403);
+      if (!params?.session_id) return json({ success: false, error: "session_id required" }, 400);
+      await sb.from("pages_live_sessions").delete().eq("id", params.session_id as string).eq("user_id", userId);
+      result = { deleted: true };
     }
 
     // ════════════════════════════════════════

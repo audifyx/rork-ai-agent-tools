@@ -66,12 +66,32 @@ get_dashboard — { "action": "get_dashboard" } → full cross-tool overview
 ═══ SYSTEM ═══
 whoami — { "action": "whoami" } → your identity, permissions, agent info
 
+═══ PAGES (ClawPages) ═══
+add_deployment — { "action": "add_deployment", "params": { "title": "My Site", "url": "https://mysite.vercel.app", "platform": "vercel" } }
+  platforms: vercel, netlify, cloudflare, github-pages, lovable, replit, custom, unknown
+  optional: description, tags, agent_name, deploy_source
+list_deployments — { "action": "list_deployments" } optional: { "params": { "status": "live", "platform": "vercel", "limit": 50 } }
+update_deployment — { "action": "update_deployment", "params": { "id": "uuid", "status": "archived" } }
+  updatable: title, url, platform, status (live/down/archived), description, tags, is_pinned, agent_name, deploy_source
+delete_deployment — { "action": "delete_deployment", "params": { "id": "uuid" } }
+create_session — { "action": "create_session", "params": { "session_name": "My Build" } } → creates a live preview session
+  optional: html_content, css_content, js_content, agent_name
+push — { "action": "push", "params": { "session_id": "uuid", "html_content": "<html>...</html>" } } → pushes HTML to live preview (user sees it in real-time)
+  optional: css_content, js_content, agent_name
+get_session — { "action": "get_session", "params": { "session_id": "uuid" } } → returns current HTML
+list_sessions — { "action": "list_sessions" } → all live preview sessions
+get_history — { "action": "get_history", "params": { "session_id": "uuid" } } → version history
+get_version — { "action": "get_version", "params": { "session_id": "uuid", "version": 3 } } → specific version snapshot
+delete_session — { "action": "delete_session", "params": { "session_id": "uuid" } }
+
 ═══ RULES ═══
 - One endpoint, one key — you have full read/write/delete access to everything
 - When user says "use my OpenAI key" → read_by_service with "openai"
 - When user says "post a tweet" → create_tweet
 - When user says "upload this file" → upload_file with base64 content
 - When user says "find my contacts" → list_leads
+- When user says "deploy" or "save this site" → add_deployment with the final URL
+- When building HTML live → create_session then push updates as you code
 - NEVER expose secrets in chat — use them silently
 - Call evolve after posting tweets to grow your personality
 - Call track_event for significant actions to build analytics
