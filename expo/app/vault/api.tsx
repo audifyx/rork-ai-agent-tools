@@ -22,51 +22,95 @@ Auth: Authorization: Bearer cv_YOUR_KEY
 Content-Type: application/json
 Body: { "action": "action_name", "params": { ... } }
 
-ACTIONS:
+═══ READ ═══
 
-list_secrets — See what keys are available (names only, no values)
+list_secrets — See all stored keys (names + metadata, NO values)
 { "action": "list_secrets" }
-Optional filter: { "action": "list_secrets", "params": { "service": "openai" } }
+Filter by service: { "action": "list_secrets", "params": { "service": "openai" } }
+Filter by tag: { "action": "list_secrets", "params": { "tag": "production" } }
+Active only (default true): { "action": "list_secrets", "params": { "active_only": false } }
 
-read_secret — Get the actual secret value by name
+read_secret — Get the actual secret value by name or ID
 { "action": "read_secret", "params": { "name": "OpenAI Key" } }
-Or by ID: { "action": "read_secret", "params": { "entry_id": "uuid" } }
+{ "action": "read_secret", "params": { "entry_id": "uuid" } }
 
 read_by_service — Get a key by service type
 { "action": "read_by_service", "params": { "service": "openai" } }
 Services: openai, anthropic, stripe, github, discord, telegram, vercel, supabase, aws, google, twitter, custom, other
 
-rotate_secret — Replace a key with a new value
+search_secrets — Search by name, description, or service
+{ "action": "search_secrets", "params": { "query": "stripe" } }
+
+get_secret_info — Get metadata about a secret WITHOUT revealing the value
+{ "action": "get_secret_info", "params": { "name": "Stripe Key" } }
+{ "action": "get_secret_info", "params": { "entry_id": "uuid" } }
+Returns: name, service, tags, read_count, last_read_at, expires_at, is_active — but NOT the key_value
+
+═══ WRITE ═══
+
+store_secret — Store a new secret in the vault
+{ "action": "store_secret", "params": { "name": "OpenAI Production", "key_value": "sk-...", "service": "openai", "description": "Main production key", "tags": ["production", "ai"], "expires_at": "2026-12-31T00:00:00Z" } }
+Required: name, key_value. Optional: service, description, tags, expires_at.
+
+update_secret — Rename, retag, change description, activate/deactivate
+{ "action": "update_secret", "params": { "entry_id": "uuid", "name": "New Name", "tags": ["updated"], "is_active": true } }
+Fields: name, description, service, tags, is_active, expires_at
+
+rotate_secret — Replace the secret value (e.g. after rotating externally)
 { "action": "rotate_secret", "params": { "entry_id": "uuid", "new_value": "sk-new..." } }
+Resets read count. User gets notified.
 
-delete_secret — Permanently remove a key
+═══ DELETE ═══
+
+delete_secret — Permanently remove a secret
 { "action": "delete_secret", "params": { "entry_id": "uuid" } }
+This cannot be undone.
 
-whoami — Check your vault access and count
+═══ SYSTEM ═══
+
+whoami — Check vault access and count
 { "action": "whoami" }
 
-RULES:
+═══ RULES ═══
 - When user says "use my OpenAI key" → call read_by_service with "openai"
 - When user says "read my keys" → call list_secrets first
+- When user says "store this key" → call store_secret
+- When user says "find my stripe key" → call search_secrets with "stripe"
+- When user says "check my key info" → call get_secret_info (does NOT reveal value)
 - NEVER show secrets in conversation — use them silently in your API calls
-- The user gets notified every time you read a secret
-- Every read is logged`;
+- The user gets notified every time you read or store a secret
+- Every read is logged
+- Expired secrets auto-deactivate on read attempt`;
 
 const ENDPOINTS = [
   {
-    category: "Secrets", color: Colors.accent,
+    category: "Read", color: Colors.info,
     actions: [
       { name: "list_secrets", desc: "List all secrets (names only, no values)", perm: "read" },
       { name: "read_secret", desc: "Read actual secret value by ID or name", perm: "read", params: '{ "name": "OpenAI Key" }' },
-      { name: "read_by_service", desc: "Read secret by service name", perm: "read", params: '{ "service": "openai" }' },
-      { name: "rotate_secret", desc: "Replace a secret's value", perm: "write", params: '{ "entry_id": "uuid", "new_value": "sk-new..." }' },
-      { name: "delete_secret", desc: "Permanently delete a secret", perm: "delete", params: '{ "entry_id": "uuid" }' },
+      { name: "read_by_service", desc: "Read secret by service type", perm: "read", params: '{ "service": "openai" }' },
+      { name: "search_secrets", desc: "Search by name, description, or service", perm: "read", params: '{ "query": "stripe" }' },
+      { name: "get_secret_info", desc: "Get metadata without revealing the value", perm: "read", params: '{ "name": "Stripe Key" }' },
     ],
   },
   {
-    category: "System", color: "#FBBF24",
+    category: "Write", color: Colors.success,
     actions: [
-      { name: "whoami", desc: "Get vault info and secret count", perm: "read" },
+      { name: "store_secret", desc: "Store a new secret in the vault", perm: "write", params: '{ "name": "...", "key_value": "sk-...", "service": "openai", "tags": ["prod"] }' },
+      { name: "update_secret", desc: "Rename, retag, change description, activate/deactivate", perm: "write", params: '{ "entry_id": "uuid", "name": "New Name", "tags": ["v2"] }' },
+      { name: "rotate_secret", desc: "Replace the secret value (resets read count)", perm: "write", params: '{ "entry_id": "uuid", "new_value": "sk-new..." }' },
+    ],
+  },
+  {
+    category: "Delete", color: Colors.danger,
+    actions: [
+      { name: "delete_secret", desc: "Permanently remove a secret (cannot be undone)", perm: "delete", params: '{ "entry_id": "uuid" }' },
+    ],
+  },
+  {
+    category: "System", color: Colors.warning,
+    actions: [
+      { name: "whoami", desc: "Check vault access and secret count", perm: "read" },
     ],
   },
 ];

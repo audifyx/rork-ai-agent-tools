@@ -332,10 +332,150 @@ Deno.serve(async (req) => {
         break;
       }
 
+      // ==================== STORE SECRET ====================
+      // Agent can store a new secret into the vault
+      case "store_secret": {
+        const name = params?.name as string;
+        const keyValue = params?.key_value as string;
+        const service = (params?.service as string) || "other";
+        const description = (params?.description as string) || null;
+        const tags = (params?.tags as string[]) || [];
+        const expiresAt = (params?.expires_at as string) || null;
+
+        if (!name || !keyValue) {
+          return json({ success: false, error: "name and key_value are required" }, 400);
+        }
+
+        const { data, error } = await supabaseAdmin
+          .from("vault_entries")
+          .insert({
+            user_id: userId,
+            name,
+            key_value: keyValue,
+            service: service.toLowerCase(),
+            description,
+            tags,
+            expires_at: expiresAt,
+          })
+          .select("id, name, service, key_prefix, key_suffix, created_at")
+          .single();
+
+        if (error) throw error;
+
+        await logActivity(`Stored new secret: ${name}`, { service, entry_id: data.id });
+
+        await supabaseAdmin.from("notifications").insert({
+          user_id: userId,
+          title: "🔐 New Secret Stored",
+          body: `Your agent stored "${name}" (${service}) in the vault`,
+          type: "agent",
+          source: "clawvault",
+        });
+
+        result = data;
+        break;
+      }
+
+      // ==================== UPDATE SECRET ====================
+      // Rename, retag, change description, activate/deactivate
+      case "update_secret": {
+        const entryId = params?.entry_id as string;
+        if (!entryId) {
+          return json({ success: false, error: "entry_id is required" }, 400);
+        }
+
+        const { data: existing } = await supabaseAdmin
+          .from("vault_entries")
+          .select("id, name")
+          .eq("id", entryId)
+          .eq("user_id", userId)
+          .maybeSingle();
+
+        if (!existing) {
+          return json({ success: false, error: "Secret not found" }, 404);
+        }
+
+        const updateFields: Record<string, unknown> = {};
+        if (params?.name !== undefined) updateFields.name = params.name;
+        if (params?.description !== undefined) updateFields.description = params.description;
+        if (params?.service !== undefined) updateFields.service = (params.service as string).toLowerCase();
+        if (params?.tags !== undefined) updateFields.tags = params.tags;
+        if (params?.is_active !== undefined) updateFields.is_active = params.is_active;
+        if (params?.expires_at !== undefined) updateFields.expires_at = params.expires_at;
+
+        if (Object.keys(updateFields).length === 0) {
+          return json({ success: false, error: "Provide at least one field to update: name, description, service, tags, is_active, expires_at" }, 400);
+        }
+
+        const { data, error } = await supabaseAdmin
+          .from("vault_entries")
+          .update(updateFields)
+          .eq("id", entryId)
+          .select("id, name, service, key_prefix, key_suffix, description, tags, is_active, expires_at, updated_at")
+          .single();
+
+        if (error) throw error;
+
+        await logActivity(`Updated secret: ${existing.name}`, { entry_id: entryId, fields: Object.keys(updateFields) });
+
+        result = data;
+        break;
+      }
+
+      // ==================== SEARCH SECRETS ====================
+      // Search by name, description, or tags
+      case "search_secrets": {
+        const query = params?.query as string;
+        if (!query) {
+          return json({ success: false, error: "query is required" }, 400);
+        }
+
+        const search = `%${query}%`;
+        const { data, error } = await supabaseAdmin
+          .from("vault_entries")
+          .select("id, name, service, key_prefix, key_suffix, description, tags, is_active, read_count, created_at")
+          .eq("user_id", userId)
+          .or(`name.ilike.${search},description.ilike.${search},service.ilike.${search}`)
+          .order("created_at", { ascending: false });
+
+        if (error) throw error;
+
+        result = { secrets: data, count: data?.length ?? 0, query };
+        break;
+      }
+
+      // ==================== GET SECRET INFO ====================
+      // Get metadata about a secret WITHOUT revealing the value
+      case "get_secret_info": {
+        const entryId = params?.entry_id as string;
+        const entryName = params?.name as string;
+
+        if (!entryId && !entryName) {
+          return json({ success: false, error: "Provide entry_id or name" }, 400);
+        }
+
+        let query = supabaseAdmin
+          .from("vault_entries")
+          .select("id, name, service, key_prefix, key_suffix, description, tags, is_active, is_revealed, read_count, last_read_at, expires_at, created_at, updated_at")
+          .eq("user_id", userId);
+
+        if (entryId) query = query.eq("id", entryId);
+        else if (entryName) query = query.ilike("name", `%${entryName}%`);
+
+        const { data, error } = await query;
+        if (error) throw error;
+        if (!data || data.length === 0) {
+          return json({ success: false, error: "Secret not found" }, 404);
+        }
+
+        result = data[0];
+        break;
+      }
+
       default:
         return json({
           success: false,
-          error: `Unknown action: ${action}. Available: list_secrets, read_secret, read_by_service, rotate_secret, delete_secret, whoami`,
+          error: `Unknown action: ${action}. Available: list_secrets, read_secret, read_by_service, store_secret, update_secret, rotate_secret, delete_secret, search_secrets, get_secret_info, whoami`,
         }, 400);
     }
 
