@@ -64,11 +64,11 @@ const tools: Tool[] = [
   {
     id: "clawvault",
     name: "ClawVault",
-    description: "Encrypted document vault with secure sharing",
+    description: "Secure API key storage — store once, agent reads when needed",
     icon: FolderOpen,
     color: "#F472B6",
-    action: { type: "route", path: "" },
-    badge: "Coming Soon",
+    action: { type: "route", path: "/vault" },
+    badge: "New",
   },
   {
     id: "clawanalytics",

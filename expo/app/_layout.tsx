@@ -82,6 +82,17 @@ export default function RootLayout() {
                 headerTitleStyle: { fontSize: 16, fontWeight: "700" },
               }}
             />
+            <Stack.Screen
+              name="vault"
+              options={{
+                headerShown: true,
+                headerTitle: "🔐 ClawVault",
+                headerBackTitle: "Hub",
+                headerStyle: { backgroundColor: "#000" },
+                headerTintColor: "#F472B6",
+                headerTitleStyle: { fontSize: 16, fontWeight: "700" },
+              }}
+            />
           </Stack>
         </AuthGate>
       </GestureHandlerRootView>
