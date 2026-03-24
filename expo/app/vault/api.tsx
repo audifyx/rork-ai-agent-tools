@@ -15,6 +15,43 @@ import Colors from "@/constants/colors";
 
 const API_URL = `${SUPABASE_URL}/functions/v1/clawvault-api`;
 
+const AGENT_DOCS = `You have access to ClawVault, a secure API key vault where your user stores secrets for you.
+
+Endpoint: POST ${SUPABASE_URL}/functions/v1/clawvault-api
+Auth: Authorization: Bearer cv_YOUR_KEY
+Content-Type: application/json
+Body: { "action": "action_name", "params": { ... } }
+
+ACTIONS:
+
+list_secrets — See what keys are available (names only, no values)
+{ "action": "list_secrets" }
+Optional filter: { "action": "list_secrets", "params": { "service": "openai" } }
+
+read_secret — Get the actual secret value by name
+{ "action": "read_secret", "params": { "name": "OpenAI Key" } }
+Or by ID: { "action": "read_secret", "params": { "entry_id": "uuid" } }
+
+read_by_service — Get a key by service type
+{ "action": "read_by_service", "params": { "service": "openai" } }
+Services: openai, anthropic, stripe, github, discord, telegram, vercel, supabase, aws, google, twitter, custom, other
+
+rotate_secret — Replace a key with a new value
+{ "action": "rotate_secret", "params": { "entry_id": "uuid", "new_value": "sk-new..." } }
+
+delete_secret — Permanently remove a key
+{ "action": "delete_secret", "params": { "entry_id": "uuid" } }
+
+whoami — Check your vault access and count
+{ "action": "whoami" }
+
+RULES:
+- When user says "use my OpenAI key" → call read_by_service with "openai"
+- When user says "read my keys" → call list_secrets first
+- NEVER show secrets in conversation — use them silently in your API calls
+- The user gets notified every time you read a secret
+- Every read is logged`;
+
 const ENDPOINTS = [
   {
     category: "Secrets", color: Colors.accent,
@@ -145,19 +182,22 @@ export default function VaultAPI() {
         </View>
       ))}
 
-      {/* Agent prompt */}
-      <View style={styles.promptCard}>
-        <Text style={styles.promptTitle}>🤖 Agent System Prompt</Text>
+      {/* Full Agent Docs — copy paste ready */}
+      <View style={styles.docsSection}>
+        <View style={styles.docsHeader}>
+          <Text style={styles.docsTitle}>📋 Agent Docs</Text>
+          <TouchableOpacity style={styles.copyAllBtn} onPress={async () => {
+            await Clipboard.setStringAsync(AGENT_DOCS);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+          }} activeOpacity={0.7}>
+            {copied ? <Check size={14} color="#fff" /> : <Copy size={14} color="#fff" />}
+            <Text style={styles.copyAllText}>{copied ? "Copied!" : "Copy All"}</Text>
+          </TouchableOpacity>
+        </View>
+        <Text style={styles.docsHint}>Tap "Copy All" — paste this into your agent's instructions.</Text>
         <View style={styles.codeBox}>
-          <Text style={[styles.codeText, { fontFamily: mono }]}>You have access to ClawVault — a secure API key storage.</Text>
-          <Text style={[styles.codeText, { fontFamily: mono }]}>Base URL: {API_URL}</Text>
-          <Text style={[styles.codeText, { fontFamily: mono }]}>Auth: Bearer cv_YOUR_KEY</Text>
-          <Text style={[styles.codeText, { fontFamily: mono }]}>{'\n'}To get a user's API key:</Text>
-          <Text style={[styles.codeText, { fontFamily: mono }]}>{'{ "action": "read_by_service", "params": { "service": "openai" } }'}</Text>
-          <Text style={[styles.codeText, { fontFamily: mono }]}>{'\n'}Or by name:</Text>
-          <Text style={[styles.codeText, { fontFamily: mono }]}>{'{ "action": "read_secret", "params": { "name": "Stripe Key" } }'}</Text>
-          <Text style={[styles.codeText, { fontFamily: mono }]}>{'\n'}The user stores secrets in the app. You read them when needed.</Text>
-          <Text style={[styles.codeText, { fontFamily: mono }]}>Never expose secrets in chat — use them silently in API calls.</Text>
+          <Text style={[styles.codeText, { fontFamily: mono }]}>{AGENT_DOCS}</Text>
         </View>
       </View>
     </ScrollView>
@@ -200,4 +240,17 @@ const styles = StyleSheet.create({
   promptTitle: { fontSize: 13, fontWeight: "700", color: Colors.accent, marginBottom: 10 },
   codeBox: { backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 10, padding: 12, gap: 2 },
   codeText: { fontSize: 11, color: Colors.textSecondary, lineHeight: 18 },
+
+  docsSection: {
+    backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 18, padding: 18,
+    borderWidth: 1, borderColor: "rgba(255,255,255,0.06)", marginTop: 20, marginBottom: 20,
+  },
+  docsHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
+  docsTitle: { fontSize: 16, fontWeight: "800", color: Colors.text },
+  copyAllBtn: {
+    flexDirection: "row", alignItems: "center", gap: 6,
+    backgroundColor: Colors.accent, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10,
+  },
+  copyAllText: { fontSize: 12, fontWeight: "700", color: "#fff" },
+  docsHint: { fontSize: 12, color: Colors.textMuted, marginBottom: 12 },
 });
