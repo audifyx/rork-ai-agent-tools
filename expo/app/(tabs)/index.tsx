@@ -1,215 +1,254 @@
 import React, { useEffect, useState } from "react";
 import {
-  StyleSheet, Text, View, ScrollView, RefreshControl, Platform,
+  StyleSheet, Text, View, ScrollView, TouchableOpacity, Platform, Linking,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 import { BlurView } from "expo-blur";
 import {
-  FolderOpen, Users, Webhook, Bot, HardDrive, TrendingUp,
-  Shield, Globe, Zap, Activity, CircleDot,
+  Bot, FolderOpen, BarChart3, Mail, Globe, Clock, Lock,
+  ArrowRight, ExternalLink, Zap, LogOut, ChevronRight,
 } from "lucide-react-native";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/authStore";
 import Colors from "@/constants/colors";
 
-function formatBytes(b: number) {
-  if (b < 1024) return `${b} B`;
-  if (b < 1048576) return `${(b / 1024).toFixed(1)} KB`;
-  if (b < 1073741824) return `${(b / 1048576).toFixed(1)} MB`;
-  return `${(b / 1073741824).toFixed(2)} GB`;
+interface Tool {
+  id: string;
+  name: string;
+  description: string;
+  icon: any;
+  color: string;
+  action: { type: "route"; path: string } | { type: "external"; url: string };
+  badge?: string;
 }
 
-// Glass card wrapper — iOS 26 frosted translucent material
-function GlassCard({ children, style }: { children: React.ReactNode; style?: any }) {
+const tools: Tool[] = [
+  {
+    id: "openclaw",
+    name: "OpenClaw Agent",
+    description: "Command center for files, leads, agents, API keys & webhook logs",
+    icon: Bot,
+    color: Colors.accent,
+    action: { type: "route", path: "/openclaw" },
+    badge: "Core",
+  },
+  {
+    id: "agentcode",
+    name: "AgentCode",
+    description: "AI-powered code generation & deployment",
+    icon: Zap,
+    color: Colors.info,
+    action: { type: "external", url: "https://agentcode.lovable.app/" },
+  },
+  {
+    id: "nexus",
+    name: "Nexus SkillHub",
+    description: "Browse & manage custom skills for your agents",
+    icon: Globe,
+    color: "#A78BFA",
+    action: { type: "external", url: "https://nexus-skillhub.lovable.app/" },
+    badge: "New",
+  },
+  {
+    id: "clawvault",
+    name: "ClawVault",
+    description: "Encrypted document vault with secure sharing",
+    icon: FolderOpen,
+    color: "#F472B6",
+    action: { type: "route", path: "" },
+    badge: "Coming Soon",
+  },
+  {
+    id: "clawanalytics",
+    name: "ClawAnalytics",
+    description: "Real-time analytics & performance dashboards",
+    icon: BarChart3,
+    color: Colors.success,
+    action: { type: "route", path: "" },
+    badge: "Coming Soon",
+  },
+  {
+    id: "clawmailer",
+    name: "ClawMailer",
+    description: "Email campaign automation & templates",
+    icon: Mail,
+    color: Colors.warning,
+    action: { type: "route", path: "" },
+    badge: "Coming Soon",
+  },
+  {
+    id: "clawscraper",
+    name: "ClawScraper",
+    description: "Web scraping & automated content collection",
+    icon: Globe,
+    color: "#C084FC",
+    action: { type: "route", path: "" },
+    badge: "Coming Soon",
+  },
+  {
+    id: "clawscheduler",
+    name: "ClawScheduler",
+    description: "Task scheduling & automated workflows",
+    icon: Clock,
+    color: "#22D3EE",
+    action: { type: "route", path: "" },
+    badge: "Coming Soon",
+  },
+];
+
+function GlassCard({ children, style, disabled }: { children: React.ReactNode; style?: any; disabled?: boolean }) {
+  const cardStyle = [styles.glass, disabled && styles.glassDisabled, style];
   if (Platform.OS === "ios") {
     return (
-      <BlurView intensity={20} tint="dark" style={[styles.glassCard, style]}>
+      <BlurView intensity={15} tint="dark" style={cardStyle}>
         <View style={styles.glassInner}>{children}</View>
       </BlurView>
     );
   }
-  // Fallback for Android/web
-  return (
-    <View style={[styles.glassCardFallback, style]}>
-      {children}
-    </View>
-  );
+  return <View style={[styles.glassFallback, disabled && styles.glassDisabled, style]}>{children}</View>;
 }
 
-// Section header like iOS Settings
-function SectionHeader({ title, icon: Icon }: { title: string; icon?: any }) {
-  return (
-    <View style={styles.sectionHeader}>
-      {Icon && <Icon size={14} color={Colors.textMuted} />}
-      <Text style={styles.sectionHeaderText}>{title}</Text>
-    </View>
-  );
-}
-
-export default function HomeTab() {
+export default function ToolHub() {
   const insets = useSafeAreaInsets();
-  const { user } = useAuthStore();
-  const [refreshing, setRefreshing] = useState(false);
-  const [stats, setStats] = useState({
-    files: 0, leads: 0, webhooks: 0, agents: 0,
-    totalSize: 0, recentFiles: 0, apiKeyActive: false,
-  });
+  const router = useRouter();
+  const { user, signOut } = useAuthStore();
+  const [stats, setStats] = useState({ files: 0, leads: 0, agents: 0 });
 
-  const loadStats = async () => {
+  useEffect(() => {
     if (!user) return;
-    const [f, l, w, a, files, keys] = await Promise.all([
-      supabase.from("stored_files").select("id", { count: "exact", head: true }).eq("user_id", user.id),
-      supabase.from("leads").select("id", { count: "exact", head: true }).eq("user_id", user.id),
-      supabase.from("webhook_logs").select("id", { count: "exact", head: true }).eq("user_id", user.id),
-      supabase.from("agent_configs").select("id", { count: "exact", head: true }).eq("user_id", user.id),
-      supabase.from("stored_files").select("file_size, created_at").eq("user_id", user.id),
-      supabase.from("api_keys").select("is_active").eq("user_id", user.id).eq("is_active", true).limit(1),
-    ]);
-    const allFiles = files.data ?? [];
-    const totalSize = allFiles.reduce((acc, f) => acc + (f.file_size ?? 0), 0);
-    const dayAgo = Date.now() - 86400000;
-    const recentFiles = allFiles.filter(f => new Date(f.created_at).getTime() > dayAgo).length;
-    setStats({
-      files: f.count ?? 0, leads: l.count ?? 0, webhooks: w.count ?? 0, agents: a.count ?? 0,
-      totalSize, recentFiles, apiKeyActive: (keys.data?.length ?? 0) > 0,
-    });
+    const load = async () => {
+      const [f, l, a] = await Promise.all([
+        supabase.from("stored_files").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+        supabase.from("leads").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+        supabase.from("agent_configs").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+      ]);
+      setStats({ files: f.count ?? 0, leads: l.count ?? 0, agents: a.count ?? 0 });
+    };
+    load();
+  }, [user]);
+
+  const handleTool = (tool: Tool) => {
+    if (tool.badge === "Coming Soon") return;
+    if (tool.action.type === "external") {
+      Linking.openURL(tool.action.url);
+    } else {
+      router.push(tool.action.path as any);
+    }
   };
 
-  useEffect(() => { loadStats(); }, [user]);
-  const onRefresh = async () => { setRefreshing(true); await loadStats(); setRefreshing(false); };
+  const activeTools = tools.filter(t => t.badge !== "Coming Soon");
+  const comingSoonTools = tools.filter(t => t.badge === "Coming Soon");
 
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: 120 }}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.accent} />}
+      contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: 40 }}
       showsVerticalScrollIndicator={false}
     >
-      {/* Greeting header */}
+      {/* Header */}
       <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Text style={styles.greeting}>🦞 OpenClaw</Text>
-          <Text style={styles.headerSub}>Command Center</Text>
+        <View>
+          <Text style={styles.greeting}>🦞 OpenClaw OS</Text>
+          <Text style={styles.headerSub}>
+            {activeTools.length} active · {comingSoonTools.length} in development
+          </Text>
         </View>
-        <View style={styles.liveBadge}>
-          <View style={styles.liveDot} />
-          <Text style={styles.liveText}>Live</Text>
-        </View>
+        <TouchableOpacity style={styles.signOutBtn} onPress={signOut} activeOpacity={0.7}>
+          <LogOut size={16} color={Colors.textMuted} />
+        </TouchableOpacity>
       </View>
 
-      {/* ━━━ Primary Stats — 2x2 grid of glass widgets ━━━ */}
-      <SectionHeader title="OVERVIEW" icon={Activity} />
-      <View style={styles.widgetGrid}>
-        {/* Files widget — large left */}
-        <GlassCard style={styles.widgetLarge}>
-          <View style={styles.widgetRow}>
-            <View style={[styles.widgetIcon, { backgroundColor: "rgba(56,189,248,0.12)" }]}>
-              <FolderOpen size={20} color="#38BDF8" />
-            </View>
-            <View style={styles.widgetTrend}>
-              <TrendingUp size={12} color={Colors.textMuted} />
-              <Text style={styles.widgetTrendText}>{stats.recentFiles} today</Text>
-            </View>
-          </View>
-          <Text style={[styles.widgetValue, { color: "#38BDF8" }]}>{stats.files}</Text>
-          <Text style={styles.widgetLabel}>Files</Text>
-          <View style={styles.widgetMeter}>
-            <View style={[styles.widgetMeterFill, { width: `${Math.min((stats.totalSize / 104857600) * 100, 100)}%`, backgroundColor: "#38BDF8" }]} />
-          </View>
-          <Text style={styles.widgetMeta}>{formatBytes(stats.totalSize)} used</Text>
-        </GlassCard>
-
-        {/* Right column — stacked */}
-        <View style={styles.widgetStackRight}>
-          <GlassCard style={styles.widgetSmall}>
-            <View style={[styles.widgetIconSm, { backgroundColor: "rgba(52,211,153,0.12)" }]}>
-              <Users size={16} color="#34D399" />
-            </View>
-            <Text style={[styles.widgetValueSm, { color: "#34D399" }]}>{stats.leads}</Text>
-            <Text style={styles.widgetLabelSm}>Leads</Text>
-          </GlassCard>
-
-          <GlassCard style={styles.widgetSmall}>
-            <View style={[styles.widgetIconSm, { backgroundColor: "rgba(251,191,36,0.12)" }]}>
-              <Webhook size={16} color="#FBBF24" />
-            </View>
-            <Text style={[styles.widgetValueSm, { color: "#FBBF24" }]}>{stats.webhooks}</Text>
-            <Text style={styles.widgetLabelSm}>API Calls</Text>
-          </GlassCard>
-        </View>
-      </View>
-
-      {/* Agent card — full width */}
-      <GlassCard style={styles.agentCard}>
-        <View style={styles.agentRow}>
-          <View style={[styles.widgetIcon, { backgroundColor: Colors.accentDim }]}>
-            <Bot size={20} color={Colors.accent} />
-          </View>
-          <View style={styles.agentInfo}>
-            <Text style={styles.agentTitle}>Agent Status</Text>
-            <Text style={styles.agentSub}>
-              {stats.agents} configured · API key {stats.apiKeyActive ? "active" : "inactive"}
-            </Text>
-          </View>
-          <View style={[styles.agentBadge, stats.apiKeyActive && styles.agentBadgeActive]}>
-            <Text style={[styles.agentBadgeText, stats.apiKeyActive && styles.agentBadgeTextActive]}>
-              {stats.apiKeyActive ? "Ready" : "Setup"}
-            </Text>
-          </View>
-        </View>
-      </GlassCard>
-
-      {/* ━━━ Quick Metrics — horizontal inline items ━━━ */}
-      <SectionHeader title="METRICS" icon={Zap} />
-      <GlassCard style={styles.metricsCard}>
-        <View style={styles.metricsGrid}>
+      {/* Quick stats bar */}
+      <GlassCard style={styles.statsBar}>
+        <View style={styles.statsRow}>
           {[
-            { label: "Storage", value: formatBytes(stats.totalSize), icon: HardDrive },
-            { label: "24h Uploads", value: String(stats.recentFiles), icon: TrendingUp },
-            { label: "API Key", value: stats.apiKeyActive ? "Active" : "None", icon: Shield },
-            { label: "Endpoint", value: "Online", icon: Globe },
-          ].map((m, i) => (
-            <View key={m.label} style={[styles.metricItem, i < 2 && styles.metricItemBorder]}>
-              <m.icon size={14} color={Colors.textMuted} />
-              <Text style={styles.metricValue}>{m.value}</Text>
-              <Text style={styles.metricLabel}>{m.label}</Text>
+            { label: "Files", value: stats.files, color: Colors.info },
+            { label: "Leads", value: stats.leads, color: Colors.success },
+            { label: "Agents", value: stats.agents, color: Colors.accent },
+          ].map((s, i) => (
+            <View key={s.label} style={[styles.statItem, i < 2 && styles.statItemBorder]}>
+              <Text style={[styles.statValue, { color: s.color }]}>{s.value}</Text>
+              <Text style={styles.statLabel}>{s.label}</Text>
             </View>
           ))}
         </View>
       </GlassCard>
 
-      {/* ━━━ System Status — grouped list ━━━ */}
-      <SectionHeader title="SYSTEM" icon={CircleDot} />
-      <GlassCard style={styles.statusCard}>
-        {["Database", "File Storage", "API Endpoint", "Realtime"].map((name, i, arr) => (
-          <View key={name} style={[styles.statusRow, i < arr.length - 1 && styles.statusRowBorder]}>
-            <View style={styles.statusDotWrap}>
-              <View style={styles.statusDotOuter} />
-              <View style={styles.statusDotInner} />
-            </View>
-            <Text style={styles.statusName}>{name}</Text>
-            <Text style={styles.statusValue}>Online</Text>
-          </View>
-        ))}
-      </GlassCard>
+      {/* Active tools */}
+      <Text style={styles.sectionLabel}>YOUR TOOLS</Text>
+      {activeTools.map((tool) => {
+        const Icon = tool.icon;
+        const isExternal = tool.action.type === "external";
+        return (
+          <TouchableOpacity key={tool.id} onPress={() => handleTool(tool)} activeOpacity={0.8}>
+            <GlassCard style={styles.toolCard}>
+              <View style={styles.toolRow}>
+                <View style={[styles.toolIcon, { backgroundColor: tool.color + "18" }]}>
+                  <Icon size={22} color={tool.color} />
+                </View>
+                <View style={styles.toolInfo}>
+                  <View style={styles.toolNameRow}>
+                    <Text style={styles.toolName}>{tool.name}</Text>
+                    {tool.badge && (
+                      <View style={[styles.badge, tool.badge === "Core" && styles.badgeCore, tool.badge === "New" && styles.badgeNew]}>
+                        <Text style={[styles.badgeText, tool.badge === "Core" && styles.badgeCoreText, tool.badge === "New" && styles.badgeNewText]}>
+                          {tool.badge}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                  <Text style={styles.toolDesc} numberOfLines={2}>{tool.description}</Text>
+                </View>
+                {isExternal ? (
+                  <ExternalLink size={16} color={Colors.textMuted} />
+                ) : (
+                  <ChevronRight size={18} color={Colors.textMuted} />
+                )}
+              </View>
+            </GlassCard>
+          </TouchableOpacity>
+        );
+      })}
 
-      {/* Quick Start — minimal */}
-      <SectionHeader title="QUICK START" icon={Zap} />
-      <GlassCard style={styles.quickStartCard}>
-        {[
-          { num: "1", text: "Generate an API key in Settings" },
-          { num: "2", text: "Configure your Agent with permissions" },
-          { num: "3", text: "Copy the Docs into your agent" },
-          { num: "4", text: "Start chatting — files, leads & more" },
-        ].map((step, i, arr) => (
-          <View key={step.num} style={[styles.stepRow, i < arr.length - 1 && styles.stepRowBorder]}>
-            <View style={styles.stepNum}>
-              <Text style={styles.stepNumText}>{step.num}</Text>
-            </View>
-            <Text style={styles.stepText}>{step.text}</Text>
+      {/* Coming soon */}
+      {comingSoonTools.length > 0 && (
+        <>
+          <View style={styles.dividerRow}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>IN DEVELOPMENT</Text>
+            <View style={styles.dividerLine} />
           </View>
-        ))}
-      </GlassCard>
+
+          {comingSoonTools.map((tool) => {
+            const Icon = tool.icon;
+            return (
+              <GlassCard key={tool.id} style={styles.toolCardDisabled} disabled>
+                <View style={styles.toolRow}>
+                  <View style={[styles.toolIcon, { backgroundColor: "rgba(255,255,255,0.03)" }]}>
+                    <Icon size={20} color={Colors.textMuted} />
+                  </View>
+                  <View style={styles.toolInfo}>
+                    <View style={styles.toolNameRow}>
+                      <Text style={styles.toolNameDisabled}>{tool.name}</Text>
+                      <View style={styles.badgeSoon}>
+                        <Lock size={9} color={Colors.textMuted} />
+                        <Text style={styles.badgeSoonText}>Soon</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.toolDescDisabled} numberOfLines={1}>{tool.description}</Text>
+                  </View>
+                </View>
+              </GlassCard>
+            );
+          })}
+        </>
+      )}
+
+      {/* Account info */}
+      <View style={styles.accountRow}>
+        <Text style={styles.accountEmail} numberOfLines={1}>{user?.email}</Text>
+      </View>
     </ScrollView>
   );
 }
@@ -217,126 +256,70 @@ export default function HomeTab() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background, paddingHorizontal: 20 },
 
-  // Header
   header: {
     flexDirection: "row", justifyContent: "space-between", alignItems: "center",
-    marginBottom: 28, paddingTop: 4,
+    marginBottom: 20, paddingTop: 4,
   },
-  headerLeft: {},
-  greeting: { fontSize: 26, fontWeight: "800", color: Colors.text, letterSpacing: -0.8 },
-  headerSub: { fontSize: 14, color: Colors.textMuted, marginTop: 2 },
-  liveBadge: {
-    flexDirection: "row", alignItems: "center", gap: 6,
-    backgroundColor: "rgba(52,211,153,0.1)", paddingHorizontal: 12, paddingVertical: 6,
-    borderRadius: 20, borderWidth: 1, borderColor: "rgba(52,211,153,0.15)",
-  },
-  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "#34D399" },
-  liveText: { fontSize: 12, fontWeight: "700", color: "#34D399" },
-
-  // Section headers
-  sectionHeader: {
-    flexDirection: "row", alignItems: "center", gap: 6,
-    marginBottom: 10, marginTop: 24,
-  },
-  sectionHeaderText: {
-    fontSize: 11, fontWeight: "700", color: Colors.textMuted,
-    letterSpacing: 1.5,
+  greeting: { fontSize: 24, fontWeight: "800", color: Colors.text, letterSpacing: -0.8 },
+  headerSub: { fontSize: 12, color: Colors.textMuted, marginTop: 3 },
+  signOutBtn: {
+    width: 40, height: 40, borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: Colors.border,
+    alignItems: "center", justifyContent: "center",
   },
 
   // Glass card
-  glassCard: {
-    borderRadius: 20, overflow: "hidden",
-    borderWidth: 1, borderColor: "rgba(255,255,255,0.06)",
-  },
-  glassInner: { padding: 0 },
-  glassCardFallback: {
-    borderRadius: 20, overflow: "hidden",
-    backgroundColor: "rgba(255,255,255,0.04)",
-    borderWidth: 1, borderColor: "rgba(255,255,255,0.06)",
-  },
+  glass: { borderRadius: 18, overflow: "hidden", borderWidth: 1, borderColor: "rgba(255,255,255,0.06)" },
+  glassFallback: { borderRadius: 18, overflow: "hidden", backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(255,255,255,0.06)" },
+  glassInner: {},
+  glassDisabled: { opacity: 0.4 },
 
-  // Widget grid — iOS 26 style asymmetric
-  widgetGrid: { flexDirection: "row", gap: 10 },
-  widgetLarge: { flex: 1.2, padding: 18 },
-  widgetStackRight: { flex: 1, gap: 10 },
-  widgetSmall: { flex: 1, padding: 16, alignItems: "center" },
+  // Stats bar
+  statsBar: { marginBottom: 24, padding: 0 },
+  statsRow: { flexDirection: "row" },
+  statItem: { flex: 1, alignItems: "center", paddingVertical: 16 },
+  statItemBorder: { borderRightWidth: 1, borderRightColor: "rgba(255,255,255,0.04)" },
+  statValue: { fontSize: 22, fontWeight: "800", letterSpacing: -0.5 },
+  statLabel: { fontSize: 11, color: Colors.textMuted, marginTop: 2 },
 
-  widgetRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14 },
-  widgetIcon: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  widgetIconSm: { width: 34, height: 34, borderRadius: 10, alignItems: "center", justifyContent: "center", marginBottom: 10 },
-  widgetTrend: { flexDirection: "row", alignItems: "center", gap: 4 },
-  widgetTrendText: { fontSize: 11, color: Colors.textMuted },
-  widgetValue: { fontSize: 36, fontWeight: "800", letterSpacing: -1.5 },
-  widgetValueSm: { fontSize: 28, fontWeight: "800", letterSpacing: -1 },
-  widgetLabel: { fontSize: 13, color: Colors.textSecondary, marginTop: 2 },
-  widgetLabelSm: { fontSize: 12, color: Colors.textMuted, marginTop: 2 },
-  widgetMeter: {
-    height: 3, backgroundColor: "rgba(255,255,255,0.06)", borderRadius: 2,
-    marginTop: 14, overflow: "hidden",
-  },
-  widgetMeterFill: { height: 3, borderRadius: 2 },
-  widgetMeta: { fontSize: 10, color: Colors.textMuted, marginTop: 6 },
+  // Section
+  sectionLabel: { fontSize: 11, fontWeight: "700", color: Colors.textMuted, letterSpacing: 1.5, marginBottom: 12 },
 
-  // Agent card
-  agentCard: { marginTop: 10, padding: 16 },
-  agentRow: { flexDirection: "row", alignItems: "center", gap: 14 },
-  agentInfo: { flex: 1 },
-  agentTitle: { fontSize: 15, fontWeight: "700", color: Colors.text },
-  agentSub: { fontSize: 12, color: Colors.textMuted, marginTop: 2 },
-  agentBadge: {
-    paddingHorizontal: 12, paddingVertical: 5, borderRadius: 10,
-    backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: Colors.border,
-  },
-  agentBadgeActive: {
-    backgroundColor: Colors.accentDim, borderColor: "rgba(220,38,38,0.2)",
-  },
-  agentBadgeText: { fontSize: 11, fontWeight: "700", color: Colors.textMuted },
-  agentBadgeTextActive: { color: Colors.accent },
+  // Tool card
+  toolCard: { marginBottom: 10, padding: 16 },
+  toolCardDisabled: { marginBottom: 8, padding: 14 },
+  toolRow: { flexDirection: "row", alignItems: "center", gap: 14 },
+  toolIcon: { width: 48, height: 48, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  toolInfo: { flex: 1 },
+  toolNameRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 3 },
+  toolName: { fontSize: 16, fontWeight: "700", color: Colors.text },
+  toolNameDisabled: { fontSize: 14, fontWeight: "600", color: Colors.textMuted },
+  toolDesc: { fontSize: 13, color: Colors.textSecondary, lineHeight: 18 },
+  toolDescDisabled: { fontSize: 12, color: "rgba(255,255,255,0.15)" },
 
-  // Metrics
-  metricsCard: { padding: 0 },
-  metricsGrid: { flexDirection: "row", flexWrap: "wrap" },
-  metricItem: {
-    width: "50%", paddingVertical: 16, paddingHorizontal: 18,
-    alignItems: "flex-start", gap: 6,
+  // Badges
+  badge: {
+    paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6,
+    backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1, borderColor: Colors.border,
   },
-  metricItemBorder: {
-    borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.04)",
+  badgeCore: { backgroundColor: Colors.accentDim, borderColor: "rgba(220,38,38,0.2)" },
+  badgeNew: { backgroundColor: "rgba(167,139,250,0.12)", borderColor: "rgba(167,139,250,0.2)" },
+  badgeText: { fontSize: 9, fontWeight: "800", color: Colors.textMuted, textTransform: "uppercase", letterSpacing: 0.5 },
+  badgeCoreText: { color: Colors.accent },
+  badgeNewText: { color: "#A78BFA" },
+  badgeSoon: {
+    flexDirection: "row", alignItems: "center", gap: 3,
+    paddingHorizontal: 6, paddingVertical: 2, borderRadius: 5,
+    backgroundColor: "rgba(255,255,255,0.03)", borderWidth: 1, borderColor: "rgba(255,255,255,0.04)",
   },
-  metricValue: { fontSize: 16, fontWeight: "700", color: Colors.text },
-  metricLabel: { fontSize: 11, color: Colors.textMuted },
+  badgeSoonText: { fontSize: 9, fontWeight: "700", color: Colors.textMuted },
 
-  // Status
-  statusCard: { padding: 0 },
-  statusRow: {
-    flexDirection: "row", alignItems: "center",
-    paddingVertical: 14, paddingHorizontal: 18,
-  },
-  statusRowBorder: { borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.04)" },
-  statusDotWrap: { width: 20, height: 20, alignItems: "center", justifyContent: "center", marginRight: 12 },
-  statusDotOuter: {
-    position: "absolute", width: 16, height: 16, borderRadius: 8,
-    backgroundColor: "rgba(52,211,153,0.15)",
-  },
-  statusDotInner: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#34D399" },
-  statusName: { fontSize: 15, color: Colors.text, flex: 1 },
-  statusValue: {
-    fontSize: 12, fontWeight: "700", color: "#34D399",
-    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
-  },
+  // Divider
+  dividerRow: { flexDirection: "row", alignItems: "center", marginVertical: 20, gap: 12 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: "rgba(255,255,255,0.04)" },
+  dividerText: { fontSize: 10, fontWeight: "700", color: "rgba(255,255,255,0.15)", letterSpacing: 1.5 },
 
-  // Quick start
-  quickStartCard: { padding: 0, marginBottom: 20 },
-  stepRow: {
-    flexDirection: "row", alignItems: "center", gap: 14,
-    paddingVertical: 14, paddingHorizontal: 18,
-  },
-  stepRowBorder: { borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.04)" },
-  stepNum: {
-    width: 26, height: 26, borderRadius: 8,
-    backgroundColor: Colors.accentDim, borderWidth: 1, borderColor: "rgba(220,38,38,0.15)",
-    alignItems: "center", justifyContent: "center",
-  },
-  stepNumText: { fontSize: 12, fontWeight: "800", color: Colors.accent },
-  stepText: { fontSize: 14, color: Colors.textSecondary, flex: 1, lineHeight: 20 },
+  // Account
+  accountRow: { alignItems: "center", marginTop: 24 },
+  accountEmail: { fontSize: 11, color: Colors.textMuted },
 });

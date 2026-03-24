@@ -23,8 +23,15 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     if (loading) return;
 
     const inAuthGroup = segments[0] === "(auth)";
+    const isIndex = segments.length === 0 || (segments.length === 1 && segments[0] === "index");
 
-    if (!session && !inAuthGroup) {
+    // Don't redirect if on splash screen
+    if (isIndex) {
+      void SplashScreen.hideAsync();
+      return;
+    }
+
+    if (!session && !inAuthGroup && !isIndex) {
       router.replace("/(auth)/login");
     } else if (session && inAuthGroup) {
       router.replace("/(tabs)");
@@ -47,11 +54,23 @@ export default function RootLayout() {
               headerTintColor: Colors.text,
               headerShown: false,
               contentStyle: { backgroundColor: Colors.background },
+              animation: "slide_from_right",
             }}
           >
+            <Stack.Screen name="index" />
             <Stack.Screen name="(auth)" />
             <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="index" options={{ headerShown: false }} />
+            <Stack.Screen
+              name="openclaw"
+              options={{
+                headerShown: true,
+                headerTitle: "🦞 OpenClaw",
+                headerBackTitle: "Hub",
+                headerStyle: { backgroundColor: "#000" },
+                headerTintColor: Colors.accent,
+                headerTitleStyle: { fontSize: 16, fontWeight: "700" },
+              }}
+            />
           </Stack>
         </AuthGate>
       </GestureHandlerRootView>
