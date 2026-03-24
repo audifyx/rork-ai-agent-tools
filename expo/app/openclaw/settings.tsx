@@ -4,7 +4,7 @@ import {
   Alert, Platform, Switch, ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import * as Clipboard from "expo-linking";
+import * as Clipboard from "expo-clipboard";
 import {
   User, Key, Bot, FileText, Activity, Eye, EyeOff, Copy, RefreshCw,
   Shield, Save, LogOut, Check, ChevronRight,
@@ -57,10 +57,10 @@ export default function SettingsTab() {
 function AccountSection() {
   const { user, signOut } = useAuthStore();
 
-  const copyId = () => {
+  const copyId = async () => {
     if (user?.id) {
-      // Using a simple Alert to show copied ID since Clipboard needs expo-clipboard
-      Alert.alert("User ID", user.id);
+      await Clipboard.setStringAsync(user.id);
+      Alert.alert("Copied", "User ID copied to clipboard");
     }
   };
 
@@ -134,7 +134,10 @@ function ApiKeysSection() {
             {showKey ? <EyeOff size={14} color={Colors.textSecondary} /> : <Eye size={14} color={Colors.textSecondary} />}
             <Text style={styles.keyBtnText}>{showKey ? "Hide" : "Show"}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.keyBtn} onPress={() => Alert.alert("API Key", apiKey.key_value)}>
+          <TouchableOpacity style={styles.keyBtn} onPress={async () => {
+            await Clipboard.setStringAsync(apiKey.key_value);
+            Alert.alert("Copied", "API key copied to clipboard");
+          }}>
             <Copy size={14} color={Colors.textSecondary} />
             <Text style={styles.keyBtnText}>Copy</Text>
           </TouchableOpacity>

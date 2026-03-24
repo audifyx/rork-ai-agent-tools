@@ -3,6 +3,7 @@ import {
   StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert, Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as Clipboard from "expo-clipboard";
 import {
   Copy, Check, ExternalLink, FileText, Users, Settings, FolderOpen,
   Webhook, Shield, Bot, ChevronDown, ChevronUp,
@@ -18,14 +19,8 @@ const API_DOCS = `# OpenClaw Agent API Documentation
 POST ${API_URL}
 
 ## Authentication
-Authorization: Bearer YOUR_API_KEY
+Authorization: Bearer oc_YOUR_API_KEY
 Content-Type: application/json
-
-## Endpoints
-
-### Files: list_files, read_file, upload_file, delete_file
-### Leads: list_leads, create_lead, update_lead, delete_lead
-### System: log_webhook, get_agent_config, update_agent_config, whoami
 
 ## Request Format
 { "action": "action_name", "params": { ... } }
@@ -34,16 +29,37 @@ Content-Type: application/json
 { "success": true, "data": { ... } }
 
 ## Permissions
-- read — list_files, read_file, list_leads, get_agent_config, whoami
-- write — upload_file, create_lead, update_lead, log_webhook, update_agent_config
-- delete — delete_file, delete_lead
+- read: list_files, read_file, list_leads, get_agent_config, whoami
+- write: upload_file, create_lead, update_lead, log_webhook, update_agent_config
+- delete: delete_file, delete_lead
+
+## Endpoints
+
+### Files
+- list_files — params: { "category": "general" } (optional)
+- read_file — params: { "file_id": "uuid" }
+- upload_file — params: { "filename": "report.pdf", "content_base64": "...", "mime_type": "application/pdf", "category": "reports", "description": "..." }
+- delete_file — params: { "file_id": "uuid" }
+
+### Leads
+- list_leads — params: { "search": "john" } (optional)
+- create_lead — params: { "name": "...", "email": "...", "website": "...", "phone": "...", "notes": "...", "tags": ["vip"] }
+- update_lead — params: { "lead_id": "uuid", "name": "...", ... }
+- delete_lead — params: { "lead_id": "uuid" }
+
+### System
+- whoami — no params
+- get_agent_config — no params
+- update_agent_config — params: { "agent_name": "...", "webhook_url": "...", "telegram_chat_id": "...", "permissions": { "read": true, "write": true, "delete": false }, "is_active": true }
+- log_webhook — params: { "endpoint": "...", "method": "POST", "status_code": 200, "request_body": {...}, "response_body": {...} }
 
 ## Agent System Prompt
 You have access to a database command center via the OpenClaw API.
 Base URL: ${API_URL}
 Method: POST (always)
-Auth: Bearer YOUR_API_KEY
-Every request body: { "action": "action_name", "params": { ... } }`;
+Auth: Bearer oc_YOUR_API_KEY
+Every request body: { "action": "action_name", "params": { ... } }
+Available actions: list_files, read_file, upload_file, delete_file, list_leads, create_lead, update_lead, delete_lead, whoami, get_agent_config, update_agent_config, log_webhook`;
 
 const ENDPOINTS = [
   {
@@ -51,9 +67,9 @@ const ENDPOINTS = [
     icon: FolderOpen,
     color: "#38BDF8",
     actions: [
-      { name: "list_files", desc: "List all files for the user", perm: "read" },
-      { name: "read_file", desc: "Get file content/URL by ID", perm: "read", params: '{ "file_id": "uuid" }' },
-      { name: "upload_file", desc: "Upload a file (base64)", perm: "write", params: '{ "filename": "...", "content": "base64...", "mime_type": "..." }' },
+      { name: "list_files", desc: "List all files for the user. Optionally filter by category.", perm: "read", params: '{ "category": "general" }  // optional' },
+      { name: "read_file", desc: "Get file metadata + signed download URL (1hr)", perm: "read", params: '{ "file_id": "uuid" }' },
+      { name: "upload_file", desc: "Upload a file via base64", perm: "write", params: '{ "filename": "report.pdf", "content_base64": "base64...", "mime_type": "application/pdf", "category": "reports", "description": "Q3 report" }' },
       { name: "delete_file", desc: "Delete a file by ID", perm: "delete", params: '{ "file_id": "uuid" }' },
     ],
   },
@@ -62,9 +78,9 @@ const ENDPOINTS = [
     icon: Users,
     color: "#34D399",
     actions: [
-      { name: "list_leads", desc: "List all leads/contacts", perm: "read" },
-      { name: "create_lead", desc: "Create a new lead", perm: "write", params: '{ "name": "...", "email": "...", "website": "...", "phone": "...", "notes": "..." }' },
-      { name: "update_lead", desc: "Update an existing lead", perm: "write", params: '{ "lead_id": "uuid", "name": "...", ... }' },
+      { name: "list_leads", desc: "List all leads. Optionally search by name/email/notes.", perm: "read", params: '{ "search": "john" }  // optional' },
+      { name: "create_lead", desc: "Create a new lead/contact", perm: "write", params: '{ "name": "John", "email": "john@example.com", "website": "https://...", "phone": "+1...", "notes": "...", "tags": ["vip"] }' },
+      { name: "update_lead", desc: "Update any lead fields by ID", perm: "write", params: '{ "lead_id": "uuid", "name": "...", "email": "...", "notes": "..." }' },
       { name: "delete_lead", desc: "Delete a lead by ID", perm: "delete", params: '{ "lead_id": "uuid" }' },
     ],
   },
@@ -73,10 +89,10 @@ const ENDPOINTS = [
     icon: Settings,
     color: "#FBBF24",
     actions: [
-      { name: "log_webhook", desc: "Log an API call", perm: "write", params: '{ "endpoint": "...", "method": "POST", "status_code": 200 }' },
-      { name: "get_agent_config", desc: "Get agent configuration", perm: "read" },
-      { name: "update_agent_config", desc: "Update agent config", perm: "write", params: '{ "agent_name": "...", ... }' },
-      { name: "whoami", desc: "Get current user info", perm: "read" },
+      { name: "whoami", desc: "Get current user ID, permissions & agent status", perm: "read" },
+      { name: "get_agent_config", desc: "Get agent configuration & permissions", perm: "read" },
+      { name: "update_agent_config", desc: "Update agent config (upserts)", perm: "write", params: '{ "agent_name": "...", "webhook_url": "https://...", "telegram_chat_id": "123", "permissions": { "read": true, "write": true, "delete": false }, "is_active": true }' },
+      { name: "log_webhook", desc: "Manually log an API call", perm: "write", params: '{ "endpoint": "/my-hook", "method": "POST", "status_code": 200, "request_body": {...}, "response_body": {...} }' },
     ],
   },
 ];
@@ -137,20 +153,19 @@ export default function DocsTab() {
   const [copiedAll, setCopiedAll] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState(false);
 
-  const copyText = (text: string, label: string) => {
-    // React Native doesn't have navigator.clipboard — use Alert to show for manual copy
-    // In production you'd use expo-clipboard
-    Alert.alert(label, text, [{ text: "OK" }]);
+  const copyText = async (text: string, label: string) => {
+    await Clipboard.setStringAsync(text);
+    Alert.alert("Copied", `${label} copied to clipboard`);
   };
 
-  const handleCopyAll = () => {
-    copyText(API_DOCS, "API Documentation");
+  const handleCopyAll = async () => {
+    await copyText(API_DOCS, "API Documentation");
     setCopiedAll(true);
     setTimeout(() => setCopiedAll(false), 2000);
   };
 
-  const handleCopyUrl = () => {
-    copyText(API_URL, "API Endpoint");
+  const handleCopyUrl = async () => {
+    await copyText(API_URL, "API Endpoint");
     setCopiedUrl(true);
     setTimeout(() => setCopiedUrl(false), 2000);
   };
@@ -231,7 +246,7 @@ export default function DocsTab() {
         </View>
         <View style={styles.permLegendRow}>
           <View style={[styles.permDot, { backgroundColor: "#34D399" }]} />
-          <Text style={styles.permLegendText}>write — upload_file, create_lead, update_lead, log_webhook</Text>
+          <Text style={styles.permLegendText}>write — upload_file, create_lead, update_lead, log_webhook, update_agent_config</Text>
         </View>
         <View style={styles.permLegendRow}>
           <View style={[styles.permDot, { backgroundColor: "#F87171" }]} />
@@ -256,8 +271,9 @@ export default function DocsTab() {
           <Text style={styles.codeText}>You have access to a database command center via the OpenClaw API.</Text>
           <Text style={styles.codeText}>Base URL: {API_URL}</Text>
           <Text style={styles.codeText}>Method: POST (always)</Text>
-          <Text style={styles.codeText}>Auth: Bearer YOUR_API_KEY</Text>
-          <Text style={styles.codeText}>Every request body: {'{ "action": "action_name", "params": { ... } }'}</Text>
+          <Text style={styles.codeText}>Auth: Bearer oc_YOUR_API_KEY</Text>
+          <Text style={styles.codeText}>Body: {'{ "action": "action_name", "params": { ... } }'}</Text>
+          <Text style={styles.codeText}>{"\n"}Actions: list_files, read_file, upload_file, delete_file, list_leads, create_lead, update_lead, delete_lead, whoami, get_agent_config, update_agent_config, log_webhook</Text>
         </View>
       </View>
     </ScrollView>
