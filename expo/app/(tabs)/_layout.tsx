@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { LayoutDashboard, FolderOpen, Users, Webhook, Settings } from "lucide-react-native";
+import { LayoutDashboard, FolderOpen, Users, Webhook, FileText, Settings } from "lucide-react-native";
 import { Platform, StyleSheet, View } from "react-native";
 import Colors from "@/constants/colors";
 
@@ -48,6 +48,15 @@ export default function TabLayout() {
           title: "Logs",
           tabBarIcon: ({ color, size }) => (
             <Webhook size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="docs"
+        options={{
+          title: "Docs",
+          tabBarIcon: ({ color, size }) => (
+            <FileText size={size} color={color} />
           ),
         }}
       />

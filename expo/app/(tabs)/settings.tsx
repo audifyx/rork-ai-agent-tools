@@ -13,7 +13,7 @@ import { supabase, SUPABASE_URL } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/authStore";
 import Colors from "@/constants/colors";
 
-type Section = "account" | "apikeys" | "agent" | "docs";
+type Section = "account" | "apikeys" | "agent";
 
 export default function SettingsTab() {
   const insets = useSafeAreaInsets();
@@ -23,7 +23,6 @@ export default function SettingsTab() {
     { id: "account", label: "Account", icon: User },
     { id: "apikeys", label: "API Keys", icon: Key },
     { id: "agent", label: "Agent", icon: Bot },
-    { id: "docs", label: "Docs", icon: FileText },
   ];
 
   return (
@@ -32,7 +31,7 @@ export default function SettingsTab() {
       contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: 120 }}
     >
       <Text style={styles.title}><Text style={{ color: Colors.accent }}>Settings</Text></Text>
-      <Text style={styles.subtitle}>Account, API, agent config & docs</Text>
+      <Text style={styles.subtitle}>Account, API keys & agent config</Text>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.pillRow}>
         {sections.map((s) => (
@@ -51,7 +50,6 @@ export default function SettingsTab() {
       {section === "account" && <AccountSection />}
       {section === "apikeys" && <ApiKeysSection />}
       {section === "agent" && <AgentSection />}
-      {section === "docs" && <DocsSection />}
     </ScrollView>
   );
 }
