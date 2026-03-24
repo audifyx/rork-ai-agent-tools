@@ -1,6 +1,6 @@
 import { Tabs } from "expo-router";
-import { MessageSquare, Brain, Activity, Key, Flame } from "lucide-react-native";
-import { Platform, StyleSheet, View } from "react-native";
+import { Brain, Activity, Key, Flame } from "lucide-react-native";
+import { Platform, StyleSheet } from "react-native";
 import Colors from "@/constants/colors";
 
 export default function TweeterLayout() {

@@ -16,29 +16,29 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    initialize();
-  }, []);
+    void initialize();
+  }, [initialize]);
 
   useEffect(() => {
     if (loading) return;
 
     const inAuthGroup = segments[0] === "(auth)";
-    const isIndex = segments.length === 0 || (segments.length === 1 && segments[0] === "index");
+    const currentPath = segments.join("/");
+    const isSplashRoute = currentPath.length === 0;
 
-    // Don't redirect if on splash screen
-    if (isIndex) {
+    if (isSplashRoute) {
       void SplashScreen.hideAsync();
       return;
     }
 
-    if (!session && !inAuthGroup && !isIndex) {
+    if (!session && !inAuthGroup) {
       router.replace("/(auth)/login");
     } else if (session && inAuthGroup) {
-      router.replace("/(tabs)");
+      router.replace("/hub");
     }
 
     void SplashScreen.hideAsync();
-  }, [session, loading, segments]);
+  }, [session, loading, router, segments]);
 
   return <>{children}</>;
 }
@@ -75,10 +75,10 @@ export default function RootLayout() {
               name="tweeter"
               options={{
                 headerShown: true,
-                headerTitle: "🐦 Agent Tweeter",
+                headerTitle: "🦞 Agent Tweeter",
                 headerBackTitle: "Hub",
                 headerStyle: { backgroundColor: "#000" },
-                headerTintColor: "#1D9BF0",
+                headerTintColor: Colors.accent,
                 headerTitleStyle: { fontSize: 16, fontWeight: "700" },
               }}
             />

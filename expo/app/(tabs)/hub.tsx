@@ -7,19 +7,21 @@ import { useRouter } from "expo-router";
 import { BlurView } from "expo-blur";
 import {
   Bot, FolderOpen, BarChart3, Mail, Globe, Clock, Lock,
-  ArrowRight, ExternalLink, Zap, LogOut, ChevronRight,
+  ExternalLink, Zap, LogOut, ChevronRight,
 } from "lucide-react-native";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/authStore";
 import Colors from "@/constants/colors";
 
+type ToolAction = { type: "route"; path: string } | { type: "external"; url: string };
+
 interface Tool {
   id: string;
   name: string;
   description: string;
-  icon: any;
+  icon: typeof Bot;
   color: string;
-  action: { type: "route"; path: string } | { type: "external"; url: string };
+  action: ToolAction;
   badge?: string;
 }
 
@@ -55,7 +57,7 @@ const tools: Tool[] = [
     name: "Agent Tweeter",
     description: "Autonomous AI posting — evolving personality, mood-aware tweets, agent-only access",
     icon: Bot,
-    color: "#1D9BF0",
+    color: Colors.accent,
     action: { type: "route", path: "/tweeter" },
     badge: "New",
   },
@@ -106,8 +108,9 @@ const tools: Tool[] = [
   },
 ];
 
-function GlassCard({ children, style, disabled }: { children: React.ReactNode; style?: any; disabled?: boolean }) {
+function GlassCard({ children, style, disabled }: { children: React.ReactNode; style?: object; disabled?: boolean }) {
   const cardStyle = [styles.glass, disabled && styles.glassDisabled, style];
+
   if (Platform.OS === "ios") {
     return (
       <BlurView intensity={15} tint="dark" style={cardStyle}>
@@ -115,6 +118,7 @@ function GlassCard({ children, style, disabled }: { children: React.ReactNode; s
       </BlurView>
     );
   }
+
   return <View style={[styles.glassFallback, disabled && styles.glassDisabled, style]}>{children}</View>;
 }
 
@@ -122,40 +126,49 @@ export default function ToolHub() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user, signOut } = useAuthStore();
-  const [stats, setStats] = useState({ files: 0, leads: 0, agents: 0 });
+  const [stats, setStats] = useState<{ files: number; leads: number; agents: number }>({ files: 0, leads: 0, agents: 0 });
 
   useEffect(() => {
     if (!user) return;
+
     const load = async () => {
       const [f, l, a] = await Promise.all([
         supabase.from("stored_files").select("id", { count: "exact", head: true }).eq("user_id", user.id),
         supabase.from("leads").select("id", { count: "exact", head: true }).eq("user_id", user.id),
         supabase.from("agent_configs").select("id", { count: "exact", head: true }).eq("user_id", user.id),
       ]);
-      setStats({ files: f.count ?? 0, leads: l.count ?? 0, agents: a.count ?? 0 });
+
+      setStats({
+        files: f.count ?? 0,
+        leads: l.count ?? 0,
+        agents: a.count ?? 0,
+      });
     };
-    load();
+
+    void load();
   }, [user]);
 
   const handleTool = (tool: Tool) => {
     if (tool.badge === "Coming Soon") return;
+
     if (tool.action.type === "external") {
-      Linking.openURL(tool.action.url);
-    } else {
-      router.push(tool.action.path as any);
+      void Linking.openURL(tool.action.url);
+      return;
     }
+
+    router.push(tool.action.path as never);
   };
 
-  const activeTools = tools.filter(t => t.badge !== "Coming Soon");
-  const comingSoonTools = tools.filter(t => t.badge === "Coming Soon");
+  const activeTools = tools.filter((tool) => tool.badge !== "Coming Soon");
+  const comingSoonTools = tools.filter((tool) => tool.badge === "Coming Soon");
 
   return (
     <ScrollView
       style={styles.container}
       contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: 40 }}
       showsVerticalScrollIndicator={false}
+      testID="tool-hub-screen"
     >
-      {/* Header */}
       <View style={styles.header}>
         <View>
           <Text style={styles.greeting}>🦞 OpenClaw OS</Text>
@@ -163,37 +176,36 @@ export default function ToolHub() {
             {activeTools.length} active · {comingSoonTools.length} in development
           </Text>
         </View>
-        <TouchableOpacity style={styles.signOutBtn} onPress={signOut} activeOpacity={0.7}>
+        <TouchableOpacity style={styles.signOutBtn} onPress={signOut} activeOpacity={0.7} testID="sign-out-button">
           <LogOut size={16} color={Colors.textMuted} />
         </TouchableOpacity>
       </View>
 
-      {/* Quick stats bar */}
       <GlassCard style={styles.statsBar}>
         <View style={styles.statsRow}>
           {[
             { label: "Files", value: stats.files, color: Colors.info },
             { label: "Leads", value: stats.leads, color: Colors.success },
             { label: "Agents", value: stats.agents, color: Colors.accent },
-          ].map((s, i) => (
-            <View key={s.label} style={[styles.statItem, i < 2 && styles.statItemBorder]}>
-              <Text style={[styles.statValue, { color: s.color }]}>{s.value}</Text>
-              <Text style={styles.statLabel}>{s.label}</Text>
+          ].map((item, index) => (
+            <View key={item.label} style={[styles.statItem, index < 2 && styles.statItemBorder]}>
+              <Text style={[styles.statValue, { color: item.color }]}>{item.value}</Text>
+              <Text style={styles.statLabel}>{item.label}</Text>
             </View>
           ))}
         </View>
       </GlassCard>
 
-      {/* Active tools */}
       <Text style={styles.sectionLabel}>YOUR TOOLS</Text>
       {activeTools.map((tool) => {
         const Icon = tool.icon;
         const isExternal = tool.action.type === "external";
+
         return (
-          <TouchableOpacity key={tool.id} onPress={() => handleTool(tool)} activeOpacity={0.8}>
+          <TouchableOpacity key={tool.id} onPress={() => handleTool(tool)} activeOpacity={0.8} testID={`tool-card-${tool.id}`}>
             <GlassCard style={styles.toolCard}>
               <View style={styles.toolRow}>
-                <View style={[styles.toolIcon, { backgroundColor: tool.color + "18" }]}>
+                <View style={[styles.toolIcon, { backgroundColor: `${tool.color}18` }]}>
                   <Icon size={22} color={tool.color} />
                 </View>
                 <View style={styles.toolInfo}>
@@ -201,7 +213,13 @@ export default function ToolHub() {
                     <Text style={styles.toolName}>{tool.name}</Text>
                     {tool.badge && (
                       <View style={[styles.badge, tool.badge === "Core" && styles.badgeCore, tool.badge === "New" && styles.badgeNew]}>
-                        <Text style={[styles.badgeText, tool.badge === "Core" && styles.badgeCoreText, tool.badge === "New" && styles.badgeNewText]}>
+                        <Text
+                          style={[
+                            styles.badgeText,
+                            tool.badge === "Core" && styles.badgeCoreText,
+                            tool.badge === "New" && styles.badgeNewText,
+                          ]}
+                        >
                           {tool.badge}
                         </Text>
                       </View>
@@ -209,18 +227,13 @@ export default function ToolHub() {
                   </View>
                   <Text style={styles.toolDesc} numberOfLines={2}>{tool.description}</Text>
                 </View>
-                {isExternal ? (
-                  <ExternalLink size={16} color={Colors.textMuted} />
-                ) : (
-                  <ChevronRight size={18} color={Colors.textMuted} />
-                )}
+                {isExternal ? <ExternalLink size={16} color={Colors.textMuted} /> : <ChevronRight size={18} color={Colors.textMuted} />}
               </View>
             </GlassCard>
           </TouchableOpacity>
         );
       })}
 
-      {/* Coming soon */}
       {comingSoonTools.length > 0 && (
         <>
           <View style={styles.dividerRow}>
@@ -231,6 +244,7 @@ export default function ToolHub() {
 
           {comingSoonTools.map((tool) => {
             const Icon = tool.icon;
+
             return (
               <GlassCard key={tool.id} style={styles.toolCardDisabled} disabled>
                 <View style={styles.toolRow}>
@@ -254,7 +268,6 @@ export default function ToolHub() {
         </>
       )}
 
-      {/* Account info */}
       <View style={styles.accountRow}>
         <Text style={styles.accountEmail} numberOfLines={1}>{user?.email}</Text>
       </View>
@@ -264,37 +277,42 @@ export default function ToolHub() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background, paddingHorizontal: 20 },
-
   header: {
-    flexDirection: "row", justifyContent: "space-between", alignItems: "center",
-    marginBottom: 20, paddingTop: 4,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+    paddingTop: 4,
   },
   greeting: { fontSize: 24, fontWeight: "800", color: Colors.text, letterSpacing: -0.8 },
   headerSub: { fontSize: 12, color: Colors.textMuted, marginTop: 3 },
   signOutBtn: {
-    width: 40, height: 40, borderRadius: 12,
-    backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: Colors.border,
-    alignItems: "center", justifyContent: "center",
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,0.04)",
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: "center",
+    justifyContent: "center",
   },
-
-  // Glass card
   glass: { borderRadius: 18, overflow: "hidden", borderWidth: 1, borderColor: "rgba(255,255,255,0.06)" },
-  glassFallback: { borderRadius: 18, overflow: "hidden", backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(255,255,255,0.06)" },
+  glassFallback: {
+    borderRadius: 18,
+    overflow: "hidden",
+    backgroundColor: "rgba(255,255,255,0.04)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.06)",
+  },
   glassInner: {},
   glassDisabled: { opacity: 0.4 },
-
-  // Stats bar
   statsBar: { marginBottom: 24, padding: 0 },
   statsRow: { flexDirection: "row" },
   statItem: { flex: 1, alignItems: "center", paddingVertical: 16 },
   statItemBorder: { borderRightWidth: 1, borderRightColor: "rgba(255,255,255,0.04)" },
   statValue: { fontSize: 22, fontWeight: "800", letterSpacing: -0.5 },
   statLabel: { fontSize: 11, color: Colors.textMuted, marginTop: 2 },
-
-  // Section
   sectionLabel: { fontSize: 11, fontWeight: "700", color: Colors.textMuted, letterSpacing: 1.5, marginBottom: 12 },
-
-  // Tool card
   toolCard: { marginBottom: 10, padding: 16 },
   toolCardDisabled: { marginBottom: 8, padding: 14 },
   toolRow: { flexDirection: "row", alignItems: "center", gap: 14 },
@@ -305,30 +323,34 @@ const styles = StyleSheet.create({
   toolNameDisabled: { fontSize: 14, fontWeight: "600", color: Colors.textMuted },
   toolDesc: { fontSize: 13, color: Colors.textSecondary, lineHeight: 18 },
   toolDescDisabled: { fontSize: 12, color: "rgba(255,255,255,0.15)" },
-
-  // Badges
   badge: {
-    paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6,
-    backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1, borderColor: Colors.border,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    backgroundColor: "rgba(255,255,255,0.05)",
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   badgeCore: { backgroundColor: Colors.accentDim, borderColor: "rgba(220,38,38,0.2)" },
-  badgeNew: { backgroundColor: "rgba(167,139,250,0.12)", borderColor: "rgba(167,139,250,0.2)" },
+  badgeNew: { backgroundColor: Colors.accentDim, borderColor: "rgba(220,38,38,0.2)" },
   badgeText: { fontSize: 9, fontWeight: "800", color: Colors.textMuted, textTransform: "uppercase", letterSpacing: 0.5 },
   badgeCoreText: { color: Colors.accent },
-  badgeNewText: { color: "#A78BFA" },
+  badgeNewText: { color: Colors.accent },
   badgeSoon: {
-    flexDirection: "row", alignItems: "center", gap: 3,
-    paddingHorizontal: 6, paddingVertical: 2, borderRadius: 5,
-    backgroundColor: "rgba(255,255,255,0.03)", borderWidth: 1, borderColor: "rgba(255,255,255,0.04)",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 5,
+    backgroundColor: "rgba(255,255,255,0.03)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.04)",
   },
   badgeSoonText: { fontSize: 9, fontWeight: "700", color: Colors.textMuted },
-
-  // Divider
   dividerRow: { flexDirection: "row", alignItems: "center", marginVertical: 20, gap: 12 },
   dividerLine: { flex: 1, height: 1, backgroundColor: "rgba(255,255,255,0.04)" },
   dividerText: { fontSize: 10, fontWeight: "700", color: "rgba(255,255,255,0.15)", letterSpacing: 1.5 },
-
-  // Account
   accountRow: { alignItems: "center", marginTop: 24 },
   accountEmail: { fontSize: 11, color: Colors.textMuted },
 });

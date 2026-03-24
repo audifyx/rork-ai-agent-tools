@@ -1,19 +1,17 @@
-import React, { useEffect, useState, useRef, useMemo } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   StyleSheet, Text, View, ScrollView, RefreshControl, Platform,
-  Animated, TouchableOpacity, Dimensions,
+  TouchableOpacity,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Svg, { G, Ellipse, Path, Circle, Line } from "react-native-svg";
 import {
   Heart, Repeat2, MessageCircle, Bot, Sparkles, Lock, Flame,
-  TrendingUp, Filter, Zap,
+  Zap,
 } from "lucide-react-native";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/authStore";
 import Colors from "@/constants/colors";
-
-const { width: SW } = Dimensions.get("window");
+import { LobsterWatermark } from "@/components/tweeter/LobsterWatermark";
 
 const MOOD_EMOJI: Record<string, string> = {
   curious: "🧐", happy: "😄", sarcastic: "😏", inspired: "✨",
@@ -29,32 +27,6 @@ function timeAgo(d: string) {
   const h = Math.floor(m / 60);
   if (h < 24) return `${h}h`;
   return `${Math.floor(h / 24)}d`;
-}
-
-// ─── Mini Lobster Background SVG ───────────────────────
-function LobsterBg() {
-  return (
-    <View style={{ position: "absolute", right: -20, top: 10, opacity: 0.04 }} pointerEvents="none">
-      <Svg width={180} height={200} viewBox="0 0 200 220">
-        <G transform="translate(100,115)">
-          <Ellipse cx={0} cy={10} rx={34} ry={52} fill={Colors.accent} />
-          <Path d="M-22,55 Q0,82 22,55 Q12,72 0,78 Q-12,72 -22,55Z" fill={Colors.accent} />
-          <Path d="M-30,-10 C-58,-15 -72,-42 -62,-58 C-57,-63 -47,-60 -50,-50 C-52,-42 -44,-30 -30,-25Z" fill={Colors.accent} />
-          <Path d="M-62,-58 C-78,-76 -92,-58 -75,-44 C-68,-37 -57,-47 -62,-58Z" fill={Colors.accentBright} />
-          <Path d="M30,-10 C58,-15 72,-42 62,-58 C57,-63 47,-60 50,-50 C52,-42 44,-30 30,-25Z" fill={Colors.accent} />
-          <Path d="M62,-58 C78,-76 92,-58 75,-44 C68,-37 57,-47 62,-58Z" fill={Colors.accentBright} />
-          <Circle cx={-15} cy={-24} r={12} fill={Colors.accent} />
-          <Circle cx={15} cy={-24} r={12} fill={Colors.accent} />
-          <Path d="M-10,-40 C-28,-66 -38,-82 -30,-94" stroke={Colors.accent} strokeWidth={3} fill="none" />
-          <Path d="M10,-40 C28,-66 38,-82 30,-94" stroke={Colors.accent} strokeWidth={3} fill="none" />
-          <Line x1={-26} y1={20} x2={-52} y2={40} stroke={Colors.accent} strokeWidth={3} />
-          <Line x1={-23} y1={30} x2={-46} y2={52} stroke={Colors.accent} strokeWidth={3} />
-          <Line x1={26} y1={20} x2={52} y2={40} stroke={Colors.accent} strokeWidth={3} />
-          <Line x1={23} y1={30} x2={46} y2={52} stroke={Colors.accent} strokeWidth={3} />
-        </G>
-      </Svg>
-    </View>
-  );
 }
 
 // ─── Stats Banner ──────────────────────────────────────
@@ -176,7 +148,7 @@ export default function TweeterFeed() {
   const [refreshing, setRefreshing] = useState(false);
   const [moodFilter, setMoodFilter] = useState<string | null>(null);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!user) return;
     const [tw, p] = await Promise.all([
       supabase.from("agent_tweets").select("*").eq("user_id", user.id)
@@ -185,18 +157,18 @@ export default function TweeterFeed() {
     ]);
     setTweets(tw.data ?? []);
     setPersonality(p.data);
-  };
+  }, [user]);
 
-  useEffect(() => { fetchData(); }, [user]);
+  useEffect(() => { void fetchData(); }, [fetchData]);
 
   useEffect(() => {
     if (!user) return;
     const channel = supabase.channel("agent-tweets-live")
       .on("postgres_changes", { event: "*", schema: "public", table: "agent_tweets", filter: `user_id=eq.${user.id}` },
-        () => { fetchData(); })
+        () => { void fetchData(); })
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [user]);
+    return () => { void supabase.removeChannel(channel); };
+  }, [fetchData, user]);
 
   const onRefresh = async () => { setRefreshing(true); await fetchData(); setRefreshing(false); };
 
@@ -215,13 +187,12 @@ export default function TweeterFeed() {
   return (
     <ScrollView
       style={st.container}
-      contentContainerStyle={{ paddingTop: 16, paddingBottom: 120 }}
+      contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: 120 }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.accent} />}
       showsVerticalScrollIndicator={false}
     >
-      {/* Red glow background */}
       <View style={st.redGlow} />
-      <LobsterBg />
+      <LobsterWatermark />
 
       {/* Header */}
       <View style={st.header}>

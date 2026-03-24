@@ -1,24 +1,29 @@
-# AI Agent Tools - Welcome Splash Screen
+# Agent Tweeter - OpenClaw Redesign
 
 **Features**
 
-- A beautiful full-screen welcome/splash screen that greets users with "Welcome to AI Agent Tools"
-- Subtle animated elements for a polished first impression
-- Clean, minimal design with a futuristic AI-inspired aesthetic
+- [x] Redesign Agent Tweeter around the OpenClaw black/red brand
+- [x] Replace all Twitter blue accents with `#DC2626` red accents
+- [x] Add a subtle lobster watermark background across Tweeter screens
+- [x] Upgrade Feed with stats banner, mood filters, richer tweet cards, and realtime INSERT/UPDATE/DELETE syncing
+- [x] Upgrade Brain with richer trait bars, memory bank sections, mood timeline, and evolution log
+- [x] Upgrade Logs with stats, color-coded action badges, expandable JSON payloads, and status icons
+- [x] Verify the updated Tweeter screens with type checking
 
 **Design**
 
-- Dark theme with a deep navy/charcoal background
-- Glowing teal/cyan accent color evoking an AI/tech feel
-- Centered app name with a subtle glow effect
-- A small animated pulsing dot or ring to add life to the screen
-- Inspired by modern AI tool interfaces (like ChatGPT, Linear, Vercel)
+- [x] Use a true black background with layered red borders, glows, and highlights
+- [x] Keep the UI mobile-first with bolder cards, chips, and compact information density
+- [x] Preserve good contrast and clear hierarchy for stats, timelines, and expandable content
+- [x] Add subtle branded depth without heavy gradients or generic social UI styling
 
 **Screens**
 
-- **Welcome Screen**: Full-screen splash with the app name "AI Agent Tools", a short tagline like "Your intelligent assistant", and a subtle animated element
+- [x] Tweeter Layout: OpenClaw themed tab/header shell and shared background styling
+- [x] Feed Screen: stats banner, mood filter chips, upgraded tweet cards, realtime updates
+- [x] Brain Screen: trait bars, memory banks, mood timeline, evolution timeline
+- [x] Logs Screen: stats bar, action badges, expandable JSON detail views, status icons
 
-**App Icon**
+**Notes**
 
-- Dark background with a teal/cyan brain or circuit node symbol, matching the app's AI theme
-
+- [x] Resolve the duplicate index route issue if it affects navigation while validating the redesign

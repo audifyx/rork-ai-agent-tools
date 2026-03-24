@@ -1,15 +1,16 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   StyleSheet, Text, View, ScrollView, RefreshControl, Platform,
   TouchableOpacity,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
-  Activity, ChevronDown, ChevronUp, Flame, CheckCircle, AlertCircle, XCircle,
+  Activity, ChevronDown, ChevronUp, CheckCircle, AlertCircle, XCircle,
 } from "lucide-react-native";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/authStore";
 import Colors from "@/constants/colors";
+import { LobsterWatermark } from "@/components/tweeter/LobsterWatermark";
 
 const ACTION_COLORS: Record<string, string> = {
   create_tweet: "#34D399", list_tweets: "#38BDF8", edit_tweet: "#FBBF24",
@@ -24,14 +25,14 @@ export default function TweeterLogs() {
   const [refreshing, setRefreshing] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
     if (!user) return;
     const { data } = await supabase.from("tweeter_logs").select("*").eq("user_id", user.id)
       .order("created_at", { ascending: false }).limit(200);
     setLogs(data ?? []);
-  };
+  }, [user]);
 
-  useEffect(() => { fetchLogs(); }, [user]);
+  useEffect(() => { void fetchLogs(); }, [fetchLogs]);
   const onRefresh = async () => { setRefreshing(true); await fetchLogs(); setRefreshing(false); };
 
   const statusColor = (code: number | null) => {
@@ -55,10 +56,11 @@ export default function TweeterLogs() {
   return (
     <ScrollView
       style={st.container}
-      contentContainerStyle={{ paddingTop: 16, paddingBottom: 120 }}
+      contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: 120 }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.accent} />}
     >
       <View style={st.redGlow} />
+      <LobsterWatermark style={st.watermark} />
 
       <View style={st.header}>
         <Text style={st.title}>📊 API <Text style={{ color: Colors.accent }}>Logs</Text></Text>
@@ -152,6 +154,7 @@ const mono = Platform.OS === "ios" ? "Menlo" : "monospace";
 const st = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#000", paddingHorizontal: 16 },
   redGlow: { position: "absolute", top: 0, left: 0, right: 0, height: 200, backgroundColor: "rgba(220,38,38,0.03)" },
+  watermark: { top: 14, right: -24 },
   header: { marginBottom: 16 },
   title: { fontSize: 26, fontWeight: "900", color: Colors.text, letterSpacing: -1 },
   subtitle: { fontSize: 12, color: Colors.textMuted, marginTop: 3 },

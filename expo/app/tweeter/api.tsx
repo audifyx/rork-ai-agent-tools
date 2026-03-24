@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert, Platform,
   ActivityIndicator,
@@ -7,11 +7,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Clipboard from "expo-clipboard";
 import {
   Key, Eye, EyeOff, Copy, RefreshCw, Check, Shield, ExternalLink,
-  Bot,
 } from "lucide-react-native";
 import { supabase, SUPABASE_URL } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/authStore";
 import Colors from "@/constants/colors";
+import { LobsterWatermark } from "@/components/tweeter/LobsterWatermark";
 
 const API_URL = `${SUPABASE_URL}/functions/v1/agent-tweeter-api`;
 
@@ -139,26 +139,27 @@ export default function TweeterAPI() {
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
 
-  const fetchKey = async () => {
+  const fetchKey = useCallback(async () => {
     if (!user) return;
     const { data } = await supabase.from("tweeter_api_keys").select("*").eq("user_id", user.id).maybeSingle();
     setApiKey(data);
     setLoading(false);
-  };
-  useEffect(() => { fetchKey(); }, [user]);
+  }, [user]);
+
+  useEffect(() => { void fetchKey(); }, [fetchKey]);
 
   const generateKey = async () => {
     if (!user) return;
     const { error } = await supabase.from("tweeter_api_keys").insert({ user_id: user.id });
     if (error) return Alert.alert("Error", error.message);
-    fetchKey();
+    void fetchKey();
   };
 
   const regenerateKey = async () => {
     if (!apiKey) return;
     const newKey = "tw_" + crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "").slice(0, 16);
     await supabase.from("tweeter_api_keys").update({ key_value: newKey }).eq("id", apiKey.id);
-    fetchKey();
+    void fetchKey();
   };
 
   const handleCopyAll = async () => {
@@ -176,9 +177,12 @@ export default function TweeterAPI() {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={{ paddingTop: 16, paddingBottom: 120 }}
+      contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: 120 }}
       showsVerticalScrollIndicator={false}
     >
+      <View style={styles.redGlow} />
+      <LobsterWatermark style={styles.watermark} />
+
       {/* Header + Copy All */}
       <View style={styles.headerRow}>
         <View>
@@ -193,10 +197,10 @@ export default function TweeterAPI() {
 
       {/* API Key */}
       {loading ? (
-        <ActivityIndicator color="#1D9BF0" style={{ marginTop: 40 }} />
+        <ActivityIndicator color={Colors.accent} style={{ marginTop: 40 }} />
       ) : !apiKey ? (
         <View style={styles.emptyCard}>
-          <Key size={32} color="#1D9BF0" />
+          <Key size={32} color={Colors.accent} />
           <Text style={styles.emptyText}>No Tweeter API key yet</Text>
           <TouchableOpacity style={styles.genBtn} onPress={generateKey} activeOpacity={0.7}>
             <Text style={styles.genBtnText}>Generate Tweeter Key</Text>
@@ -205,7 +209,7 @@ export default function TweeterAPI() {
       ) : (
         <View style={styles.keyCard}>
           <View style={styles.keyHeader}>
-            <Key size={16} color="#1D9BF0" />
+            <Key size={16} color={Colors.accent} />
             <Text style={styles.keyLabel}>Tweeter API Key</Text>
             <View style={[styles.statusBadge, apiKey.is_active && styles.statusActive]}>
               <Text style={[styles.statusText, apiKey.is_active && { color: "#34D399" }]}>
@@ -237,7 +241,7 @@ export default function TweeterAPI() {
       {/* Quick info */}
       <View style={styles.infoCard}>
         <View style={styles.infoRow}>
-          <ExternalLink size={14} color="#1D9BF0" />
+          <ExternalLink size={14} color={Colors.accent} />
           <Text style={styles.infoLabel}>Endpoint</Text>
         </View>
         <View style={styles.urlBox}>
@@ -247,7 +251,7 @@ export default function TweeterAPI() {
       </View>
 
       <View style={styles.authCard}>
-        <Shield size={14} color="#1D9BF0" />
+        <Shield size={14} color={Colors.accent} />
         <Text style={styles.authLabel}>Auth</Text>
         <Text style={styles.authCode}>Authorization: Bearer tw_YOUR_KEY</Text>
       </View>
@@ -274,6 +278,8 @@ const mono = Platform.OS === "ios" ? "Menlo" : "monospace";
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#000", paddingHorizontal: 16 },
+  redGlow: { position: "absolute", top: 0, left: 0, right: 0, height: 220, backgroundColor: "rgba(220,38,38,0.03)" },
+  watermark: { top: 14, right: -26 },
 
   headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 },
   title: { fontSize: 24, fontWeight: "800", color: Colors.text, letterSpacing: -0.8 },
@@ -281,7 +287,7 @@ const styles = StyleSheet.create({
 
   copyAllBtn: {
     flexDirection: "row", alignItems: "center", gap: 6,
-    backgroundColor: "#1D9BF0", paddingHorizontal: 16, paddingVertical: 11, borderRadius: 14,
+    backgroundColor: Colors.accent, paddingHorizontal: 16, paddingVertical: 11, borderRadius: 14,
   },
   copyAllBtnDone: { backgroundColor: "#34D399" },
   copyAllText: { fontSize: 13, fontWeight: "800", color: "#000" },
@@ -293,12 +299,12 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.02)", borderRadius: 20, borderWidth: 1, borderColor: Colors.border,
   },
   emptyText: { fontSize: 14, color: Colors.textSecondary },
-  genBtn: { backgroundColor: "#1D9BF0", borderRadius: 14, paddingVertical: 14, paddingHorizontal: 24 },
+  genBtn: { backgroundColor: Colors.accent, borderRadius: 14, paddingVertical: 14, paddingHorizontal: 24 },
   genBtnText: { fontSize: 15, fontWeight: "700", color: "#fff" },
 
   keyCard: {
-    backgroundColor: "rgba(29,155,240,0.05)", borderRadius: 18, padding: 16,
-    borderWidth: 1, borderColor: "rgba(29,155,240,0.12)",
+    backgroundColor: "rgba(220,38,38,0.05)", borderRadius: 18, padding: 16,
+    borderWidth: 1, borderColor: "rgba(220,38,38,0.12)",
   },
   keyHeader: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 },
   keyLabel: { fontSize: 14, fontWeight: "700", color: Colors.text, flex: 1 },
@@ -318,9 +324,9 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: "rgba(255,255,255,0.06)", marginTop: 12,
   },
   infoRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 },
-  infoLabel: { fontSize: 12, fontWeight: "700", color: "#1D9BF0" },
+  infoLabel: { fontSize: 12, fontWeight: "700", color: Colors.accent },
   urlBox: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 10, padding: 10 },
-  urlMethod: { fontSize: 10, fontWeight: "800", color: "#1D9BF0", fontFamily: mono, backgroundColor: "rgba(29,155,240,0.1)", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+  urlMethod: { fontSize: 10, fontWeight: "800", color: Colors.accent, fontFamily: mono, backgroundColor: Colors.accentDim, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
   urlText: { fontSize: 10, color: Colors.textSecondary, fontFamily: mono, flex: 1 },
 
   authCard: {
@@ -328,14 +334,14 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 14, padding: 14,
     borderWidth: 1, borderColor: "rgba(255,255,255,0.06)", marginTop: 10,
   },
-  authLabel: { fontSize: 12, fontWeight: "700", color: "#1D9BF0" },
+  authLabel: { fontSize: 12, fontWeight: "700", color: Colors.accent },
   authCode: { fontSize: 11, color: Colors.textSecondary, fontFamily: mono, flex: 1 },
 
   docsCard: {
     backgroundColor: "rgba(255,255,255,0.02)", borderRadius: 18,
     borderWidth: 1, borderColor: "rgba(255,255,255,0.06)", padding: 16,
   },
-  docsHint: { fontSize: 12, color: "#1D9BF0", fontWeight: "600", marginBottom: 12 },
+  docsHint: { fontSize: 12, color: Colors.accent, fontWeight: "600", marginBottom: 12 },
   docsBox: {
     backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 12, padding: 14,
   },
@@ -343,7 +349,7 @@ const styles = StyleSheet.create({
 
   bottomCopyBtn: {
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
-    backgroundColor: "#1D9BF0", borderRadius: 16, paddingVertical: 16, marginTop: 16, marginBottom: 20,
+    backgroundColor: Colors.accent, borderRadius: 16, paddingVertical: 16, marginTop: 16, marginBottom: 20,
   },
   bottomCopyBtnDone: { backgroundColor: "#34D399" },
   bottomCopyText: { fontSize: 16, fontWeight: "800", color: "#000" },

@@ -27,16 +27,16 @@ export default function TabsLayout() {
         .eq("user_id", user.id).eq("is_read", false);
       setUnreadCount(count ?? 0);
     };
-    fetchUnread();
+    void fetchUnread();
 
     // Realtime unread count
     const ch = supabase.channel("notif-badge")
       .on("postgres_changes", {
         event: "*", schema: "public", table: "notifications",
         filter: `user_id=eq.${user.id}`,
-      }, () => { fetchUnread(); })
+      }, () => { void fetchUnread(); })
       .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    return () => { void supabase.removeChannel(ch); };
   }, [user]);
 
   return (
@@ -51,7 +51,7 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen
-        name="index"
+        name="hub"
         options={{
           title: "Hub",
           tabBarIcon: ({ color, size }) => <LayoutGrid size={size} color={color} />,

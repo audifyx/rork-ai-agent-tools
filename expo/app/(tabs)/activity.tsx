@@ -1,16 +1,16 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   StyleSheet, Text, View, ScrollView, TouchableOpacity, RefreshControl, Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Activity, Filter } from "lucide-react-native";
+import { Activity } from "lucide-react-native";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/authStore";
 import Colors from "@/constants/colors";
 
 const TOOL_COLORS: Record<string, string> = {
   openclaw: Colors.accent,
-  tweeter: "#1D9BF0",
+  tweeter: Colors.accent,
   scheduler: "#22D3EE",
   system: Colors.textMuted,
 };
@@ -32,16 +32,16 @@ export default function ActivityScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<string | null>(null);
 
-  const fetch_ = async () => {
+  const fetch_ = useCallback(async () => {
     if (!user) return;
     let query = supabase.from("agent_activity").select("*")
       .eq("user_id", user.id).order("created_at", { ascending: false }).limit(100);
     if (filter) query = query.eq("tool", filter);
     const { data } = await query;
     setActivities(data ?? []);
-  };
+  }, [filter, user]);
 
-  useEffect(() => { fetch_(); }, [user, filter]);
+  useEffect(() => { void fetch_(); }, [fetch_]);
 
   // Realtime
   useEffect(() => {
@@ -53,7 +53,7 @@ export default function ActivityScreen() {
       }, (payload) => {
         setActivities(prev => [payload.new, ...prev].slice(0, 200));
       }).subscribe();
-    return () => { supabase.removeChannel(ch); };
+    return () => { void supabase.removeChannel(ch); };
   }, [user]);
 
   const onRefresh = async () => { setRefreshing(true); await fetch_(); setRefreshing(false); };

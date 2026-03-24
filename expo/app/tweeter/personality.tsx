@@ -1,16 +1,16 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   StyleSheet, Text, View, ScrollView, RefreshControl, Platform, TouchableOpacity,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Svg, { G, Ellipse, Path, Circle, Line } from "react-native-svg";
 import {
-  Brain, Sparkles, Heart, Zap, Eye, BookOpen, TrendingUp, ChevronDown, ChevronUp,
+  Brain, Heart, Zap, Eye, BookOpen, TrendingUp, ChevronDown, ChevronUp,
   Flame, Star, Clock, Lightbulb, MessageSquare,
 } from "lucide-react-native";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/authStore";
 import Colors from "@/constants/colors";
+import { LobsterWatermark } from "@/components/tweeter/LobsterWatermark";
 
 const TRAIT_ICONS: Record<string, any> = {
   humor: Star, sarcasm: Zap, optimism: Heart, curiosity: Eye, boldness: Flame, empathy: Heart,
@@ -36,13 +36,13 @@ export default function PersonalityScreen() {
   const [showTopics, setShowTopics] = useState(false);
   const [showEvolution, setShowEvolution] = useState(false);
 
-  const fetch_ = async () => {
+  const fetch_ = useCallback(async () => {
     if (!user) return;
     const { data } = await supabase.from("agent_personality").select("*").eq("user_id", user.id).maybeSingle();
     setPersonality(data);
-  };
+  }, [user]);
 
-  useEffect(() => { fetch_(); }, [user]);
+  useEffect(() => { void fetch_(); }, [fetch_]);
   const onRefresh = async () => { setRefreshing(true); await fetch_(); setRefreshing(false); };
 
   const traits = personality?.personality_traits || {};
@@ -52,11 +52,12 @@ export default function PersonalityScreen() {
   return (
     <ScrollView
       style={st.container}
-      contentContainerStyle={{ paddingTop: 16, paddingBottom: 120 }}
+      contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: 120 }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.accent} />}
       showsVerticalScrollIndicator={false}
     >
       <View style={st.redGlow} />
+      <LobsterWatermark style={st.watermark} />
 
       <View style={st.header}>
         <Text style={st.title}>🧠 Agent <Text style={{ color: Colors.accent }}>Brain</Text></Text>
@@ -243,6 +244,7 @@ const mono = Platform.OS === "ios" ? "Menlo" : "monospace";
 const st = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#000", paddingHorizontal: 16 },
   redGlow: { position: "absolute", top: 0, left: 0, right: 0, height: 250, backgroundColor: "rgba(220,38,38,0.03)" },
+  watermark: { top: 18, right: -28 },
   header: { marginBottom: 20 },
   title: { fontSize: 26, fontWeight: "900", color: Colors.text, letterSpacing: -1 },
   subtitle: { fontSize: 12, color: Colors.textMuted, marginTop: 3 },

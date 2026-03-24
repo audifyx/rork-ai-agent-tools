@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
-  StyleSheet, Text, View, ScrollView, TouchableOpacity, RefreshControl, Platform,
+  StyleSheet, Text, View, ScrollView, TouchableOpacity, RefreshControl,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
-  Bell, BellOff, Check, CheckCheck, Trash2, Bot, AlertTriangle,
-  Info, CheckCircle2, Zap,
+  BellOff, CheckCheck, Trash2, Bot, AlertTriangle,
+  Info, CheckCircle2,
 } from "lucide-react-native";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/authStore";
@@ -16,7 +16,7 @@ const TYPE_CONFIG: Record<string, { icon: any; color: string }> = {
   success: { icon: CheckCircle2, color: Colors.success },
   warning: { icon: AlertTriangle, color: Colors.warning },
   error: { icon: AlertTriangle, color: Colors.danger },
-  agent: { icon: Bot, color: "#1D9BF0" },
+  agent: { icon: Bot, color: Colors.accent },
 };
 
 function timeAgo(d: string) {
@@ -35,14 +35,14 @@ export default function NotificationsScreen() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
-  const fetch_ = async () => {
+  const fetch_ = useCallback(async () => {
     if (!user) return;
     const { data } = await supabase.from("notifications").select("*")
       .eq("user_id", user.id).order("created_at", { ascending: false }).limit(50);
     setNotifications(data ?? []);
-  };
+  }, [user]);
 
-  useEffect(() => { fetch_(); }, [user]);
+  useEffect(() => { void fetch_(); }, [fetch_]);
 
   // Realtime
   useEffect(() => {
@@ -54,7 +54,7 @@ export default function NotificationsScreen() {
       }, (payload) => {
         setNotifications(prev => [payload.new, ...prev].slice(0, 100));
       }).subscribe();
-    return () => { supabase.removeChannel(ch); };
+    return () => { void supabase.removeChannel(ch); };
   }, [user]);
 
   const onRefresh = async () => { setRefreshing(true); await fetch_(); setRefreshing(false); };
