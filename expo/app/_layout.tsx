@@ -93,6 +93,17 @@ export default function RootLayout() {
                 headerTitleStyle: { fontSize: 16, fontWeight: "700" },
               }}
             />
+            <Stack.Screen
+              name="analytics"
+              options={{
+                headerShown: true,
+                headerTitle: "📊 ClawAnalytics",
+                headerBackTitle: "Hub",
+                headerStyle: { backgroundColor: "#000" },
+                headerTintColor: "#34D399",
+                headerTitleStyle: { fontSize: 16, fontWeight: "700" },
+              }}
+            />
           </Stack>
         </AuthGate>
       </GestureHandlerRootView>

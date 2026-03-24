@@ -73,11 +73,11 @@ const tools: Tool[] = [
   {
     id: "clawanalytics",
     name: "ClawAnalytics",
-    description: "Real-time analytics & performance dashboards",
+    description: "Cross-tool analytics, error tracking, health monitoring & custom KPIs",
     icon: BarChart3,
     color: Colors.success,
-    action: { type: "route", path: "" },
-    badge: "Coming Soon",
+    action: { type: "route", path: "/analytics" },
+    badge: "New",
   },
   {
     id: "clawmailer",
