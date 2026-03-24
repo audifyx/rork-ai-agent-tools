@@ -80,6 +80,15 @@ const tools: Tool[] = [
     badge: "New",
   },
   {
+    id: "clawpages",
+    name: "ClawPages",
+    description: "Deployment link tracker & live HTML preview — see your agent build in real-time",
+    icon: Globe,
+    color: Colors.info,
+    action: { type: "route", path: "/pages" },
+    badge: "New",
+  },
+  {
     id: "clawmailer",
     name: "ClawMailer",
     description: "Email campaign automation & templates",
