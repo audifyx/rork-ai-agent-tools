@@ -37,10 +37,6 @@ export default function TweeterLayout() {
         }}
       />
       <Tabs.Screen
-        name="api"
-        options={{
-          title: "API",
-          tabBarIcon: ({ color, size }) => <Key size={size} color={color} />,
         }}
       />
     </Tabs>

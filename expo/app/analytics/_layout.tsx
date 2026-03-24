@@ -19,13 +19,3 @@ export default function AnalyticsLayout() {
       <Tabs.Screen name="errors" options={{ title: "Errors", tabBarIcon: ({ color, size }) => <AlertTriangle size={size} color={color} /> }} />
       <Tabs.Screen name="health" options={{ title: "Health", tabBarIcon: ({ color, size }) => <Activity size={size} color={color} /> }} />
       <Tabs.Screen name="metrics" options={{ title: "Metrics", tabBarIcon: ({ color, size }) => <Target size={size} color={color} /> }} />
-      <Tabs.Screen name="api" options={{ title: "API", tabBarIcon: ({ color, size }) => <Key size={size} color={color} /> }} />
-    </Tabs>
-  );
-}
-
-const styles = StyleSheet.create({
-  tabBar: { backgroundColor: "#050505", borderTopColor: Colors.border, borderTopWidth: 1, height: Platform.OS === "ios" ? 88 : 68, paddingBottom: Platform.OS === "ios" ? 28 : 8, paddingTop: 8 },
-  tabLabel: { fontSize: 9, fontWeight: "600", marginTop: 2 },
-  tabItem: { paddingTop: 4 },
-});
