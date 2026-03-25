@@ -96,3 +96,9 @@ CREATE POLICY "pages_logs_owner" ON pages_logs
   FOR ALL USING (auth.uid() = user_id);
 
 CREATE INDEX idx_pages_logs_user ON pages_logs(user_id, created_at DESC);
+
+-- Add pages permission to existing master keys
+UPDATE master_api_keys
+SET permissions = permissions || '{"pages": true}'::jsonb
+WHERE permissions IS NOT NULL
+AND NOT (permissions ? 'pages');

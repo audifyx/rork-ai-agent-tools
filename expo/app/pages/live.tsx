@@ -1,14 +1,17 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
   StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput,
-  RefreshControl, Alert, Platform, ActivityIndicator,
+  RefreshControl, Alert, Platform, ActivityIndicator, Share,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   Radio, Plus, X, Check, Trash2, ArrowLeft, RefreshCw,
   ChevronLeft, ChevronRight, Eye, Code, Clock,
+  Download, FolderOpen, Share2, Copy,
 } from "lucide-react-native";
 import { WebView } from "react-native-webview";
+import * as FileSystem from "expo-file-system/legacy";
+import * as Clipboard from "expo-clipboard";
 import { useRouter } from "expo-router";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/authStore";
@@ -137,6 +140,63 @@ export default function LiveScreen() {
     return html;
   };
 
+  const downloadHtml = async () => {
+    if (!activeSession) return;
+    try {
+      const html = buildHtml(activeSession);
+      const filename = `${activeSession.session_name.replace(/[^a-zA-Z0-9]/g, "_")}_v${activeSession.version}.html`;
+      const fileUri = FileSystem.documentDirectory + filename;
+      await FileSystem.writeAsStringAsync(fileUri, html, { encoding: FileSystem.EncodingType.UTF8 });
+      if (Platform.OS === "ios") {
+        await Share.share({ url: fileUri, title: filename });
+      } else {
+        await Share.share({ message: html, title: filename });
+      }
+    } catch (err: any) {
+      Alert.alert("Error", err.message || "Failed to save file");
+    }
+  };
+
+  const saveToOpenClaw = async () => {
+    if (!activeSession || !user) return;
+    try {
+      const html = buildHtml(activeSession);
+      const filename = `${activeSession.session_name.replace(/[^a-zA-Z0-9]/g, "_")}_v${activeSession.version}.html`;
+      const storagePath = `${user.id}/${Date.now()}_${filename}`;
+
+      // Upload to Supabase Storage
+      const blob = new Blob([html], { type: "text/html" });
+      const { error: upErr } = await supabase.storage
+        .from("openclaw-files")
+        .upload(storagePath, blob, { contentType: "text/html" });
+
+      if (upErr) throw upErr;
+
+      // Create stored_files record
+      const { error } = await supabase.from("stored_files").insert({
+        user_id: user.id,
+        filename,
+        file_type: "text",
+        mime_type: "text/html",
+        category: "clawpages",
+        description: `Live preview: ${activeSession.session_name} v${activeSession.version}`,
+        file_size: html.length,
+        storage_path: storagePath,
+      });
+
+      if (error) throw error;
+      Alert.alert("✅ Saved to Files", `"${filename}" saved to OpenClaw Files under clawpages category.`);
+    } catch (err: any) {
+      Alert.alert("Error", err.message || "Failed to save to OpenClaw");
+    }
+  };
+
+  const copySource = async () => {
+    if (!activeSession) return;
+    await Clipboard.setStringAsync(buildHtml(activeSession));
+    Alert.alert("Copied!", "Full HTML source copied to clipboard.");
+  };
+
   return (
     <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
       {/* Header */}
@@ -214,6 +274,24 @@ export default function LiveScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* Action bar */}
+      {activeSession && (
+        <View style={styles.actionBar}>
+          <TouchableOpacity style={styles.actionBtn} onPress={downloadHtml}>
+            <Download size={14} color={Colors.info} />
+            <Text style={[styles.actionText, { color: Colors.info }]}>Download</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionBtn} onPress={saveToOpenClaw}>
+            <FolderOpen size={14} color={Colors.success} />
+            <Text style={[styles.actionText, { color: Colors.success }]}>Save to Files</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionBtn} onPress={copySource}>
+            <Copy size={14} color={Colors.textSecondary} />
+            <Text style={styles.actionText}>Copy HTML</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* Content area */}
       {!activeSession ? (
         <View style={styles.empty}>
@@ -271,6 +349,9 @@ const styles = StyleSheet.create({
   toggleBtnActive: { backgroundColor: Colors.accentDim },
   toggleText: { fontSize: 12, color: Colors.textMuted, fontWeight: "600" },
   toggleTextActive: { color: Colors.accent },
+  actionBar: { flexDirection: "row", gap: 6, marginBottom: 10 },
+  actionBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5, paddingVertical: 9, borderRadius: 10, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border },
+  actionText: { fontSize: 11, fontWeight: "600", color: Colors.textSecondary },
   empty: { flex: 1, alignItems: "center", justifyContent: "center", paddingTop: 80, gap: 10 },
   emptyText: { fontSize: 16, fontWeight: "600", color: Colors.textSecondary },
   emptySubtext: { fontSize: 13, color: Colors.textMuted, textAlign: "center", paddingHorizontal: 40 },
