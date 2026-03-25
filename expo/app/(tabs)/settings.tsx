@@ -84,6 +84,24 @@ get_history — { "action": "get_history", "params": { "session_id": "uuid" } } 
 get_version — { "action": "get_version", "params": { "session_id": "uuid", "version": 3 } } → specific version snapshot
 delete_session — { "action": "delete_session", "params": { "session_id": "uuid" } }
 
+═══ SWARM (ClawSwarm) ═══
+setup_key — { "action": "setup_key", "params": { "api_key": "sk-or-v1-YOUR_OPENROUTER_KEY" } } → stores OpenRouter key in vault for all sub-agents
+swarm_status — { "action": "swarm_status" } → active agents count, key status, model info
+create_agent — { "action": "create_agent", "params": { "name": "Research Bot", "role": "researcher" } }
+  roles: assistant, researcher, coder, writer, analyst, custom
+  optional: description, system_prompt, model (default: stepfun/step-1-flash-v3.5), permissions, personality
+create_swarm — { "action": "create_swarm", "params": { "agents": [{"name": "Coder", "role": "coder"}, {"name": "Writer", "role": "writer"}] } } → batch create up to 10
+list_agents — { "action": "list_agents" } optional: { "params": { "status": "active" } }
+get_agent — { "action": "get_agent", "params": { "agent_id": "uuid" } } → full agent details + memory
+update_agent — { "action": "update_agent", "params": { "agent_id": "uuid", "status": "paused" } }
+delete_agent — { "action": "delete_agent", "params": { "agent_id": "uuid" } }
+chat — { "action": "chat", "params": { "agent_id": "uuid", "message": "Research the latest AI news" } } → sends message, gets AI reply
+get_messages — { "action": "get_messages", "params": { "agent_id": "uuid" } } → conversation history
+clear_messages — { "action": "clear_messages", "params": { "agent_id": "uuid" } } → wipe conversation
+add_memory — { "action": "add_memory", "params": { "agent_id": "uuid", "content": "User prefers short answers", "type": "fact" } }
+send_to_agent — { "action": "send_to_agent", "params": { "from_agent_id": "uuid", "to_agent_id": "uuid", "message": "Please review this" } }
+read_inbox — { "action": "read_inbox", "params": { "agent_id": "uuid" } } → inter-agent messages
+
 ═══ RULES ═══
 - One endpoint, one key — you have full read/write/delete access to everything
 - When user says "use my OpenAI key" → read_by_service with "openai"

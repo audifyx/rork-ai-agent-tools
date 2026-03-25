@@ -80,6 +80,15 @@ const tools: Tool[] = [
     badge: "New",
   },
   {
+    id: "clawswarm",
+    name: "ClawSwarm",
+    description: "Create & manage AI sub-agents — your agent builds its own team",
+    icon: Bot,
+    color: "#F59E0B",
+    action: { type: "route", path: "/swarm" },
+    badge: "New",
+  },
+  {
     id: "clawpages",
     name: "ClawPages",
     description: "Deployment link tracker & live HTML preview — see your agent build in real-time",

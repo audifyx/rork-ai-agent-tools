@@ -464,12 +464,35 @@ Deno.serve(async (req) => {
     }
 
     // ════════════════════════════════════════
+    // SWARM — Sub-Agent System (proxied to clawswarm-api)
+    // ════════════════════════════════════════
+
+    else if (["setup_key", "create_agent", "list_agents", "get_agent", "update_agent", "delete_agent", "chat", "get_messages", "clear_messages", "add_memory", "send_to_agent", "read_inbox", "create_swarm", "swarm_status"].includes(action)) {
+      if (!perms.swarm) return json({ success: false, error: "Swarm access denied" }, 403);
+      // Proxy to clawswarm-api using the same master key
+      const swarmUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/clawswarm-api`;
+      const proxyResp = await fetch(swarmUrl, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ action, params }),
+      });
+      const proxyData = await proxyResp.json();
+      const resp2 = { success: proxyData.success, data: proxyData.data || proxyData };
+      await logWebhook(proxyResp.status, resp2);
+      return json(resp2, proxyResp.status);
+    }
+
+    // ════════════════════════════════════════
     // SYSTEM
     // ════════════════════════════════════════
 
     else if (action === "whoami") {
       const { data: p } = await sb.from("agent_personality").select("agent_name, current_mood, total_tweets").eq("user_id", userId).maybeSingle();
-      result = { user_id: userId, api_type: "openclaw-master", key_prefix: "ok_", permissions: perms, agent: p || null };
+      const { count: swarmCount } = await sb.from("swarm_agents").select("id", { count: "exact", head: true }).eq("user_id", userId).eq("status", "active");
+      result = { user_id: userId, api_type: "openclaw-master", key_prefix: "ok_", permissions: perms, agent: p || null, active_sub_agents: swarmCount ?? 0 };
     }
     else {
       await logWebhook(400, { error: `Unknown action: ${action}` });

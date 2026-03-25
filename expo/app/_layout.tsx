@@ -115,6 +115,17 @@ export default function RootLayout() {
                 headerTitleStyle: { fontSize: 16, fontWeight: "700" },
               }}
             />
+            <Stack.Screen
+              name="swarm"
+              options={{
+                headerShown: true,
+                headerTitle: "🐝 ClawSwarm",
+                headerBackTitle: "Hub",
+                headerStyle: { backgroundColor: "#000" },
+                headerTintColor: "#F59E0B",
+                headerTitleStyle: { fontSize: 16, fontWeight: "700" },
+              }}
+            />
           </Stack>
         </AuthGate>
       </GestureHandlerRootView>
