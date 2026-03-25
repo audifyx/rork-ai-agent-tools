@@ -5,7 +5,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as DocumentPicker from "expo-document-picker";
-import * as FileSystem from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
 import { Image as ExpoImage } from "expo-image";
 import { Audio, Video, ResizeMode } from "expo-av";
 import { WebView } from "react-native-webview";
