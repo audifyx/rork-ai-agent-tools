@@ -104,7 +104,7 @@ export default function AgentsScreen() {
       role: form.role,
       description: form.description || null,
       system_prompt: form.system_prompt || undefined,
-      model: "stepfun/step-1-flash-v3.5",
+      model: "stepfun/step-3.5-flash:free",
     });
     if (error) return Alert.alert("Error", error.message);
     setForm({ name: "", role: "assistant", description: "", system_prompt: "" });
@@ -162,7 +162,7 @@ export default function AgentsScreen() {
       ) : (
         <View style={styles.keyOkBanner}>
           <Zap size={14} color={Colors.success} />
-          <Text style={styles.keyOkText}>OpenRouter connected · stepfun/step-1-flash-v3.5</Text>
+          <Text style={styles.keyOkText}>OpenRouter connected · stepfun/step-3.5-flash:free</Text>
           <TouchableOpacity onPress={() => setShowSetup(true)}>
             <Text style={styles.keyChangeText}>Change</Text>
           </TouchableOpacity>

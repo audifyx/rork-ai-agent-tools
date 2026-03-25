@@ -89,7 +89,7 @@ setup_key — { "action": "setup_key", "params": { "api_key": "sk-or-v1-YOUR_OPE
 swarm_status — { "action": "swarm_status" } → active agents count, key status, model info
 create_agent — { "action": "create_agent", "params": { "name": "Research Bot", "role": "researcher" } }
   roles: assistant, researcher, coder, writer, analyst, custom
-  optional: description, system_prompt, model (default: stepfun/step-1-flash-v3.5), permissions, personality
+  optional: description, system_prompt, model (default: stepfun/step-3.5-flash:free), permissions, personality
 create_swarm — { "action": "create_swarm", "params": { "agents": [{"name": "Coder", "role": "coder"}, {"name": "Writer", "role": "writer"}] } } → batch create up to 10
 list_agents — { "action": "list_agents" } optional: { "params": { "status": "active" } }
 get_agent — { "action": "get_agent", "params": { "agent_id": "uuid" } } → full agent details + memory

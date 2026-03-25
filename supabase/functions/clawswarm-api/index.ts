@@ -12,7 +12,7 @@ function json(data: unknown, status = 200) {
   });
 }
 
-const DEFAULT_MODEL = "stepfun/step-1-flash-v3.5";
+const DEFAULT_MODEL = "stepfun/step-3.5-flash:free";
 
 const ROLE_PROMPTS: Record<string, string> = {
   assistant: "You are a helpful AI assistant. You help with tasks, answer questions, and provide useful information.",
