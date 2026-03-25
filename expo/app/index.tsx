@@ -180,7 +180,7 @@ function Spark({ angle, delay: d, fast }: { angle: number; delay: number; fast?:
     ]).start();
   }, []);
   const size = fast ? (1 + Math.random() * 2) : (2 + Math.random() * 4);
-  const color = Math.random() > 0.6 ? "#fff" : Math.random() > 0.3 ? Colors.accent : Colors.accentBright;
+  const color = Math.random() > 0.3 ? "#fff" : Math.random() > 0.5 ? "rgba(255,255,255,0.6)" : Colors.accent;
   return <Animated.View style={{ position: "absolute", left: CX - size / 2, top: CY - size / 2, width: size, height: size, borderRadius: size / 2, backgroundColor: color, transform: [{ translateX }, { translateY }], opacity }} pointerEvents="none" />;
 }
 
@@ -207,7 +207,7 @@ function Ember({ x, y, delay: d }: { x: number; y: number; delay: number }) {
     loop();
   }, []);
   const size = 2 + Math.random() * 2;
-  return <Animated.View style={{ position: "absolute", left: x, top: y, width: size, height: size, borderRadius: size / 2, backgroundColor: Math.random() > 0.5 ? Colors.accent : Colors.accentBright, transform: [{ translateY: ty }, { translateX: tx }], opacity: op }} />;
+  return <Animated.View style={{ position: "absolute", left: x, top: y, width: size, height: size, borderRadius: size / 2, backgroundColor: Math.random() > 0.8 ? Colors.accent : "rgba(255,255,255,0.5)", transform: [{ translateY: ty }, { translateX: tx }], opacity: op }} />;
 }
 
 // ─── Screen Shake ──────────────────────────────────────
@@ -286,6 +286,57 @@ function LobsterCharacter({ size = 200 }: { size?: number }) {
   );
 }
 
+// ─── Animated Floating Grid Background ─────────────────
+function AnimatedGrid() {
+  const ty = useRef(new Animated.Value(0)).current;
+  const opacity = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(opacity, { toValue: 1, duration: 2000, useNativeDriver: true }).start();
+    Animated.loop(
+      Animated.timing(ty, { toValue: -40, duration: 20000, useNativeDriver: true })
+    ).start();
+  }, []);
+  // Generate grid dots
+  const dots = useMemo(() => {
+    const d: Array<{ x: number; y: number; r: number; bright: boolean }> = [];
+    const cols = 12;
+    const rows = 20;
+    const spacingX = width / cols;
+    const spacingY = (height + 80) / rows;
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        const jitterX = (Math.random() - 0.5) * 8;
+        const jitterY = (Math.random() - 0.5) * 8;
+        d.push({
+          x: col * spacingX + spacingX / 2 + jitterX,
+          y: row * spacingY + jitterY,
+          r: Math.random() > 0.92 ? 1.5 : 0.8,
+          bright: Math.random() > 0.95,
+        });
+      }
+    }
+    return d;
+  }, []);
+
+  return (
+    <Animated.View style={[StyleSheet.absoluteFill, { opacity, transform: [{ translateY: ty }] }]} pointerEvents="none">
+      <Svg width={width} height={height + 80} viewBox={`0 0 ${width} ${height + 80}`}>
+        {/* Subtle grid lines */}
+        {Array.from({ length: 7 }, (_, i) => (
+          <Line key={`vl${i}`} x1={width * (i + 1) / 8} y1={0} x2={width * (i + 1) / 8} y2={height + 80} stroke="rgba(255,255,255,0.018)" strokeWidth={0.5} />
+        ))}
+        {Array.from({ length: 12 }, (_, i) => (
+          <Line key={`hl${i}`} x1={0} y1={(height + 80) * (i + 1) / 13} x2={width} y2={(height + 80) * (i + 1) / 13} stroke="rgba(255,255,255,0.015)" strokeWidth={0.5} />
+        ))}
+        {/* Dots at intersections */}
+        {dots.map((d, i) => (
+          <Circle key={i} cx={d.x} cy={d.y} r={d.r} fill={d.bright ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.06)"} />
+        ))}
+      </Svg>
+    </Animated.View>
+  );
+}
+
 // ─── Main Screen ───────────────────────────────────────
 export default function WelcomeScreen() {
   const insets = useSafeAreaInsets();
@@ -354,8 +405,8 @@ export default function WelcomeScreen() {
         ]),
         Animated.timing(glassOpacity, { toValue: 0, duration: 120, useNativeDriver: true }),
         Animated.sequence([
-          Animated.timing(vignetteOpacity, { toValue: 0.6, duration: 60, useNativeDriver: true }),
-          Animated.timing(vignetteOpacity, { toValue: 0.05, duration: 1200, useNativeDriver: true }),
+          Animated.timing(vignetteOpacity, { toValue: 0.25, duration: 60, useNativeDriver: true }),
+          Animated.timing(vignetteOpacity, { toValue: 0.02, duration: 1200, useNativeDriver: true }),
         ]),
       ]).start();
       Animated.sequence([
@@ -390,7 +441,7 @@ export default function WelcomeScreen() {
       Animated.timing(lobsterFloat, { toValue: 0, duration: 2500, useNativeDriver: true }),
     ])).start();
     Animated.loop(Animated.sequence([
-      Animated.timing(bgPulse, { toValue: 0.03, duration: 3000, useNativeDriver: true }),
+      Animated.timing(bgPulse, { toValue: 0.012, duration: 3000, useNativeDriver: true }),
       Animated.timing(bgPulse, { toValue: 0, duration: 3000, useNativeDriver: true }),
     ])).start();
     const pulse = Animated.loop(Animated.sequence([
@@ -445,7 +496,10 @@ export default function WelcomeScreen() {
   return (
     <ScreenShake>
       <View style={styles.container}>
-        {/* Background effects */}
+        {/* Animated grid background */}
+        <AnimatedGrid />
+
+        {/* Background effects — very subtle */}
         <Animated.View style={[styles.vignette, { opacity: bgPulse }]} pointerEvents="none" />
         <Animated.View style={[styles.vignette, { opacity: vignetteOpacity }]} pointerEvents="none" />
         <View style={[styles.glowOrb, { left: "5%", top: "15%", width: 300, height: 300, borderRadius: 150 }]} />
@@ -542,11 +596,11 @@ export default function WelcomeScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#000" },
   vignette: { ...StyleSheet.absoluteFillObject, backgroundColor: Colors.accent },
-  glowOrb: { position: "absolute", backgroundColor: "rgba(220,38,38,0.04)" },
+  glowOrb: { position: "absolute", backgroundColor: "rgba(220,38,38,0.015)" },
   // Intro text
   introContainer: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, justifyContent: "center", alignItems: "center", paddingHorizontal: 40, zIndex: 20 },
   introText: { fontSize: 28, fontWeight: "300", color: "rgba(255,255,255,0.8)", textAlign: "center", marginBottom: 12, letterSpacing: -0.5 },
-  introTextAccent: { color: Colors.accent, fontWeight: "600" },
+  introTextAccent: { color: "rgba(220,38,38,0.8)", fontWeight: "600" },
   introTextDim: { fontSize: 20, color: "rgba(255,255,255,0.4)", fontWeight: "400", letterSpacing: 1 },
   introTextBold: { fontSize: 32, fontWeight: "800", color: "#fff", letterSpacing: -1 },
   // Tool pills
@@ -559,27 +613,27 @@ const styles = StyleSheet.create({
   heroSection: { flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: 32 },
   lobsterGlow: {
     ...Platform.select({
-      ios: { shadowColor: Colors.accent, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.6, shadowRadius: 50 },
+      ios: { shadowColor: Colors.accent, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.3, shadowRadius: 30 },
       default: {},
     }),
   },
   title: { fontSize: 42, fontWeight: "900", color: Colors.text, textAlign: "center", letterSpacing: 12 },
   titleLine: {
     width: 60, height: 2, backgroundColor: Colors.accent, alignSelf: "center", marginVertical: 10, borderRadius: 1,
-    ...Platform.select({ ios: { shadowColor: Colors.accent, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.8, shadowRadius: 10 }, default: {} }),
+    ...Platform.select({ ios: { shadowColor: Colors.accent, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.4, shadowRadius: 6 }, default: {} }),
   },
   titleSub: { fontSize: 16, fontWeight: "700", color: Colors.accent, textAlign: "center", letterSpacing: 6, textTransform: "uppercase" },
   subtitleRow: { flexDirection: "row", alignItems: "center", marginTop: 24, gap: 8 },
   statusDot: {
     width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.accent,
-    ...Platform.select({ ios: { shadowColor: Colors.accent, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.9, shadowRadius: 12 }, default: {} }),
+    ...Platform.select({ ios: { shadowColor: Colors.accent, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.5, shadowRadius: 8 }, default: {} }),
   },
   subtitle: { fontSize: 15, color: Colors.textSecondary, fontWeight: "400" },
   footer: { alignItems: "center", paddingHorizontal: 28 },
   enterButton: {
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10,
     backgroundColor: Colors.accent, paddingVertical: 18, paddingHorizontal: 40, borderRadius: 16, width: "100%", marginBottom: 16,
-    ...Platform.select({ ios: { shadowColor: Colors.accent, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.6, shadowRadius: 25 }, android: { elevation: 10 }, default: {} }),
+    ...Platform.select({ ios: { shadowColor: Colors.accent, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 15 }, android: { elevation: 6 }, default: {} }),
   },
   enterButtonText: { fontSize: 17, fontWeight: "700", color: "#fff", letterSpacing: 0.5 },
   footerText: { fontSize: 11, color: Colors.textMuted, letterSpacing: 0.5 },
