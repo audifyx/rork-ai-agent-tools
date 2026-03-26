@@ -89,6 +89,15 @@ const tools: Tool[] = [
     badge: "New",
   },
   {
+    id: "clawimagen",
+    name: "ClawImageGen",
+    description: "AI image generation — agents send prompts, images generate live with full gallery & download support",
+    icon: Sparkles,
+    color: "#A855F7",
+    action: { type: "route", path: "/imagegen" },
+    badge: "New",
+  },
+  {
     id: "clawpages",
     name: "ClawPages",
     description: "Deployment link tracker & live HTML preview — see your agent build in real-time",
