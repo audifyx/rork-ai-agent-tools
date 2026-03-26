@@ -63,9 +63,9 @@ const DEFAULT_APPS: AppItem[] = [
   { id: "swarm",     name: "Swarm",     emoji: "🐝", color: "#D97706", dark: "#78350F", route: "/swarm",              badge: "NEW",  page: 0, pos: 4 },
   { id: "pages",     name: "Pages",     emoji: "🌐", color: "#0284C7", dark: "#075985", route: "/pages",              badge: null,   page: 0, pos: 5 },
   { id: "imagegen",  name: "ImageGen",  emoji: "🎨", color: "#9333EA", dark: "#581C87", route: "/imagegen",           badge: "NEW",  page: 0, pos: 6 },
-  { id: "activity",  name: "Activity",  emoji: "⚡", color: "#DC2626", dark: "#7F1D1D", route: "/(tabs)/activity",    badge: null,   page: 0, pos: 7 },
-  { id: "notifs",    name: "Alerts",    emoji: "🔔", color: "#EA580C", dark: "#7C2D12", route: "/(tabs)/notifications", badge: null, page: 0, pos: 8 },
-  { id: "settings",  name: "Settings",  emoji: "⚙️", color: "#374151", dark: "#111827", route: "/(tabs)/settings",   badge: null,   page: 0, pos: 9 },
+  { id: "activity",  name: "Activity",  emoji: "⚡", color: "#DC2626", dark: "#7F1D1D", route: "/activity",    badge: null,   page: 0, pos: 7 },
+  { id: "notifs",    name: "Alerts",    emoji: "🔔", color: "#EA580C", dark: "#7C2D12", route: "/notifications", badge: null, page: 0, pos: 8 },
+  { id: "settings",  name: "Settings",  emoji: "⚙️", color: "#374151", dark: "#111827", route: "/settings",   badge: null,   page: 0, pos: 9 },
   { id: "notebook",  name: "Notebook",  emoji: "📓", color: "#DC2626", dark: "#7F1D1D", route: null,                  badge: "SOON", page: 1, pos: 0 },
   { id: "scheduler", name: "Scheduler", emoji: "⏰", color: "#0891B2", dark: "#164E63", route: null,                  badge: "SOON", page: 1, pos: 1 },
   { id: "mailer",    name: "Mailer",    emoji: "📧", color: "#EA580C", dark: "#9A3412", route: null,                  badge: "SOON", page: 1, pos: 2 },
@@ -75,10 +75,10 @@ const DEFAULT_APPS: AppItem[] = [
 ];
 
 const DOCK_ITEMS = [
-  { id: "activity", emoji: "⚡", label: "Activity", route: "/(tabs)/activity",      color: "#DC2626" },
-  { id: "notifs",   emoji: "🔔", label: "Alerts",   route: "/(tabs)/notifications", color: "#EA580C" },
-  { id: "swarm",    emoji: "🐝", label: "Swarm",    route: "/swarm",                color: "#D97706" },
-  { id: "settings", emoji: "⚙️", label: "Settings", route: "/(tabs)/settings",      color: "#374151" },
+  { id: "activity", emoji: "⚡", label: "Activity", route: "/activity",      color: "#DC2626" },
+  { id: "notifs",   emoji: "🔔", label: "Alerts",   route: "/notifications", color: "#EA580C" },
+  { id: "swarm",    emoji: "🐝", label: "Swarm",    route: "/swarm",         color: "#D97706" },
+  { id: "settings", emoji: "⚙️", label: "Settings", route: "/settings",      color: "#374151" },
 ];
 
 function AppIcon({ app, wiggling, selected, onPress, onLongPress, badge }: {
@@ -105,7 +105,7 @@ function AppIcon({ app, wiggling, selected, onPress, onLongPress, badge }: {
       animRef.current?.stop();
       Animated.spring(rot, { toValue: 0, tension: 300, friction: 10, useNativeDriver: true }).start();
     }
-  }, [wiggling]);
+  }, [wiggling, rot]);
 
   const spin = rot.interpolate({ inputRange: [-1, 1], outputRange: ["-2.8deg", "2.8deg"] });
   const pressIn  = () => !wiggling && Animated.spring(scale, { toValue: 0.85, tension: 300, friction: 10, useNativeDriver: true }).start();
@@ -162,7 +162,7 @@ function FolderIcon({ folder, apps, wiggling, onPress, onLongPress }: {
       animRef.current?.stop();
       Animated.spring(rot, { toValue: 0, tension: 300, friction: 10, useNativeDriver: true }).start();
     }
-  }, [wiggling]);
+  }, [wiggling, rot]);
 
   const spin = rot.interpolate({ inputRange: [-1, 1], outputRange: ["-2.5deg", "2.5deg"] });
   const cellSz = (ICON_SIZE * 0.76) / 3;
@@ -207,7 +207,7 @@ function FolderModal({ folder, apps, visible, onClose, onOpen }: {
     } else {
       sc.setValue(0.78); bg.setValue(0);
     }
-  }, [visible]);
+  }, [visible, bg, sc]);
 
   if (!folder) return null;
   const inside = apps.filter(a => folder.appIds.includes(a.id));
@@ -257,7 +257,7 @@ export default function HomeScreen() {
 
   // Load saved layout
   useEffect(() => {
-    AsyncStorage.getItem(STORAGE_KEY).then(raw => {
+    void AsyncStorage.getItem(STORAGE_KEY).then(raw => {
       if (!raw) return;
       try {
         const s = JSON.parse(raw);
@@ -268,13 +268,13 @@ export default function HomeScreen() {
   }, []);
 
   const save = useCallback((a: AppItem[], f: Folder[]) => {
-    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ apps: a, folders: f }));
+    void AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ apps: a, folders: f }));
   }, []);
 
   // Load badges + wallpaper
   useEffect(() => {
     if (!user) return;
-    (async () => {
+    void (async () => {
       const [{ count: n }, { count: t }, { count: s }, { count: i }] = await Promise.all([
         supabase.from("notifications").select("id", { count: "exact", head: true }).eq("user_id", user.id).eq("is_read", false),
         supabase.from("agent_tweets").select("id",  { count: "exact", head: true }).eq("user_id", user.id),
@@ -298,7 +298,7 @@ export default function HomeScreen() {
       return;
     }
     if (app.badge === "SOON") return;
-    if (app.external && app.route) { Linking.openURL(app.route); return; }
+    if (app.external && app.route) { void Linking.openURL(app.route); return; }
     if (app.route) router.push(app.route as any);
   };
 

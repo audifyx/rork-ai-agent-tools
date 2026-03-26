@@ -12,7 +12,7 @@ const queryClient = new QueryClient();
 
 // All top-level routes that are valid destinations for logged-in users
 const AUTHENTICATED_ROUTES = new Set([
-  "(tabs)",
+  "hub",
   "openclaw",
   "tweeter",
   "vault",
@@ -20,7 +20,10 @@ const AUTHENTICATED_ROUTES = new Set([
   "pages",
   "swarm",
   "imagegen",
+  "activity",
+  "notifications",
   "settings",
+  "profile",
   "modal",
 ]);
 
@@ -41,12 +44,12 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     const topSegment  = segments[0] as string | undefined;
     const inAuthGroup = topSegment === "(auth)";
     const onIndex     = !topSegment || topSegment === "index";
-    const inAppRoute  = topSegment ? AUTHENTICATED_ROUTES.has(topSegment) : false;
+    const _inAppRoute = topSegment ? AUTHENTICATED_ROUTES.has(topSegment) : false;
 
     if (session) {
       // Logged in: only redirect if on the welcome screen or auth screens
       if (onIndex || inAuthGroup) {
-        router.replace("/(tabs)/hub");
+        router.replace("/hub");
       }
       // If already on a valid app route — leave them there
     } else {
@@ -55,7 +58,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
         router.replace("/(auth)/login");
       }
     }
-  }, [session, loading, segments]);
+  }, [session, loading, segments, router]);
 
   return <>{children}</>;
 }
@@ -86,7 +89,11 @@ export default function RootLayout() {
           >
             <Stack.Screen name="index" />
             <Stack.Screen name="(auth)" />
-            <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="hub" />
+            <Stack.Screen name="activity"      options={screenHeader("\u26a1 Activity",      Colors.accent)} />
+            <Stack.Screen name="notifications" options={screenHeader("\ud83d\udd14 Alerts",       Colors.warning)} />
+            <Stack.Screen name="settings"      options={screenHeader("\u2699\ufe0f Settings",     Colors.textSecondary)} />
+            <Stack.Screen name="profile"       options={screenHeader("\ud83d\udc64 Profile",      Colors.text)} />
             <Stack.Screen name="openclaw"  options={screenHeader("🦞 OpenClaw",      Colors.accent)} />
             <Stack.Screen name="tweeter"   options={screenHeader("🐦 Agent Tweeter", "#3B82F6")} />
             <Stack.Screen name="vault"     options={screenHeader("🔐 ClawVault",     "#8B5CF6")} />
@@ -94,9 +101,7 @@ export default function RootLayout() {
             <Stack.Screen name="pages"     options={screenHeader("🌐 ClawPages",     Colors.info)} />
             <Stack.Screen name="swarm"     options={screenHeader("🐝 ClawSwarm",     "#F59E0B")} />
             <Stack.Screen name="imagegen"  options={screenHeader("🎨 ClawImageGen",  "#A855F7")} />
-            <Stack.Screen name="settings"  options={screenHeader("⚙️ Settings",      Colors.textSecondary)} />
-            <Stack.Screen name="activity"  options={screenHeader("⚡ Activity",      Colors.accent)} />
-            <Stack.Screen name="notifications" options={screenHeader("🔔 Alerts",    Colors.warning)} />
+
           </Stack>
         </AuthGate>
       </GestureHandlerRootView>

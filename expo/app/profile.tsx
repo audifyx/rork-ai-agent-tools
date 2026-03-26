@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   StyleSheet, Text, View, ScrollView, TextInput, TouchableOpacity,
   Alert, Switch, Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
-  User, Save, LogOut, Moon, Bell, RefreshCw, Settings, Shield,
+  Save, LogOut, Moon, Bell, RefreshCw,
 } from "lucide-react-native";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/authStore";
@@ -21,17 +21,17 @@ export default function ProfileScreen() {
   });
   const [saving, setSaving] = useState(false);
 
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     if (!user) return;
     const { data } = await supabase.from("user_profiles").select("*").eq("user_id", user.id).maybeSingle();
     if (data) {
       setProfile(data);
       setForm({ display_name: data.display_name || "", bio: data.bio || "", timezone: data.timezone || "UTC" });
-      setPrefs(data.preferences || prefs);
+      if (data.preferences) setPrefs(data.preferences);
     }
-  };
+  }, [user]);
 
-  useEffect(() => { fetchProfile(); }, [user]);
+  useEffect(() => { void fetchProfile(); }, [fetchProfile]);
 
   const handleSave = async () => {
     if (!user) return;
@@ -47,7 +47,7 @@ export default function ProfileScreen() {
     }
     setSaving(false);
     Alert.alert("Saved", "Profile updated");
-    fetchProfile();
+    void fetchProfile();
   };
 
   const initial = (form.display_name || user?.email || "?")[0].toUpperCase();
