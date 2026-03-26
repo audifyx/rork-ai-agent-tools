@@ -21,14 +21,25 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (loading) return;
-    const inAuthGroup = segments[0] === "(auth)";
-    const currentPath = segments.join("/");
-    const isSplashRoute = currentPath.length === 0;
-    if (isSplashRoute) { void SplashScreen.hideAsync(); return; }
-    if (!session && !inAuthGroup) router.replace("/(auth)/login");
-    else if (session && inAuthGroup) router.replace("/(tabs)/hub");
+
     void SplashScreen.hideAsync();
-  }, [session, loading, router, segments]);
+
+    const inAuthGroup  = segments[0] === "(auth)";
+    const inTabsGroup  = segments[0] === "(tabs)";
+    const onIndex      = segments.length === 0 || segments[0] === "index";
+
+    if (session) {
+      // Logged in — always go to hub unless already there
+      if (!inTabsGroup) {
+        router.replace("/(tabs)/hub");
+      }
+    } else {
+      // Not logged in — go to login unless on welcome or auth screens
+      if (!inAuthGroup && !onIndex) {
+        router.replace("/(auth)/login");
+      }
+    }
+  }, [session, loading, segments]);
 
   return <>{children}</>;
 }
@@ -60,14 +71,14 @@ export default function RootLayout() {
             <Stack.Screen name="index" />
             <Stack.Screen name="(auth)" />
             <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="openclaw" options={screenHeader("🦞 OpenClaw", Colors.accent)} />
-            <Stack.Screen name="tweeter" options={screenHeader("🐦 Agent Tweeter", "#3B82F6")} />
-            <Stack.Screen name="vault" options={screenHeader("🔐 ClawVault", "#8B5CF6")} />
+            <Stack.Screen name="openclaw"  options={screenHeader("🦞 OpenClaw",      Colors.accent)} />
+            <Stack.Screen name="tweeter"   options={screenHeader("🐦 Agent Tweeter", "#3B82F6")} />
+            <Stack.Screen name="vault"     options={screenHeader("🔐 ClawVault",     "#8B5CF6")} />
             <Stack.Screen name="analytics" options={screenHeader("📊 ClawAnalytics", Colors.success)} />
-            <Stack.Screen name="pages" options={screenHeader("🌐 ClawPages", Colors.info)} />
-            <Stack.Screen name="swarm" options={screenHeader("🐝 ClawSwarm", "#F59E0B")} />
-            <Stack.Screen name="imagegen" options={screenHeader("🎨 ClawImageGen", "#A855F7")} />
-            <Stack.Screen name="settings" options={screenHeader("⚙️ Settings", Colors.textSecondary)} />
+            <Stack.Screen name="pages"     options={screenHeader("🌐 ClawPages",     Colors.info)} />
+            <Stack.Screen name="swarm"     options={screenHeader("🐝 ClawSwarm",     "#F59E0B")} />
+            <Stack.Screen name="imagegen"  options={screenHeader("🎨 ClawImageGen",  "#A855F7")} />
+            <Stack.Screen name="settings"  options={screenHeader("⚙️ Settings",      Colors.textSecondary)} />
           </Stack>
         </AuthGate>
       </GestureHandlerRootView>
