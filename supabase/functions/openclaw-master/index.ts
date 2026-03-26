@@ -540,26 +540,55 @@ Deno.serve(async (req) => {
     // CLAWBG — Animated HTML App Background
     // ════════════════════════════════════════
 
-    else if (action === "set_bg_preset" || action === "set_bg_custom" || action === "get_bg_active" || action === "list_bgs" || action === "activate_bg" || action === "delete_bg" || action === "list_bg_presets") {
-      if (!perms.clawbg) return json({ success: false, error: "ClawBG access denied. Enable clawbg in your master key permissions." }, 403);
-      // Map shorthand actions to clawbg-api actions
-      const bgActionMap: Record<string, string> = {
-        "set_bg_preset": "set_preset",
-        "set_bg_custom": "set_custom",
-        "get_bg_active": "get_active",
-        "list_bgs": "list",
-        "activate_bg": "activate",
-        "delete_bg": "delete",
-        "list_bg_presets": "list_presets",
-      };
+    // CLAWBG — handles ALL of these patterns:
+    // { action: "clawbg", params: { action: "set_custom", html: "..." } }
+    // { action: "set_bg_preset", params: { preset: "matrix" } }
+    // { action: "set_bg_custom", params: { html: "..." } }
+    // { action: "get_bg_active" }
+    // { action: "list_bgs" }
+    else if (
+      action === "clawbg" ||
+      action === "set_bg_preset" || action === "set_bg_custom" ||
+      action === "get_bg_active" || action === "list_bgs" ||
+      action === "activate_bg" || action === "delete_bg" ||
+      action === "list_bg_presets" || action === "bg_whoami"
+    ) {
+      if (!perms.clawbg) return json({ success: false, error: "ClawBG access denied. Enable clawbg in master key permissions." }, 403);
+
+      // If action is "clawbg", the real action is nested in params.action
+      let bgAction: string;
+      let bgParams: Record<string, unknown> | undefined;
+
+      if (action === "clawbg") {
+        // Agent sent: { action: "clawbg", params: { action: "set_custom", html: "...", name: "..." } }
+        bgAction = (params?.action as string) || "whoami";
+        const { action: _a, ...rest } = params as Record<string, unknown>;
+        bgParams = rest;
+      } else {
+        // Agent used the prefixed shorthand
+        const bgActionMap: Record<string, string> = {
+          "set_bg_preset": "set_preset",
+          "set_bg_custom": "set_custom",
+          "get_bg_active": "get_active",
+          "list_bgs": "list",
+          "activate_bg": "activate",
+          "delete_bg": "delete",
+          "list_bg_presets": "list_presets",
+          "bg_whoami": "whoami",
+        };
+        bgAction = bgActionMap[action] ?? action;
+        bgParams = params;
+      }
+
       const bgUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/clawbg-api`;
       const bgResp = await fetch(bgUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
-        body: JSON.stringify({ action: bgActionMap[action], params }),
+        body: JSON.stringify({ action: bgAction, params: bgParams }),
       });
       const bgData = await bgResp.json();
-      await log("clawbg", `ClawBG: ${action}`, params || {});
+      await log("clawbg", `ClawBG: ${bgAction}`, params || {});
+      if (!bgData.success) return json(bgData, 400);
       result = bgData.data ?? bgData;
     }
 
