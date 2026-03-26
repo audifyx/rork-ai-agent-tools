@@ -19,7 +19,7 @@ import { supabase, SUPABASE_URL } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/authStore";
 import Colors from "@/constants/colors";
 
-const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
+const { width: SCREEN_W } = Dimensions.get("window");
 
 function timeAgo(d: string) {
   const diff = Date.now() - new Date(d).getTime();
@@ -45,14 +45,21 @@ export default function ImageDetailModal() {
 
   useEffect(() => {
     if (!user || !id) return;
-    (async () => {
-      const [{ data: img }, { data: k }] = await Promise.all([
-        supabase.from("generated_images").select("*").eq("id", id).eq("user_id", user.id).maybeSingle(),
-        supabase.from("master_api_keys").select("key_value").eq("user_id", user.id).maybeSingle(),
-      ]);
-      setImage(img);
-      setApiKey(k?.key_value ?? null);
-      setLoading(false);
+    void (async () => {
+      try {
+        const results = await Promise.allSettled([
+          supabase.from("generated_images").select("*").eq("id", id).eq("user_id", user.id).maybeSingle(),
+          supabase.from("master_api_keys").select("key_value").eq("user_id", user.id).maybeSingle(),
+        ]);
+        const img = results[0].status === "fulfilled" ? results[0].value.data : null;
+        const k = results[1].status === "fulfilled" ? results[1].value.data : null;
+        setImage(img);
+        setApiKey(k?.key_value ?? null);
+      } catch (e) {
+        console.log("[imagegen] image load failed", e);
+      } finally {
+        setLoading(false);
+      }
     })();
   }, [user, id]);
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   StyleSheet, Text, View, ScrollView, RefreshControl, Platform,
 } from "react-native";
@@ -40,7 +40,7 @@ function SectionHeader({ title, icon: Icon }: { title: string; icon?: any }) {
 }
 
 export default function OpenClawDashboard() {
-  const insets = useSafeAreaInsets();
+  const _insets = useSafeAreaInsets();
   const { user } = useAuthStore();
   const [refreshing, setRefreshing] = useState(false);
   const [stats, setStats] = useState({
@@ -48,27 +48,37 @@ export default function OpenClawDashboard() {
     totalSize: 0, recentFiles: 0, apiKeyActive: false,
   });
 
-  const loadStats = async () => {
+  const loadStats = useCallback(async () => {
     if (!user) return;
-    const [f, l, w, a, files, keys] = await Promise.all([
-      supabase.from("stored_files").select("id", { count: "exact", head: true }).eq("user_id", user.id),
-      supabase.from("leads").select("id", { count: "exact", head: true }).eq("user_id", user.id),
-      supabase.from("webhook_logs").select("id", { count: "exact", head: true }).eq("user_id", user.id),
-      supabase.from("agent_configs").select("id", { count: "exact", head: true }).eq("user_id", user.id),
-      supabase.from("stored_files").select("file_size, created_at").eq("user_id", user.id),
-      supabase.from("api_keys").select("is_active").eq("user_id", user.id).eq("is_active", true).limit(1),
-    ]);
-    const allFiles = files.data ?? [];
-    const totalSize = allFiles.reduce((acc, f) => acc + (f.file_size ?? 0), 0);
-    const dayAgo = Date.now() - 86400000;
-    const recentFiles = allFiles.filter(f => new Date(f.created_at).getTime() > dayAgo).length;
-    setStats({
-      files: f.count ?? 0, leads: l.count ?? 0, webhooks: w.count ?? 0, agents: a.count ?? 0,
-      totalSize, recentFiles, apiKeyActive: (keys.data?.length ?? 0) > 0,
-    });
-  };
+    try {
+      const results = await Promise.allSettled([
+        supabase.from("stored_files").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+        supabase.from("leads").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+        supabase.from("webhook_logs").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+        supabase.from("agent_configs").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+        supabase.from("stored_files").select("file_size, created_at").eq("user_id", user.id),
+        supabase.from("api_keys").select("is_active").eq("user_id", user.id).eq("is_active", true).limit(1),
+      ]);
+      const safeCount = (r: PromiseSettledResult<any>) =>
+        r.status === "fulfilled" ? (r.value?.count ?? 0) : 0;
+      const safeData = (r: PromiseSettledResult<any>) =>
+        r.status === "fulfilled" ? (r.value?.data ?? []) : [];
+      const allFiles = safeData(results[4]);
+      const totalSize = allFiles.reduce((acc: number, f: any) => acc + (f.file_size ?? 0), 0);
+      const dayAgo = Date.now() - 86400000;
+      const recentFiles = allFiles.filter((f: any) => new Date(f.created_at).getTime() > dayAgo).length;
+      const keysData = safeData(results[5]);
+      setStats({
+        files: safeCount(results[0]), leads: safeCount(results[1]),
+        webhooks: safeCount(results[2]), agents: safeCount(results[3]),
+        totalSize, recentFiles, apiKeyActive: keysData.length > 0,
+      });
+    } catch (e) {
+      console.log("[openclaw] loadStats failed", e);
+    }
+  }, [user]);
 
-  useEffect(() => { loadStats(); }, [user]);
+  useEffect(() => { void loadStats(); }, [user, loadStats]);
   const onRefresh = async () => { setRefreshing(true); await loadStats(); setRefreshing(false); };
 
   return (

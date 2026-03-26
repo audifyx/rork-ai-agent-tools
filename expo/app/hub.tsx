@@ -275,16 +275,31 @@ export default function HomeScreen() {
   useEffect(() => {
     if (!user) return;
     void (async () => {
-      const [{ count: n }, { count: t }, { count: s }, { count: i }] = await Promise.all([
-        supabase.from("notifications").select("id", { count: "exact", head: true }).eq("user_id", user.id).eq("is_read", false),
-        supabase.from("agent_tweets").select("id",  { count: "exact", head: true }).eq("user_id", user.id),
-        supabase.from("swarm_agents").select("id",  { count: "exact", head: true }).eq("user_id", user.id).eq("status", "active"),
-        supabase.from("generated_images").select("id", { count: "exact", head: true }).eq("user_id", user.id),
-      ]);
-      setBadges({ notifs: n ?? 0, tweeter: t ?? 0, swarm: s ?? 0, imagegen: i ?? 0 });
-      const { data: wp } = await supabase.from("ai_wallpapers")
-        .select("image_url").eq("user_id", user.id).eq("is_active", true).maybeSingle();
-      if (wp?.image_url) setWallpaper(wp.image_url);
+      try {
+        const results = await Promise.allSettled([
+          supabase.from("notifications").select("id", { count: "exact", head: true }).eq("user_id", user.id).eq("is_read", false),
+          supabase.from("agent_tweets").select("id",  { count: "exact", head: true }).eq("user_id", user.id),
+          supabase.from("swarm_agents").select("id",  { count: "exact", head: true }).eq("user_id", user.id).eq("status", "active"),
+          supabase.from("generated_images").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+        ]);
+        const safeCount = (r: PromiseSettledResult<any>) =>
+          r.status === "fulfilled" ? (r.value?.count ?? 0) : 0;
+        setBadges({
+          notifs: safeCount(results[0]),
+          tweeter: safeCount(results[1]),
+          swarm: safeCount(results[2]),
+          imagegen: safeCount(results[3]),
+        });
+      } catch (e) {
+        console.log("[hub] badge fetch failed", e);
+      }
+      try {
+        const { data: wp } = await supabase.from("ai_wallpapers")
+          .select("image_url").eq("user_id", user.id).eq("is_active", true).maybeSingle();
+        if (wp?.image_url) setWallpaper(wp.image_url);
+      } catch (e) {
+        console.log("[hub] wallpaper fetch failed", e);
+      }
     })();
   }, [user]);
 

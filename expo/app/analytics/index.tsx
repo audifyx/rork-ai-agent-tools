@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { StyleSheet, Text, View, ScrollView, RefreshControl, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { FolderOpen, Users, Webhook, MessageSquare, KeyRound, HardDrive, AlertTriangle, Activity, TrendingUp } from "lucide-react-native";
+import { FolderOpen, Users, Webhook, MessageSquare, KeyRound, HardDrive, AlertTriangle } from "lucide-react-native";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/authStore";
 import Colors from "@/constants/colors";
@@ -13,31 +13,39 @@ function formatBytes(b: number) {
 }
 
 export default function AnalyticsDashboard() {
-  const insets = useSafeAreaInsets();
+  const _insets = useSafeAreaInsets();
   const { user } = useAuthStore();
   const [refreshing, setRefreshing] = useState(false);
   const [data, setData] = useState<any>(null);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     if (!user) return;
-    const [files, leads, webhooks, tweets, secrets, errors, activity] = await Promise.all([
-      supabase.from("stored_files").select("file_size", { count: "exact" }).eq("user_id", user.id),
-      supabase.from("leads").select("id", { count: "exact", head: true }).eq("user_id", user.id),
-      supabase.from("webhook_logs").select("id", { count: "exact", head: true }).eq("user_id", user.id),
-      supabase.from("agent_tweets").select("id", { count: "exact", head: true }).eq("user_id", user.id),
-      supabase.from("vault_entries").select("id", { count: "exact", head: true }).eq("user_id", user.id).eq("is_active", true),
-      supabase.from("error_log").select("id", { count: "exact", head: true }).eq("user_id", user.id).eq("resolved", false),
-      supabase.from("agent_activity").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(8),
-    ]);
-    const totalStorage = (files.data ?? []).reduce((s, f) => s + (f.file_size ?? 0), 0);
-    setData({
-      files: files.count ?? 0, leads: leads.count ?? 0, webhooks: webhooks.count ?? 0,
-      tweets: tweets.count ?? 0, secrets: secrets.count ?? 0, errors: errors.count ?? 0,
-      storage: totalStorage, activity: activity.data ?? [],
-    });
-  };
+    try {
+      const results = await Promise.allSettled([
+        supabase.from("stored_files").select("file_size", { count: "exact" }).eq("user_id", user.id),
+        supabase.from("leads").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+        supabase.from("webhook_logs").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+        supabase.from("agent_tweets").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+        supabase.from("vault_entries").select("id", { count: "exact", head: true }).eq("user_id", user.id).eq("is_active", true),
+        supabase.from("error_log").select("id", { count: "exact", head: true }).eq("user_id", user.id).eq("resolved", false),
+        supabase.from("agent_activity").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(8),
+      ]);
+      const safeVal = (r: PromiseSettledResult<any>) =>
+        r.status === "fulfilled" ? r.value : { data: [], count: 0 };
+      const files = safeVal(results[0]);
+      const totalStorage = (files.data ?? []).reduce((s: number, f: any) => s + (f.file_size ?? 0), 0);
+      setData({
+        files: files.count ?? 0, leads: safeVal(results[1]).count ?? 0,
+        webhooks: safeVal(results[2]).count ?? 0, tweets: safeVal(results[3]).count ?? 0,
+        secrets: safeVal(results[4]).count ?? 0, errors: safeVal(results[5]).count ?? 0,
+        storage: totalStorage, activity: safeVal(results[6]).data ?? [],
+      });
+    } catch (e) {
+      console.log("[analytics] load failed", e);
+    }
+  }, [user]);
 
-  useEffect(() => { load(); }, [user]);
+  useEffect(() => { void load(); }, [load]);
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
 
   const stats = [

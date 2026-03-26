@@ -150,13 +150,17 @@ export default function TweeterFeed() {
 
   const fetchData = useCallback(async () => {
     if (!user) return;
-    const [tw, p] = await Promise.all([
-      supabase.from("agent_tweets").select("*").eq("user_id", user.id)
-        .order("created_at", { ascending: false }).limit(100),
-      supabase.from("agent_personality").select("*").eq("user_id", user.id).maybeSingle(),
-    ]);
-    setTweets(tw.data ?? []);
-    setPersonality(p.data);
+    try {
+      const [tw, p] = await Promise.allSettled([
+        supabase.from("agent_tweets").select("*").eq("user_id", user.id)
+          .order("created_at", { ascending: false }).limit(100),
+        supabase.from("agent_personality").select("*").eq("user_id", user.id).maybeSingle(),
+      ]);
+      setTweets(tw.status === "fulfilled" ? (tw.value.data ?? []) : []);
+      setPersonality(p.status === "fulfilled" ? p.value.data : null);
+    } catch (e) {
+      console.log("[tweeter] fetchData failed", e);
+    }
   }, [user]);
 
   useEffect(() => { void fetchData(); }, [fetchData]);
