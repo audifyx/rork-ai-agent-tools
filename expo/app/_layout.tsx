@@ -78,8 +78,8 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <ClawBGWallpaper opacity={0.9} />
         <AuthGate>
+          <ClawBGWallpaper opacity={0.88} />
           <Stack
             screenOptions={{
               headerStyle: { backgroundColor: Colors.background },

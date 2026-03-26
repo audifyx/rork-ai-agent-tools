@@ -1,20 +1,6 @@
 /**
- * useClawBG — React Native hook for animated HTML app backgrounds
- *
- * Drop <ClawBGWallpaper /> at the root of any screen to have the
- * agent-controlled HTML background render behind your UI.
- *
- * Usage:
- *   import { ClawBGWallpaper } from '@/hooks/useClawBG';
- *
- *   export default function MyScreen() {
- *     return (
- *       <View style={{ flex: 1 }}>
- *         <ClawBGWallpaper />
- *         <YourContent />
- *       </View>
- *     );
- *   }
+ * useClawBG — Animated HTML background hook + components
+ * Fetches active background from Supabase and renders it via WebView
  */
 
 import { useEffect, useState, useRef, useCallback } from 'react';
@@ -22,202 +8,130 @@ import { StyleSheet, View, ViewStyle } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { supabase } from '@/lib/supabase';
 
-// ── Types ──────────────────────────────────────────────────────────────────
-
-export interface ClawBGBackground {
-  id: string;
-  name: string;
-  type: 'preset' | 'generated' | 'custom';
-  html_content: string;
-  is_active: boolean;
-  updated_at: string;
-}
-
-interface UseClawBGOptions {
-  /** Poll for changes every N ms. Default: 30000 (30s). Set 0 to disable. */
-  pollInterval?: number;
-  /** Opacity of the background layer. Default: 1 */
-  opacity?: number;
-  /** Called when background changes */
-  onUpdate?: (bg: ClawBGBackground | null) => void;
-}
-
-// ── Default fallback HTML (pure black, no flicker on load) ──
+// ── Fallback: pure black, no flicker ──────────────────────────────────────
 const FALLBACK_HTML = `<!DOCTYPE html><html>
-<body style="margin:0;background:#000;width:100vw;height:100vh;overflow:hidden">
-</body></html>`;
+<head><meta name='viewport' content='width=device-width,initial-scale=1.0'></head>
+<body style='margin:0;background:#000;width:100vw;height:100vh;overflow:hidden'></body>
+</html>`;
 
-// ── Hook ───────────────────────────────────────────────────────────────────
-
-export function useClawBG(options: UseClawBGOptions = {}) {
-  const { pollInterval = 30000, onUpdate } = options;
-  const [background, setBackground] = useState<ClawBGBackground | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const lastUpdatedAt = useRef<string | null>(null);
+// ── Hook ──────────────────────────────────────────────────────────────────
+export function useClawBG() {
+  const [html, setHtml] = useState<string | null>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const userIdRef = useRef<string | null>(null);
 
-  const fetchActive = useCallback(async () => {
+  const fetchActive = useCallback(async (userId: string) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data, error: err } = await supabase
+      const { data } = await supabase
         .from('clawbg_backgrounds')
-        .select('id, name, type, html_content, is_active, updated_at')
-        .eq('user_id', user.id)
+        .select('html_content, updated_at')
+        .eq('user_id', userId)
         .eq('is_active', true)
         .eq('status', 'done')
         .order('updated_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
-      if (err) throw err;
-
-      // Only update if actually changed (avoid unnecessary re-renders)
-      if (data && data.updated_at !== lastUpdatedAt.current) {
-        lastUpdatedAt.current = data.updated_at;
-        setBackground(data as ClawBGBackground);
-        onUpdate?.(data as ClawBGBackground);
-      } else if (!data && background) {
-        setBackground(null);
-        onUpdate?.(null);
+      if (data?.html_content) {
+        setHtml(data.html_content);
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load background');
-    } finally {
-      setLoading(false);
+      console.log('[ClawBG] fetch error:', e);
     }
-  }, [onUpdate, background]);
+  }, []);
 
-  // Initial fetch
   useEffect(() => {
-    fetchActive();
-  }, [fetchActive]);
+    // Get user from existing session — don't wait for auth events
+    const init = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
 
-  // Realtime subscription — reacts instantly when agent changes bg
-  useEffect(() => {
-    const setupRealtime = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      const userId = session.user.id;
+      userIdRef.current = userId;
 
+      // Initial fetch
+      await fetchActive(userId);
+
+      // Realtime — update live when agent pushes new background
       channelRef.current = supabase
-        .channel('clawbg-changes')
+        .channel(`clawbg-${userId}`)
         .on(
           'postgres_changes',
           {
             event: '*',
             schema: 'public',
             table: 'clawbg_backgrounds',
-            filter: `user_id=eq.${user.id}`,
+            filter: `user_id=eq.${userId}`,
           },
           (payload) => {
-            // Background changed — refetch active
-            if (payload.new && (payload.new as ClawBGBackground).is_active) {
-              fetchActive();
-            } else if (payload.eventType === 'DELETE' || payload.old) {
-              fetchActive();
+            const row = payload.new as { is_active?: boolean; html_content?: string; status?: string };
+            if (row?.is_active && row?.html_content && row?.status === 'done') {
+              setHtml(row.html_content);
             }
           }
         )
         .subscribe();
     };
 
-    setupRealtime();
+    init();
+
+    // Also re-fetch whenever auth state changes (login)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        userIdRef.current = session.user.id;
+        fetchActive(session.user.id);
+      }
+    });
 
     return () => {
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-      }
+      subscription.unsubscribe();
+      if (channelRef.current) supabase.removeChannel(channelRef.current);
     };
   }, [fetchActive]);
 
-  // Optional polling fallback
-  useEffect(() => {
-    if (!pollInterval) return;
-    const timer = setInterval(fetchActive, pollInterval);
-    return () => clearInterval(timer);
-  }, [pollInterval, fetchActive]);
-
-  return { background, loading, error, refetch: fetchActive };
+  return html;
 }
 
-// ── Component ──────────────────────────────────────────────────────────────
-
+// ── Wallpaper component ───────────────────────────────────────────────────
 interface ClawBGWallpaperProps {
   style?: ViewStyle;
   opacity?: number;
-  /** Show loading state. Default: false (invisible until ready) */
-  showLoading?: boolean;
 }
 
-export function ClawBGWallpaper({
-  style,
-  opacity = 1,
-  showLoading = false,
-}: ClawBGWallpaperProps) {
-  const { background, loading } = useClawBG();
-  const html = background?.html_content || FALLBACK_HTML;
-
-  if (loading && !showLoading) {
-    return (
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: '#000' }, style]} />
-    );
-  }
+export function ClawBGWallpaper({ style, opacity = 1 }: ClawBGWallpaperProps) {
+  const html = useClawBG();
 
   return (
     <View
-      style={[
-        StyleSheet.absoluteFill,
-        { opacity, backgroundColor: '#000' },
-        style,
-      ]}
-      pointerEvents="none" // Clicks pass through to your UI
+      style={[StyleSheet.absoluteFill, { opacity, backgroundColor: '#000' }, style]}
+      pointerEvents="none"
     >
       <WebView
-        source={{ html }}
+        source={{ html: html || FALLBACK_HTML }}
         style={StyleSheet.absoluteFill}
         scrollEnabled={false}
         bounces={false}
-        showsVerticalScrollIndicator={false}
-        showsHorizontalScrollIndicator={false}
         overScrollMode="never"
-        androidLayerType="hardware"
-        // Prevent any navigation
-        onShouldStartLoadWithRequest={() => false}
-        originWhitelist={['*']}
-        // Performance
         javaScriptEnabled={true}
         domStorageEnabled={false}
         cacheEnabled={false}
-        mediaPlaybackRequiresUserAction={false}
+        showsVerticalScrollIndicator={false}
+        showsHorizontalScrollIndicator={false}
+        androidLayerType="hardware"
+        originWhitelist={['*']}
         allowsInlineMediaPlayback={true}
-        // Security
+        mediaPlaybackRequiresUserAction={false}
         allowFileAccess={false}
-        allowsBackForwardNavigationGestures={false}
       />
     </View>
   );
 }
 
-// ── Full-screen background screen wrapper ──────────────────────────────────
-
-/**
- * Wrap any screen with this to give it an animated agent background.
- *
- * Example:
- *   export default function HubScreen() {
- *     return (
- *       <ClawBGScreen style={{ flex: 1 }}>
- *         <Text>Content here</Text>
- *       </ClawBGScreen>
- *     );
- *   }
- */
+// ── Full screen wrapper ───────────────────────────────────────────────────
 export function ClawBGScreen({
   children,
   style,
-  backgroundOpacity = 0.85,
+  backgroundOpacity = 0.88,
 }: {
   children: React.ReactNode;
   style?: ViewStyle;
@@ -226,9 +140,7 @@ export function ClawBGScreen({
   return (
     <View style={[{ flex: 1, backgroundColor: '#000' }, style]}>
       <ClawBGWallpaper opacity={backgroundOpacity} />
-      <View style={{ flex: 1 }}>
-        {children}
-      </View>
+      <View style={{ flex: 1 }}>{children}</View>
     </View>
   );
 }
