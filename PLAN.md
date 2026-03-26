@@ -9,6 +9,9 @@
 - [x] Upgrade Brain with richer trait bars, memory bank sections, mood timeline, and evolution log
 - [x] Upgrade Logs with stats, color-coded action badges, expandable JSON payloads, and status icons
 - [x] Verify the updated Tweeter screens with type checking
+- [x] Integrate ClawImageGen with the toolkit image generation endpoint
+- [x] Expose image generation actions through the OpenClaw master agent endpoint
+- [x] Update OpenClaw agent docs and key defaults to include ImageGen access
 
 **Design**
 
@@ -23,7 +26,9 @@
 - [x] Feed Screen: stats banner, mood filter chips, upgraded tweet cards, realtime updates
 - [x] Brain Screen: trait bars, memory banks, mood timeline, evolution timeline
 - [x] Logs Screen: stats bar, action badges, expandable JSON detail views, status icons
+- [x] Settings Screen: one-key OpenClaw agent docs expanded with ImageGen actions
 
 **Notes**
 
 - [x] Resolve the duplicate index route issue if it affects navigation while validating the redesign
+- [x] Default new master keys to include ImageGen permissions so OpenClaw can generate images immediately

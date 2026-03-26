@@ -14,6 +14,61 @@ function json(data: unknown, status = 200) {
 
 const STYLES = ["photorealistic", "anime", "digital-art", "oil-painting", "sketch", "cinematic", "watercolor", "3d-render"];
 const SIZES = ["512x512", "768x768", "1024x1024", "1024x1792", "1792x1024"];
+const TOOLKIT_BASE_URL = (Deno.env.get("EXPO_PUBLIC_TOOLKIT_URL") ?? "https://toolkit.rork.com").replace(/\/$/, "");
+
+type ImageGenerateResponse = {
+  image: {
+    base64Data: string;
+    mimeType: string;
+  };
+  size: string;
+};
+
+function base64ToBytes(base64: string): Uint8Array {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+
+  return bytes;
+}
+
+function mimeTypeToExtension(mimeType: string): string {
+  if (mimeType.includes("png")) return "png";
+  if (mimeType.includes("webp")) return "webp";
+  if (mimeType.includes("jpeg") || mimeType.includes("jpg")) return "jpg";
+  return "bin";
+}
+
+async function generateToolkitImage(prompt: string, size: string): Promise<ImageGenerateResponse> {
+  const response = await fetch(`${TOOLKIT_BASE_URL}/images/generate/`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ prompt, size }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Toolkit image generation failed with status ${response.status}`);
+  }
+
+  const data = await response.json() as Partial<ImageGenerateResponse>;
+
+  if (!data.image?.base64Data || !data.image?.mimeType) {
+    throw new Error("Toolkit image generation returned an invalid payload");
+  }
+
+  return {
+    image: {
+      base64Data: data.image.base64Data,
+      mimeType: data.image.mimeType,
+    },
+    size: data.size ?? size,
+  };
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -111,22 +166,54 @@ Deno.serve(async (req) => {
       const start = Date.now();
 
       try {
-        // ── Rork's AI toolkit will handle the actual generation ──
-        // The function builds the enhanced prompt and stores the placeholder.
-        // Rork installs the real image generation provider.
-        // For now we store the config so the UI can trigger generation.
         const enhancedPrompt = buildPrompt(prompt, style, quality);
+        const finalPrompt = negativePrompt
+          ? `${enhancedPrompt}. Avoid the following elements: ${negativePrompt}`
+          : enhancedPrompt;
 
-        // Mark as ready-for-rork (Rork's toolkit picks this up)
+        console.log("[clawimagen-api] Starting toolkit image generation", JSON.stringify({
+          userId,
+          imageId: imageRow.id,
+          style,
+          size: sizeStr,
+          agentName,
+        }));
+
+        const toolkitResult = await generateToolkitImage(finalPrompt, sizeStr);
+        const mimeType = toolkitResult.image.mimeType || "image/png";
+        const extension = mimeTypeToExtension(mimeType);
+        const imageBytes = base64ToBytes(toolkitResult.image.base64Data);
+        const storagePath = `${userId}/${imageRow.id}.${extension}`;
+
+        const { error: uploadErr } = await sb.storage
+          .from("clawimagen")
+          .upload(storagePath, imageBytes, { contentType: mimeType, upsert: true });
+
+        if (uploadErr) throw uploadErr;
+
+        const signedUrlTtl = 60 * 60 * 24 * 365;
+        const { data: signedUrlData, error: signedUrlError } = await sb.storage
+          .from("clawimagen")
+          .createSignedUrl(storagePath, signedUrlTtl);
+
+        if (signedUrlError) throw signedUrlError;
+
         await sb.from("generated_images").update({
-          status: "pending",
+          status: "done",
+          model: "rork-toolkit-dall-e-3",
+          image_url: signedUrlData?.signedUrl ?? null,
+          thumbnail_url: signedUrlData?.signedUrl ?? null,
+          storage_path: storagePath,
           metadata: {
             enhanced_prompt: enhancedPrompt,
+            final_prompt: finalPrompt,
             negative_prompt: negativePrompt,
-            size: sizeStr,
+            size: toolkitResult.size ?? sizeStr,
             style,
             quality,
-            rork_ready: true,
+            provider: "rork-toolkit",
+            provider_model: "dall-e-3",
+            mime_type: mimeType,
           },
         }).eq("id", imageRow.id);
 
@@ -135,20 +222,21 @@ Deno.serve(async (req) => {
 
         await sb.from("notifications").insert({
           user_id: userId,
-          title: "🎨 Image Queued",
-          body: `"${prompt.slice(0, 60)}..." is being generated`,
+          title: "🎨 Image Ready",
+          body: `"${prompt.slice(0, 60)}..." has been generated`,
           type: "agent",
           source: "clawimagen",
         });
 
         result = {
           id: imageRow.id,
-          status: "pending",
+          status: "done",
           prompt,
           enhanced_prompt: enhancedPrompt,
+          image_url: signedUrlData?.signedUrl ?? null,
           style,
-          size: sizeStr,
-          message: "Image queued. Rork's AI toolkit will generate it. Poll get_image for updates.",
+          size: toolkitResult.size ?? sizeStr,
+          message: "Image generated successfully.",
         };
       } catch (genErr: unknown) {
         const errMsg = genErr instanceof Error ? genErr.message : "Generation failed";
@@ -273,7 +361,7 @@ Deno.serve(async (req) => {
       const [{ count: total }, { count: saved }, { count: generating }, { data: recent }] = await Promise.all([
         sb.from("generated_images").select("id", { count: "exact", head: true }).eq("user_id", userId),
         sb.from("generated_images").select("id", { count: "exact", head: true }).eq("user_id", userId).eq("is_saved", true),
-        sb.from("generated_images").select("id", { count: "exact", head: true }).eq("user_id", userId).eq("status", "generating"),
+        sb.from("generated_images").select("id", { count: "exact", head: true }).eq("user_id", userId).in("status", ["generating", "pending"]),
         sb.from("generated_images").select("style").eq("user_id", userId).eq("status", "done"),
       ]);
 

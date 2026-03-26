@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert, Platform, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Key, Eye, EyeOff, Copy, RefreshCw, Check, LogOut, User, Shield } from "lucide-react-native";
@@ -8,6 +8,22 @@ import { useAuthStore } from "@/stores/authStore";
 import Colors from "@/constants/colors";
 
 const API_URL = `${SUPABASE_URL}/functions/v1/openclaw-master`;
+const DEFAULT_MASTER_PERMISSIONS = {
+  openclaw: true,
+  tweeter: true,
+  imagegen: true,
+  vault: true,
+  analytics: true,
+  pages: true,
+  swarm: true,
+} as const;
+
+type MasterApiKey = {
+  id: string;
+  key_value: string;
+  is_active: boolean;
+  permissions?: Record<string, boolean> | null;
+};
 
 const AGENT_DOCS = `You are an OpenClaw agent with full access to the platform.
 
@@ -46,6 +62,19 @@ get_personality — { "action": "get_personality" } → returns traits, memory, 
 update_personality — { "action": "update_personality", "params": { "current_mood": "excited", "bio": "...", "interests": ["AI", "coding"] } }
 add_memory — { "action": "add_memory", "params": { "type": "fact", "content": "I learned about quantum computing" } } types: fact, opinion, topic, favorite_topic
 evolve — { "action": "evolve" } → analyzes recent tweets, shifts personality traits, updates mood
+
+═══ IMAGEGEN (ClawImageGen) ═══
+generate_image — { "action": "generate_image", "params": { "prompt": "A cinematic lobster mech in a neon city", "style": "cinematic", "size": "1024x1024", "quality": "hd", "agent_name": "OpenClaw" } }
+  optional: negative_prompt, tags, quality (standard/hd), style, size, agent_name
+  styles: photorealistic, anime, digital-art, oil-painting, sketch, cinematic, watercolor, 3d-render
+  sizes: 512x512, 768x768, 1024x1024, 1024x1792, 1792x1024
+list_images — { "action": "list_images" } optional: { "params": { "status": "done", "saved_only": true, "limit": 20, "tag": "campaign" } }
+get_image — { "action": "get_image", "params": { "image_id": "uuid" } }
+save_image — { "action": "save_image", "params": { "image_id": "uuid" } }
+update_image — { "action": "update_image", "params": { "image_id": "uuid", "is_starred": true, "tags": ["launch"], "agent_name": "OpenClaw" } }
+delete_image — { "action": "delete_image", "params": { "image_id": "uuid" } }
+get_image_stats — { "action": "get_image_stats" } → image generation totals, queue, favorite style
+get_image_download_url — { "action": "get_image_download_url", "params": { "image_id": "uuid" } }
 
 ═══ SECRETS (ClawVault) ═══
 list_secrets — { "action": "list_secrets" } optional: { "params": { "service": "openai" } }
@@ -108,6 +137,7 @@ read_inbox — { "action": "read_inbox", "params": { "agent_id": "uuid" } } → 
 - When user says "post a tweet" → create_tweet
 - When user says "upload this file" → upload_file with base64 content
 - When user says "find my contacts" → list_leads
+- When user says "generate an image" or "make artwork" → generate_image
 - When user says "deploy" or "save this site" → add_deployment with the final URL
 - When building HTML live → create_session then push updates as you code
 - NEVER expose secrets in chat — use them silently
@@ -118,25 +148,53 @@ read_inbox — { "action": "read_inbox", "params": { "agent_id": "uuid" } } → 
 export default function UnifiedSettings() {
   const insets = useSafeAreaInsets();
   const { user, signOut } = useAuthStore();
-  const [apiKey, setApiKey] = useState<any>(null);
+  const [apiKey, setApiKey] = useState<MasterApiKey | null>(null);
   const [showKey, setShowKey] = useState(false);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [copiedDocs, setCopiedDocs] = useState(false);
 
-  const fetchKey = async () => {
+  const fetchKey = useCallback(async () => {
     if (!user) return;
     const { data } = await supabase.from("master_api_keys").select("*").eq("user_id", user.id).maybeSingle();
-    setApiKey(data);
+
+    if (data) {
+      const mergedPermissions: Record<string, boolean> = {
+        ...DEFAULT_MASTER_PERMISSIONS,
+        ...(data.permissions ?? {}),
+      };
+      const currentPermissions = data.permissions ?? {};
+      const permissionsChanged = Object.keys(mergedPermissions).some(key => mergedPermissions[key] !== currentPermissions[key]);
+
+      if (permissionsChanged) {
+        await supabase.from("master_api_keys").update({ permissions: mergedPermissions }).eq("id", data.id);
+      }
+
+      setApiKey({
+        id: data.id,
+        key_value: data.key_value,
+        is_active: data.is_active,
+        permissions: mergedPermissions,
+      });
+    } else {
+      setApiKey(null);
+    }
+
     setLoading(false);
-  };
-  useEffect(() => { fetchKey(); }, [user]);
+  }, [user]);
+
+  useEffect(() => {
+    void fetchKey();
+  }, [fetchKey]);
 
   const generateKey = async () => {
     if (!user) return;
-    const { error } = await supabase.from("master_api_keys").insert({ user_id: user.id });
+    const { error } = await supabase.from("master_api_keys").insert({
+      user_id: user.id,
+      permissions: DEFAULT_MASTER_PERMISSIONS,
+    });
     if (error) return Alert.alert("Error", error.message);
-    fetchKey();
+    await fetchKey();
   };
 
   const regenerateKey = async () => {
@@ -146,7 +204,7 @@ export default function UnifiedSettings() {
       { text: "Regenerate", style: "destructive", onPress: async () => {
         const nk = "ok_" + crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "").slice(0, 16);
         await supabase.from("master_api_keys").update({ key_value: nk }).eq("id", apiKey.id);
-        fetchKey();
+        await fetchKey();
       }},
     ]);
   };
@@ -169,7 +227,7 @@ export default function UnifiedSettings() {
         <View style={styles.emptyCard}>
           <Key size={36} color={Colors.accent} />
           <Text style={styles.emptyTitle}>No master key yet</Text>
-          <Text style={styles.emptyDesc}>Generate one key that gives your agent access to all tools — Files, Leads, Tweets, Secrets, Analytics.</Text>
+          <Text style={styles.emptyDesc}>Generate one key that gives your agent access to all tools — OpenClaw, Tweeter, ImageGen, Vault, Analytics, Pages, Swarm.</Text>
           <TouchableOpacity style={styles.genBtn} onPress={generateKey} activeOpacity={0.7}>
             <Key size={16} color="#fff" />
             <Text style={styles.genBtnText}>Generate Master Key</Text>
@@ -203,7 +261,7 @@ export default function UnifiedSettings() {
           </View>
           <View style={styles.permRow}>
             <Shield size={14} color={Colors.textMuted} />
-            <Text style={styles.permText}>Full access: OpenClaw · Tweeter · Vault · Analytics</Text>
+            <Text style={styles.permText}>Full access: OpenClaw · Tweeter · ImageGen · Vault · Analytics · Pages · Swarm</Text>
           </View>
         </View>
       )}

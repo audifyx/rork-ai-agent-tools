@@ -359,6 +359,57 @@ Deno.serve(async (req) => {
     }
 
     // ════════════════════════════════════════
+    // IMAGEGEN — One-key proxy to clawimagen-api
+    // ════════════════════════════════════════
+
+    else if (["generate_image", "generate", "get_image", "list_images", "save_image", "update_image", "delete_image", "get_image_stats", "get_stats", "get_image_download_url", "get_download_url"].includes(action)) {
+      if (!perms.imagegen) return json({ success: false, error: "ImageGen access denied" }, 403);
+
+      const imageActionMap: Record<string, string> = {
+        generate_image: "generate",
+        generate: "generate",
+        get_image: "get_image",
+        list_images: "list_images",
+        save_image: "save_image",
+        update_image: "update_image",
+        delete_image: "delete_image",
+        get_image_stats: "get_stats",
+        get_stats: "get_stats",
+        get_image_download_url: "get_download_url",
+        get_download_url: "get_download_url",
+      };
+
+      const proxiedAction = imageActionMap[action] ?? action;
+      const proxiedParams: Record<string, unknown> = { ...(params ?? {}) };
+
+      if (proxiedAction === "generate" && proxiedParams.agent_name === undefined) {
+        proxiedParams.agent_name = "OpenClaw";
+      }
+
+      console.log("[openclaw-master] Proxying image action", JSON.stringify({
+        userId,
+        action,
+        proxiedAction,
+      }));
+
+      const imageUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/clawimagen-api`;
+      const proxyResp = await fetch(imageUrl, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ action: proxiedAction, params: proxiedParams }),
+      });
+      const proxyData = await proxyResp.json();
+      const resp2 = proxyData.success === false
+        ? proxyData
+        : { success: true, data: proxyData.data ?? proxyData };
+      await logWebhook(proxyResp.status, resp2);
+      return json(resp2, proxyResp.status);
+    }
+
+    // ════════════════════════════════════════
     // PAGES — Deployments & Live Preview
     // ════════════════════════════════════════
 
