@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import {
-  StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert, Platform,
+  StyleSheet, Text, View, ScrollView, TouchableOpacity, Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Clipboard from "expo-clipboard";
 import {
-  Copy, Check, ExternalLink, Shield, Bot,
+  Copy, Check, ExternalLink, Shield,
 } from "lucide-react-native";
 import { SUPABASE_URL } from "@/lib/supabase";
 import Colors from "@/constants/colors";
@@ -105,6 +105,45 @@ All params optional.
 Manually log an API call.
 { "action": "log_webhook", "params": { "endpoint": "/my-hook", "method": "POST", "status_code": 200, "request_body": { "key": "value" }, "response_body": { "result": "ok" } } }
 Optional: endpoint, method, status_code, request_body, response_body
+
+---
+
+## IMAGE GENERATION (ClawImageGen)
+
+Generate images using the Rork Toolkit DALL·E 3 endpoint.
+Endpoint: POST https://toolkit.rork.com/images/generate/
+No auth required — uses project-level toolkit access.
+
+### generate_image [write]
+Generate an image from a text prompt via DALL·E 3.
+curl -X POST https://toolkit.rork.com/images/generate/ \\
+  -H "Content-Type: application/json" \\
+  -d '{ "prompt": "A cyberpunk city at night", "size": "1024x1024" }'
+
+Request body:
+{ "prompt": "description of the image", "size": "1024x1024" }
+Required: prompt
+Optional: size ("1024x1024", "1024x1792", "1792x1024") — default "1024x1024"
+
+Response:
+{ "image": { "base64Data": "...", "mimeType": "image/png" }, "size": "1024x1024" }
+
+The response contains the generated image as base64. To display it:
+data:image/png;base64,{base64Data}
+
+To save to OpenClaw storage, upload via upload_file with the base64 content.
+
+### edit_image [write]
+Edit an existing image using Gemini via the Rork Toolkit.
+Endpoint: POST https://toolkit.rork.com/images/edit/
+
+Request body:
+{ "prompt": "make the sky red", "images": [{ "type": "image", "image": "base64..." }], "aspectRatio": "16:9" }
+Required: prompt, images (array of base64 images)
+Optional: aspectRatio ("1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9")
+
+Response:
+{ "image": { "base64Data": "...", "mimeType": "image/png", "aspectRatio": "16:9" } }
 
 ---
 

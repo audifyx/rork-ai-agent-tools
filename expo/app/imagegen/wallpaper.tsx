@@ -23,10 +23,13 @@ const WALLPAPER_STYLES = [
   { id: "minimal",    label: "Minimal",    emoji: "◻️" },
 ];
 
+const TOOLKIT_URL = "https://toolkit.rork.com/images/generate/";
+
 const MODELS = [
-  { key: "flux-schnell", label: "FLUX Schnell", emoji: "⚡" },
-  { key: "flux-dev",     label: "FLUX Dev",     emoji: "🎨" },
-  { key: "playground",   label: "Playground",   emoji: "🎡" },
+  { key: "dalle3",       label: "DALL·E 3",     emoji: "🧠", isToolkit: true },
+  { key: "flux-schnell", label: "FLUX Schnell", emoji: "⚡", isToolkit: false },
+  { key: "flux-dev",     label: "FLUX Dev",     emoji: "🎨", isToolkit: false },
+  { key: "playground",   label: "Playground",   emoji: "🎡", isToolkit: false },
 ];
 
 const QUICK_PROMPTS = [
@@ -46,12 +49,12 @@ function timeAgo(d: string) {
 }
 
 export default function WallpaperScreen() {
-  const insets = useSafeAreaInsets();
+  const _insets = useSafeAreaInsets();
   const { user } = useAuthStore();
 
   const [prompt, setPrompt]   = useState("");
   const [style, setStyle]     = useState("abstract");
-  const [model, setModel]     = useState("flux-schnell");
+  const [model, setModel]     = useState("dalle3");
   const [generating, setGen]  = useState(false);
   const [wallpapers, setWps]  = useState<any[]>([]);
   const [activeWp, setActiveWp] = useState<any>(null);
@@ -66,7 +69,7 @@ export default function WallpaperScreen() {
       .then(({ data }) => setApiKey(data?.key_value ?? null));
   }, [user]);
 
-  const fetch = useCallback(async () => {
+  const fetchWallpapers = useCallback(async () => {
     if (!user) return;
     const { data } = await supabase.from("ai_wallpapers")
       .select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(30);
@@ -75,26 +78,26 @@ export default function WallpaperScreen() {
     if (active) setActiveWp(active);
   }, [user]);
 
-  useEffect(() => { fetch(); }, [fetch]);
+  useEffect(() => { void fetchWallpapers(); }, [fetchWallpapers]);
 
   useEffect(() => {
     if (!user) return;
     const ch = supabase.channel("wallpapers-live")
-      .on("postgres_changes", { event: "*", schema: "public", table: "ai_wallpapers", filter: `user_id=eq.${user.id}` }, fetch)
+      .on("postgres_changes", { event: "*", schema: "public", table: "ai_wallpapers", filter: `user_id=eq.${user.id}` }, () => void fetchWallpapers())
       .subscribe();
-    return () => { supabase.removeChannel(ch); };
-  }, [user, fetch]);
+    return () => { void supabase.removeChannel(ch); };
+  }, [user, fetchWallpapers]);
 
   useEffect(() => {
     const hasGen = wallpapers.some(w => w.status === "generating");
-    if (hasGen && !pollRef.current) pollRef.current = setInterval(fetch, 3500);
+    if (hasGen && !pollRef.current) pollRef.current = setInterval(fetchWallpapers, 3500);
     else if (!hasGen && pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
     return () => { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } };
-  }, [wallpapers, fetch]);
+  }, [wallpapers, fetchWallpapers]);
 
-  const call = async (action: string, params: any) => {
+  const callApi = async (action: string, params: any) => {
     if (!apiKey) throw new Error("No API key");
-    const r = await fetch(`${SUPABASE_URL}/functions/v1/clawimagen-api`, {
+    const r = await globalThis.fetch(`${SUPABASE_URL}/functions/v1/clawimagen-api`, {
       method: "POST",
       headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({ action, params }),
@@ -104,21 +107,55 @@ export default function WallpaperScreen() {
     return d.data;
   };
 
+  const generateWithToolkit = async () => {
+    console.log("[wallpaper] generating with DALL·E 3 toolkit");
+    const fullPrompt = `${style} wallpaper for mobile phone: ${prompt.trim()}`;
+    const resp = await globalThis.fetch(TOOLKIT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: fullPrompt, size: "1024x1792" }),
+    });
+    if (!resp.ok) {
+      const errText = await resp.text().catch(() => "Unknown error");
+      throw new Error(`Toolkit error: ${errText}`);
+    }
+    const result = await resp.json();
+    console.log("[wallpaper] toolkit result received");
+    if (apiKey) {
+      try {
+        await callApi("save_toolkit_wallpaper", {
+          prompt: prompt.trim(),
+          style,
+          model: "dalle3",
+          base64: result.image.base64Data,
+          mime_type: result.image.mimeType,
+        });
+      } catch (saveErr) {
+        console.log("[wallpaper] save to gallery failed", saveErr);
+      }
+    }
+  };
+
   const generate = async () => {
     if (!prompt.trim()) { Alert.alert("Enter a prompt"); return; }
     setGen(true);
     try {
-      await call("generate_wallpaper", { prompt: prompt.trim(), style, model });
-      await fetch();
+      const selectedModel = MODELS.find(m => m.key === model);
+      if (selectedModel?.isToolkit) {
+        await generateWithToolkit();
+      } else {
+        await callApi("generate_wallpaper", { prompt: prompt.trim(), style, model });
+      }
+      await fetchWallpapers();
     } catch (e: any) { Alert.alert("Error", e.message); }
     finally { setGen(false); }
   };
 
   const applyWallpaper = async (wp: any) => {
     try {
-      await call("set_wallpaper", { wallpaper_id: wp.id });
+      await callApi("set_wallpaper", { wallpaper_id: wp.id });
       setActiveWp(wp);
-      await fetch();
+      await fetchWallpapers();
       Alert.alert("✅ Wallpaper Applied", "Your home screen background has been updated.");
     } catch (e: any) { Alert.alert("Error", e.message); }
   };
@@ -127,9 +164,9 @@ export default function WallpaperScreen() {
     Alert.alert("Delete Wallpaper?", "", [
       { text: "Cancel", style: "cancel" },
       { text: "Delete", style: "destructive", onPress: async () => {
-        await call("delete_wallpaper", { wallpaper_id: wp.id });
+        await callApi("delete_wallpaper", { wallpaper_id: wp.id });
         if (activeWp?.id === wp.id) setActiveWp(null);
-        fetch();
+        void fetchWallpapers();
       }},
     ]);
   };

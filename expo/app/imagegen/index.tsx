@@ -5,7 +5,7 @@ import {
   TouchableOpacity, View, Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Sparkles, Send, Download, Star, Trash2, ChevronDown, ChevronUp, Check, ZoomIn, Cpu, Wallpaper } from "lucide-react-native";
+import { Sparkles, Send, Download, Star, Trash2, ChevronDown, ChevronUp, Check } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { supabase, SUPABASE_URL } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/authStore";
@@ -15,12 +15,15 @@ import { LobsterWatermark } from "@/components/tweeter/LobsterWatermark";
 const { width: W } = Dimensions.get("window");
 const THUMB = (W - 56) / 3;
 
+const TOOLKIT_URL = "https://toolkit.rork.com/images/generate/";
+
 const MODELS = [
-  { key: "flux-schnell",  label: "FLUX Schnell", tag: "Fast · Free",    emoji: "⚡" },
-  { key: "flux-dev",      label: "FLUX Dev",     tag: "Quality · Free", emoji: "🎨" },
-  { key: "flux-pro",      label: "FLUX Pro",     tag: "Best · Paid",    emoji: "💎" },
-  { key: "sdxl",          label: "SDXL",         tag: "Classic · Free", emoji: "🖼️" },
-  { key: "playground",    label: "Playground",   tag: "Aesthetic · Free",emoji: "🎡" },
+  { key: "dalle3",        label: "DALL·E 3",     tag: "Best · Toolkit", emoji: "🧠", isToolkit: true },
+  { key: "flux-schnell",  label: "FLUX Schnell", tag: "Fast · Free",    emoji: "⚡", isToolkit: false },
+  { key: "flux-dev",      label: "FLUX Dev",     tag: "Quality · Free", emoji: "🎨", isToolkit: false },
+  { key: "flux-pro",      label: "FLUX Pro",     tag: "Best · Paid",    emoji: "💎", isToolkit: false },
+  { key: "sdxl",          label: "SDXL",         tag: "Classic · Free", emoji: "🖼️", isToolkit: false },
+  { key: "playground",    label: "Playground",   tag: "Aesthetic · Free",emoji: "🎡", isToolkit: false },
 ];
 
 const STYLES = [
@@ -66,7 +69,7 @@ function ago(d: string) {
 }
 
 export default function ImageGenScreen() {
-  const insets = useSafeAreaInsets();
+  const _insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuthStore();
 
@@ -75,7 +78,7 @@ export default function ImageGenScreen() {
   const [style, setStyle]           = useState("photorealistic");
   const [size, setSize]             = useState("1024x1024");
   const [quality, setQuality]       = useState<"standard"|"hd">("standard");
-  const [model, setModel]           = useState("flux-schnell");
+  const [model, setModel]           = useState("dalle3");
   const [showAdv, setShowAdv]       = useState(false);
   const [showModelPicker, setShowModelPicker] = useState(false);
 
@@ -101,16 +104,17 @@ export default function ImageGenScreen() {
       .eq("user_id", user.id).order("created_at", { ascending: false }).limit(50);
     setImages(data ?? []);
     if (active) { const u = data?.find((i: any) => i.id === active.id); if (u) setActive(u); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, active?.id]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => { void fetchData(); }, [fetchData]);
 
   useEffect(() => {
     if (!user) return;
     const ch = supabase.channel("imagegen-live")
       .on("postgres_changes", { event: "*", schema: "public", table: "generated_images", filter: `user_id=eq.${user.id}` }, fetchData)
       .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    return () => { void supabase.removeChannel(ch); };
   }, [user, fetchData]);
 
   useEffect(() => {
@@ -132,12 +136,69 @@ export default function ImageGenScreen() {
     return d.data;
   };
 
+  const generateWithToolkit = async (): Promise<any> => {
+    console.log("[imagegen] generating with DALL·E 3 toolkit");
+    const fullPrompt = `${style} style: ${prompt.trim()}${negPrompt ? `. Avoid: ${negPrompt}` : ""}`;
+    const resp = await fetch(TOOLKIT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: fullPrompt, size }),
+    });
+    if (!resp.ok) {
+      const errText = await resp.text().catch(() => "Unknown error");
+      throw new Error(`Toolkit error: ${errText}`);
+    }
+    const result = await resp.json();
+    console.log("[imagegen] toolkit result received, size:", result.size);
+    const base64Uri = `data:${result.image.mimeType};base64,${result.image.base64Data}`;
+
+    if (user && apiKey) {
+      try {
+        const saveResp = await call("save_toolkit_image", {
+          prompt: prompt.trim(),
+          style,
+          size,
+          quality,
+          model: "dalle3",
+          base64: result.image.base64Data,
+          mime_type: result.image.mimeType,
+          agent_name: "Manual",
+        });
+        console.log("[imagegen] saved toolkit image to gallery", saveResp?.id);
+        return saveResp;
+      } catch (saveErr) {
+        console.log("[imagegen] save to gallery failed, showing inline", saveErr);
+      }
+    }
+    return {
+      id: `toolkit-${Date.now()}`,
+      prompt: prompt.trim(),
+      image_url: base64Uri,
+      style,
+      width: parseInt(size.split("x")[0]),
+      height: parseInt(size.split("x")[1]),
+      status: "done",
+      is_saved: false,
+      is_starred: false,
+      openrouter_model: "dall-e-3",
+      agent_name: "Manual",
+      created_at: new Date().toISOString(),
+    };
+  };
+
   const generate = async () => {
     if (!prompt.trim()) { Alert.alert("Prompt required"); return; }
     setGenerating(true);
     try {
-      const data = await call("generate", { prompt: prompt.trim(), negative_prompt: negPrompt || undefined, style, size, quality, model, agent_name: "Manual" });
-      await fetchData();
+      const selectedModel = MODELS.find(m => m.key === model);
+      let data: any;
+      if (selectedModel?.isToolkit) {
+        data = await generateWithToolkit();
+        await fetchData();
+      } else {
+        data = await call("generate", { prompt: prompt.trim(), negative_prompt: negPrompt || undefined, style, size, quality, model, agent_name: "Manual" });
+        await fetchData();
+      }
       setActive(data);
       setShowGallery(false);
       scrollRef.current?.scrollTo({ y: 0, animated: true });
@@ -195,13 +256,13 @@ export default function ImageGenScreen() {
             {isDone(active) && (
               <View style={st.actRow}>
                 {!active.is_saved
-                  ? <TouchableOpacity style={[st.act, st.actSave]} onPress={async () => { await call("save_image", { image_id: active.id }); fetchData(); }}><Download size={14} color={Colors.success} /><Text style={[st.actTxt, { color: Colors.success }]}>Save</Text></TouchableOpacity>
+                  ? <TouchableOpacity style={[st.act, st.actSave]} onPress={async () => { await call("save_image", { image_id: active.id }); void fetchData(); }}><Download size={14} color={Colors.success} /><Text style={[st.actTxt, { color: Colors.success }]}>Save</Text></TouchableOpacity>
                   : <View style={[st.act, st.actSaved]}><Check size={14} color={Colors.success} /><Text style={[st.actTxt, { color: Colors.success }]}>Saved</Text></View>
                 }
-                <TouchableOpacity style={[st.act, st.actStar]} onPress={async () => { await call("update_image", { image_id: active.id, is_starred: !active.is_starred }); fetchData(); }}>
+                <TouchableOpacity style={[st.act, st.actStar]} onPress={async () => { await call("update_image", { image_id: active.id, is_starred: !active.is_starred }); void fetchData(); }}>
                   <Star size={14} color={active.is_starred ? Colors.warning : Colors.textMuted} fill={active.is_starred ? Colors.warning : "none"} />
                 </TouchableOpacity>
-                <TouchableOpacity style={[st.act, st.actDel]} onPress={() => Alert.alert("Delete?", "", [{ text: "Cancel", style: "cancel" }, { text: "Delete", style: "destructive", onPress: async () => { await call("delete_image", { image_id: active.id }); setActive(null); fetchData(); } }])}>
+                <TouchableOpacity style={[st.act, st.actDel]} onPress={() => Alert.alert("Delete?", "", [{ text: "Cancel", style: "cancel" }, { text: "Delete", style: "destructive", onPress: async () => { await call("delete_image", { image_id: active.id }); setActive(null); void fetchData(); } }])}>
                   <Trash2 size={14} color={Colors.danger} />
                 </TouchableOpacity>
               </View>
