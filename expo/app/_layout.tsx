@@ -68,7 +68,7 @@ const screenHeader = (title: string, tintColor: string) => ({
   headerShown: true,
   headerTitle: title,
   headerBackTitle: "Home",
-  headerStyle: { backgroundColor: "#000" },
+  headerStyle: { backgroundColor: 'rgba(0,0,0,0.7)' },
   headerTintColor: tintColor,
   headerTitleStyle: { fontSize: 16, fontWeight: "700" as const },
   headerShadowVisible: false,
@@ -79,13 +79,12 @@ export default function RootLayout() {
     <QueryClientProvider client={queryClient}>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <AuthGate>
-          <ClawBGWallpaper opacity={0.88} />
           <Stack
             screenOptions={{
               headerStyle: { backgroundColor: Colors.background },
               headerTintColor: Colors.text,
               headerShown: false,
-              contentStyle: { backgroundColor: Colors.background },
+              contentStyle: { backgroundColor: 'transparent' },
               animation: "slide_from_right",
             }}
           >
@@ -106,6 +105,7 @@ export default function RootLayout() {
             <Stack.Screen name="clawbg"    options={screenHeader("🎨 ClawBG",         Colors.accent)} />
 
           </Stack>
+          <ClawBGWallpaper opacity={0.88} />
         </AuthGate>
       </GestureHandlerRootView>
     </QueryClientProvider>

@@ -103,12 +103,16 @@ export function ClawBGWallpaper({ style, opacity = 1 }: ClawBGWallpaperProps) {
 
   return (
     <View
-      style={[StyleSheet.absoluteFill, { opacity, backgroundColor: '#000' }, style]}
+      style={[StyleSheet.absoluteFill, { opacity }, style]}
       pointerEvents="none"
     >
       <WebView
         source={{ html: html || FALLBACK_HTML }}
-        style={StyleSheet.absoluteFill}
+        style={[StyleSheet.absoluteFill, { backgroundColor: 'transparent' }]}
+        backgroundColor="transparent"
+        applicationNameForUserAgent="ClawBG/1.0"
+        mixedContentMode="always"
+        allowsInlineMediaPlayback
         scrollEnabled={false}
         bounces={false}
         overScrollMode="never"
