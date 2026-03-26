@@ -15,27 +15,9 @@ export default function SwarmLayout() {
         tabBarItemStyle: styles.tabItem,
       }}
     >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: "Agents",
-          tabBarIcon: ({ color, size }) => <Bot size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="chat"
-        options={{
-          title: "Chat",
-          tabBarIcon: ({ color, size }) => <MessageSquare size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="logs"
-        options={{
-          title: "Logs",
-          tabBarIcon: ({ color, size }) => <Activity size={size} color={color} />,
-        }}
-      />
+      <Tabs.Screen name="index" options={{ title: "Agents", tabBarIcon: ({ color, size }) => <Bot size={size} color={color} /> }} />
+      <Tabs.Screen name="chat"  options={{ title: "Chat",   tabBarIcon: ({ color, size }) => <MessageSquare size={size} color={color} /> }} />
+      <Tabs.Screen name="logs"  options={{ title: "Logs",   tabBarIcon: ({ color, size }) => <Activity size={size} color={color} /> }} />
     </Tabs>
   );
 }
@@ -45,8 +27,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#050505",
     borderTopColor: Colors.border,
     borderTopWidth: 1,
-    height: Platform.OS === "ios" ? 88 : 68,
-    paddingBottom: Platform.OS === "ios" ? 28 : 8,
+    height: Platform.OS === "ios" ? 72 : 62,
+    paddingBottom: Platform.OS === "ios" ? 12 : 6,
     paddingTop: 8,
   },
   tabLabel: { fontSize: 9, fontWeight: "600", marginTop: 2 },
