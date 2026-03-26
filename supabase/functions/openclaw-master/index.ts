@@ -537,17 +537,43 @@ Deno.serve(async (req) => {
     }
 
     // ════════════════════════════════════════
+    // CLAWBG — Animated HTML App Background
+    // ════════════════════════════════════════
+
+    else if (action === "set_bg_preset" || action === "set_bg_custom" || action === "get_bg_active" || action === "list_bgs" || action === "activate_bg" || action === "delete_bg" || action === "list_bg_presets") {
+      if (!perms.clawbg) return json({ success: false, error: "ClawBG access denied. Enable clawbg in your master key permissions." }, 403);
+      // Map shorthand actions to clawbg-api actions
+      const bgActionMap: Record<string, string> = {
+        "set_bg_preset": "set_preset",
+        "set_bg_custom": "set_custom",
+        "get_bg_active": "get_active",
+        "list_bgs": "list",
+        "activate_bg": "activate",
+        "delete_bg": "delete",
+        "list_bg_presets": "list_presets",
+      };
+      const bgUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/clawbg-api`;
+      const bgResp = await fetch(bgUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
+        body: JSON.stringify({ action: bgActionMap[action], params }),
+      });
+      const bgData = await bgResp.json();
+      await log("clawbg", `ClawBG: ${action}`, params || {});
+      result = bgData.data ?? bgData;
+    }
+
     // SYSTEM
     // ════════════════════════════════════════
 
     else if (action === "whoami") {
       const { data: p } = await sb.from("agent_personality").select("agent_name, current_mood, total_tweets").eq("user_id", userId).maybeSingle();
       const { count: swarmCount } = await sb.from("swarm_agents").select("id", { count: "exact", head: true }).eq("user_id", userId).eq("status", "active");
-      result = { user_id: userId, api_type: "openclaw-master", key_prefix: "ok_", permissions: perms, agent: p || null, active_sub_agents: swarmCount ?? 0 };
+      result = { user_id: userId, api_type: "openclaw-master", key_prefix: "ok_", permissions: perms, agent: p || null, active_sub_agents: swarmCount ?? 0, tools: ["openclaw","imagegen","swarm","tweeter","vault","pages","analytics","clawbg"] };
     }
     else {
       await logWebhook(400, { error: `Unknown action: ${action}` });
-      return json({ success: false, error: `Unknown action: ${action}. See docs for available actions.` }, 400);
+      return json({ success: false, error: `Unknown action: ${action}. Tools: openclaw, imagegen, swarm, tweeter, vault, pages, analytics, clawbg. See docs.` }, 400);
     }
 
     const resp = { success: true, data: result };

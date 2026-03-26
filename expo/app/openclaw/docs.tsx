@@ -208,6 +208,41 @@ Required: session_id
 
 ---
 
+## APP BACKGROUND (ClawBG)
+
+Control the app's animated HTML canvas background wallpaper in real time.
+Endpoint: POST ${SUPABASE_URL}/functions/v1/clawbg-api
+Auth: Authorization: Bearer ok_YOUR_MASTER_KEY (requires clawbg permission)
+
+### set_preset
+Apply a built-in animated background instantly.
+{ "action": "set_preset", "params": { "preset": "matrix" } }
+Available presets: matrix, particles, aurora, mesh-grid, fire, starfield, pulse, noise
+
+### set_custom
+Push any self-contained HTML canvas animation as the app background (max 100KB).
+{ "action": "set_custom", "params": { "html": "<!DOCTYPE html>...", "name": "My BG" } }
+
+### get_active
+Get the currently active background.
+{ "action": "get_active" }
+
+### list
+List all saved backgrounds.
+{ "action": "list" }
+
+### activate
+Switch to a saved background by ID.
+{ "action": "activate", "params": { "bg_id": "uuid" } }
+
+### list_presets
+See all built-in preset options.
+{ "action": "list_presets" }
+
+NOTE: App updates background LIVE via Realtime — no reload needed.
+
+---
+
 ## Agent System Prompt (paste into your AI agent)
 
 You have access to a database command center via the OpenClaw API.
@@ -218,6 +253,11 @@ Auth: Bearer oc_YOUR_API_KEY
 Body: { "action": "action_name", "params": { ... } }
 
 Available actions: list_files, read_file, upload_file, delete_file, list_leads, create_lead, update_lead, delete_lead, whoami, get_agent_config, update_agent_config, log_webhook
+
+You also have access to ClawBG for controlling the app background in real time:
+ClawBG URL: ${SUPABASE_URL}/functions/v1/clawbg-api
+ClawBG actions: set_preset, set_custom, get_active, list, activate, delete, list_presets
+Example: POST clawbg-api with { "action": "set_preset", "params": { "preset": "matrix" } }
 
 For every action, send a POST request with JSON body containing "action" and optional "params".
 Responses always return { "success": true/false, "data": ... } or { "success": false, "error": "..." }.`;
