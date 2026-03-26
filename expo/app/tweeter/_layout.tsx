@@ -15,48 +15,12 @@ export default function TweeterLayout() {
         tabBarItemStyle: styles.tabItem,
       }}
     >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: "Feed",
-          tabBarIcon: ({ color, size }) => <Flame size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="personality"
-        options={{
-          title: "Brain",
-          tabBarIcon: ({ color, size }) => <Brain size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="logs"
-        options={{
-          title: "Logs",
-          tabBarIcon: ({ color, size }) => <Activity size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="analytics"
-        options={{
-          title: "Analytics",
-          tabBarIcon: ({ color, size }) => <BarChart3 size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="calendar"
-        options={{
-          title: "Calendar",
-          tabBarIcon: ({ color, size }) => <Calendar size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="tuner"
-        options={{
-          title: "Tuner",
-          tabBarIcon: ({ color, size }) => <Sliders size={size} color={color} />,
-        }}
-      />
+      <Tabs.Screen name="index"       options={{ title: "Feed",      tabBarIcon: ({ color, size }) => <Flame size={size} color={color} /> }} />
+      <Tabs.Screen name="personality" options={{ title: "Brain",     tabBarIcon: ({ color, size }) => <Brain size={size} color={color} /> }} />
+      <Tabs.Screen name="logs"        options={{ title: "Logs",      tabBarIcon: ({ color, size }) => <Activity size={size} color={color} /> }} />
+      <Tabs.Screen name="analytics"   options={{ title: "Analytics", tabBarIcon: ({ color, size }) => <BarChart3 size={size} color={color} /> }} />
+      <Tabs.Screen name="calendar"    options={{ title: "Calendar",  tabBarIcon: ({ color, size }) => <Calendar size={size} color={color} /> }} />
+      <Tabs.Screen name="tuner"       options={{ title: "Tuner",     tabBarIcon: ({ color, size }) => <Sliders size={size} color={color} /> }} />
     </Tabs>
   );
 }
@@ -66,8 +30,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#050505",
     borderTopColor: "rgba(220,38,38,0.15)",
     borderTopWidth: 1,
-    height: Platform.OS === "ios" ? 88 : 68,
-    paddingBottom: Platform.OS === "ios" ? 28 : 8,
+    height: Platform.OS === "ios" ? 72 : 62,
+    paddingBottom: Platform.OS === "ios" ? 12 : 6,
     paddingTop: 8,
   },
   tabLabel: { fontSize: 9, fontWeight: "700", marginTop: 2, letterSpacing: 0.3 },
