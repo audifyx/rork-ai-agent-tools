@@ -7,7 +7,7 @@ import { useRouter } from "expo-router";
 import { BlurView } from "expo-blur";
 import {
   Bot, FolderOpen, BarChart3, Mail, Globe, Clock, Lock,
-  ExternalLink, Zap, LogOut, ChevronRight,
+  ExternalLink, Zap, LogOut, ChevronRight, Sparkles,
 } from "lucide-react-native";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/authStore";
