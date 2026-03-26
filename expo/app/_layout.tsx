@@ -10,6 +10,20 @@ void SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
 
+// All top-level routes that are valid destinations for logged-in users
+const AUTHENTICATED_ROUTES = new Set([
+  "(tabs)",
+  "openclaw",
+  "tweeter",
+  "vault",
+  "analytics",
+  "pages",
+  "swarm",
+  "imagegen",
+  "settings",
+  "modal",
+]);
+
 function AuthGate({ children }: { children: React.ReactNode }) {
   const { session, loading, initialize } = useAuthStore();
   const segments = useSegments();
@@ -24,17 +38,19 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 
     void SplashScreen.hideAsync();
 
-    const inAuthGroup  = segments[0] === "(auth)";
-    const inTabsGroup  = segments[0] === "(tabs)";
-    const onIndex      = segments.length === 0 || segments[0] === "index";
+    const topSegment  = segments[0] as string | undefined;
+    const inAuthGroup = topSegment === "(auth)";
+    const onIndex     = !topSegment || topSegment === "index";
+    const inAppRoute  = topSegment ? AUTHENTICATED_ROUTES.has(topSegment) : false;
 
     if (session) {
-      // Logged in — always go to hub unless already there
-      if (!inTabsGroup) {
+      // Logged in: only redirect if on the welcome screen or auth screens
+      if (onIndex || inAuthGroup) {
         router.replace("/(tabs)/hub");
       }
+      // If already on a valid app route — leave them there
     } else {
-      // Not logged in — go to login unless on welcome or auth screens
+      // Not logged in: send to login unless on welcome or already in auth
       if (!inAuthGroup && !onIndex) {
         router.replace("/(auth)/login");
       }
@@ -79,6 +95,8 @@ export default function RootLayout() {
             <Stack.Screen name="swarm"     options={screenHeader("🐝 ClawSwarm",     "#F59E0B")} />
             <Stack.Screen name="imagegen"  options={screenHeader("🎨 ClawImageGen",  "#A855F7")} />
             <Stack.Screen name="settings"  options={screenHeader("⚙️ Settings",      Colors.textSecondary)} />
+            <Stack.Screen name="activity"  options={screenHeader("⚡ Activity",      Colors.accent)} />
+            <Stack.Screen name="notifications" options={screenHeader("🔔 Alerts",    Colors.warning)} />
           </Stack>
         </AuthGate>
       </GestureHandlerRootView>
