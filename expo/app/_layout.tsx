@@ -5,6 +5,7 @@ import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useAuthStore } from "@/stores/authStore";
 import Colors from "@/constants/colors";
+import { ClawBGWallpaper } from "@/hooks/useClawBG";
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -77,6 +78,7 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <GestureHandlerRootView style={{ flex: 1 }}>
+        <ClawBGWallpaper opacity={0.9} />
         <AuthGate>
           <Stack
             screenOptions={{
@@ -101,6 +103,7 @@ export default function RootLayout() {
             <Stack.Screen name="pages"     options={screenHeader("🌐 ClawPages",     Colors.info)} />
             <Stack.Screen name="swarm"     options={screenHeader("🐝 ClawSwarm",     "#F59E0B")} />
             <Stack.Screen name="imagegen"  options={screenHeader("🎨 ClawImageGen",  "#A855F7")} />
+            <Stack.Screen name="clawbg"    options={screenHeader("🎨 ClawBG",         Colors.accent)} />
 
           </Stack>
         </AuthGate>
