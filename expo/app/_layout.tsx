@@ -5,7 +5,6 @@ import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useAuthStore } from "@/stores/authStore";
 import Colors from "@/constants/colors";
-import { ClawBGWallpaper } from "@/hooks/useClawBG";
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -68,7 +67,7 @@ const screenHeader = (title: string, tintColor: string) => ({
   headerShown: true,
   headerTitle: title,
   headerBackTitle: "Home",
-  headerStyle: { backgroundColor: 'rgba(0,0,0,0.7)' },
+  headerStyle: { backgroundColor: "#000" },
   headerTintColor: tintColor,
   headerTitleStyle: { fontSize: 16, fontWeight: "700" as const },
   headerShadowVisible: false,
@@ -84,7 +83,7 @@ export default function RootLayout() {
               headerStyle: { backgroundColor: Colors.background },
               headerTintColor: Colors.text,
               headerShown: false,
-              contentStyle: { backgroundColor: 'transparent' },
+              contentStyle: { backgroundColor: Colors.background },
               animation: "slide_from_right",
             }}
           >
@@ -105,7 +104,6 @@ export default function RootLayout() {
             <Stack.Screen name="clawbg"    options={screenHeader("🎨 ClawBG",         Colors.accent)} />
 
           </Stack>
-          <ClawBGWallpaper opacity={0.88} />
         </AuthGate>
       </GestureHandlerRootView>
     </QueryClientProvider>
