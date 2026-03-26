@@ -1,16 +1,16 @@
 import React, { useEffect, useState, useCallback } from "react";
 import {
   StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput,
-  RefreshControl, Alert, Platform,
+  RefreshControl, Alert,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+
 import {
-  Bot, Plus, X, Check, Trash2, ArrowLeft, Key, Zap,
-  Pause, Play, Copy, Shield, Brain,
+  Bot, Plus, X, Trash2, ArrowLeft, Key, Zap,
+  Pause, Play, Copy, Shield,
 } from "lucide-react-native";
 import * as Clipboard from "expo-clipboard";
 import { useRouter } from "expo-router";
-import { supabase, SUPABASE_URL } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/authStore";
 import Colors from "@/constants/colors";
 
@@ -31,7 +31,6 @@ function timeAgo(d: string | null) {
 }
 
 export default function AgentsScreen() {
-  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuthStore();
   const [agents, setAgents] = useState<any[]>([]);
@@ -62,7 +61,7 @@ export default function AgentsScreen() {
     setKeySet(!!data);
   }, [user]);
 
-  useEffect(() => { fetchAgents(); checkKey(); }, [fetchAgents, checkKey]);
+  useEffect(() => { void fetchAgents(); void checkKey(); }, [fetchAgents, checkKey]);
   const onRefresh = async () => { setRefreshing(true); await fetchAgents(); await checkKey(); setRefreshing(false); };
 
   const saveKey = async () => {
@@ -109,13 +108,13 @@ export default function AgentsScreen() {
     if (error) return Alert.alert("Error", error.message);
     setForm({ name: "", role: "assistant", description: "", system_prompt: "" });
     setShowCreate(false);
-    fetchAgents();
+    void fetchAgents();
   };
 
   const toggleStatus = async (id: string, current: string) => {
     const next = current === "active" ? "paused" : "active";
     await supabase.from("swarm_agents").update({ status: next }).eq("id", id);
-    fetchAgents();
+    void fetchAgents();
   };
 
   const deleteAgent = (id: string, name: string) => {
@@ -123,7 +122,7 @@ export default function AgentsScreen() {
       { text: "Cancel", style: "cancel" },
       { text: "Delete", style: "destructive", onPress: async () => {
         await supabase.from("swarm_agents").delete().eq("id", id);
-        fetchAgents();
+        void fetchAgents();
       }},
     ]);
   };
@@ -134,7 +133,7 @@ export default function AgentsScreen() {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: 100 }}
+      contentContainerStyle={{ paddingTop: 12, paddingBottom: 100 }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.accent} />}
     >
       <View style={styles.header}>

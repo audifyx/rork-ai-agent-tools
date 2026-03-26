@@ -1,15 +1,14 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   StyleSheet, Text, View, TextInput, TouchableOpacity,
   KeyboardAvoidingView, Platform, ActivityIndicator, Alert,
   Animated, Dimensions, PanResponder, StatusBar,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { BlurView } from "expo-blur";
 import { useAuthStore } from "@/stores/authStore";
 import Colors from "@/constants/colors";
 
-const { width, height } = Dimensions.get("window");
+const { height } = Dimensions.get("window");
 
 function Clock() {
   const [time, setTime] = useState(new Date());
@@ -70,7 +69,21 @@ export default function LoginScreen() {
         Animated.timing(hintPulse, { toValue: 1, duration: 1500, useNativeDriver: true }),
       ])
     ).start();
-  }, []);
+  }, [arrowAnim, hintPulse]);
+
+  const unlock = useCallback(() => {
+    Animated.parallel([
+      Animated.timing(lockOpacity, { toValue: 0, duration: 400, useNativeDriver: true }),
+      Animated.timing(swipeY, { toValue: -height, duration: 500, useNativeDriver: true }),
+    ]).start(() => {
+      setLocked(false);
+      setShowForm(true);
+      Animated.parallel([
+        Animated.timing(formOpacity, { toValue: 1, duration: 500, useNativeDriver: true }),
+        Animated.timing(formY, { toValue: 0, duration: 500, useNativeDriver: true }),
+      ]).start();
+    });
+  }, [lockOpacity, swipeY, formOpacity, formY]);
 
   const panResponder = useRef(
     PanResponder.create({
@@ -80,18 +93,7 @@ export default function LoginScreen() {
       },
       onPanResponderRelease: (_, g) => {
         if (g.dy < -80) {
-          // Unlock
-          Animated.parallel([
-            Animated.timing(lockOpacity, { toValue: 0, duration: 400, useNativeDriver: true }),
-            Animated.timing(swipeY, { toValue: -height, duration: 500, useNativeDriver: true }),
-          ]).start(() => {
-            setLocked(false);
-            setShowForm(true);
-            Animated.parallel([
-              Animated.timing(formOpacity, { toValue: 1, duration: 500, useNativeDriver: true }),
-              Animated.timing(formY, { toValue: 0, duration: 500, useNativeDriver: true }),
-            ]).start();
-          });
+          unlock();
         } else {
           Animated.spring(swipeY, { toValue: 0, tension: 80, friction: 8, useNativeDriver: true }).start();
         }
@@ -125,7 +127,11 @@ export default function LoginScreen() {
           style={[StyleSheet.absoluteFill, { opacity: lockOpacity, transform: [{ translateY: swipeY }] }]}
           {...panResponder.panHandlers}
         >
-          <View style={[st.lockScreen, { paddingTop: insets.top + 40 }]}>
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={Platform.OS === "web" ? unlock : undefined}
+            style={[st.lockScreen, { paddingTop: insets.top + 40 }]}
+          >
             {/* Lobster icon */}
             <View style={st.lockIconWrap}>
               <Text style={st.lockEmoji}>🦞</Text>
@@ -159,10 +165,10 @@ export default function LoginScreen() {
                 <Text style={st.swipeArrow}>↑</Text>
               </Animated.View>
               <Animated.Text style={[st.swipeHint, { opacity: hintPulse }]}>
-                Swipe up to unlock
+                {Platform.OS === "web" ? "Tap to unlock" : "Swipe up to unlock"}
               </Animated.Text>
             </View>
-          </View>
+          </TouchableOpacity>
         </Animated.View>
       )}
 

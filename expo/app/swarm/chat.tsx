@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
   StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput,
-  RefreshControl, Alert, Platform, ActivityIndicator, KeyboardAvoidingView,
+  Alert, Platform, ActivityIndicator, KeyboardAvoidingView,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Bot, Send, ArrowLeft, Trash2, ChevronDown } from "lucide-react-native";
+import { Send, ArrowLeft, Trash2, ChevronDown } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { supabase, SUPABASE_URL } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/authStore";
@@ -36,9 +36,9 @@ export default function ChatScreen() {
       .order("created_at", { ascending: false });
     setAgents(data ?? []);
     if (!selectedAgent && data && data.length > 0) setSelectedAgent(data[0]);
-  }, [user]);
+  }, [user, selectedAgent]);
 
-  useEffect(() => { fetchAgents(); }, [fetchAgents]);
+  useEffect(() => { void fetchAgents(); }, [fetchAgents]);
 
   const fetchMessages = useCallback(async () => {
     if (!selectedAgent) return;
@@ -53,7 +53,7 @@ export default function ChatScreen() {
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
   }, [selectedAgent, user]);
 
-  useEffect(() => { fetchMessages(); }, [fetchMessages]);
+  useEffect(() => { void fetchMessages(); }, [fetchMessages]);
 
   const sendMessage = async () => {
     if (!input.trim() || !selectedAgent || !user || sending) return;
