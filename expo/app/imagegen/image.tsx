@@ -17,7 +17,7 @@ import { ArrowLeft, Download, Star, Trash2, Share2, Check, Copy } from "lucide-r
 import * as Clipboard from "expo-clipboard";
 import { supabase, SUPABASE_URL } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/authStore";
-import Colors from "@/constants/colors";
+import { useTheme } from "@/providers/ThemeProvider";
 
 const { width: SCREEN_W } = Dimensions.get("window");
 
@@ -32,6 +32,9 @@ function timeAgo(d: string) {
 }
 
 export default function ImageDetailModal() {
+  const { colors, theme } = useTheme();
+  const isDark = theme.dark;
+  const st = createStStyles(colors);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuthStore();
@@ -125,7 +128,7 @@ export default function ImageDetailModal() {
   if (loading) {
     return (
       <View style={[st.container, { paddingTop: insets.top }]}>
-        <ActivityIndicator size="large" color={Colors.accent} />
+        <ActivityIndicator size="large" color={colors.accent} />
       </View>
     );
   }
@@ -133,9 +136,9 @@ export default function ImageDetailModal() {
   if (!image) {
     return (
       <View style={[st.container, { paddingTop: insets.top }]}>
-        <Text style={{ color: Colors.textMuted }}>Image not found</Text>
+        <Text style={{ color: colors.textMuted }}>Image not found</Text>
         <TouchableOpacity onPress={() => router.back()} style={st.backBtn}>
-          <ArrowLeft size={20} color={Colors.text} />
+          <ArrowLeft size={20} color={colors.text} />
         </TouchableOpacity>
       </View>
     );
@@ -148,11 +151,11 @@ export default function ImageDetailModal() {
       {/* Top bar */}
       <View style={st.topBar}>
         <TouchableOpacity style={st.backBtn} onPress={() => router.back()}>
-          <ArrowLeft size={20} color={Colors.text} />
+          <ArrowLeft size={20} color={colors.text} />
         </TouchableOpacity>
         <Text style={st.topTitle} numberOfLines={1}>Image Detail</Text>
         <TouchableOpacity style={st.topActionBtn} onPress={handleShare} disabled={!image.image_url}>
-          <Share2 size={18} color={image.image_url ? Colors.text : Colors.textMuted} />
+          <Share2 size={18} color={image.image_url ? colors.text : colors.textMuted} />
         </TouchableOpacity>
       </View>
 
@@ -163,7 +166,7 @@ export default function ImageDetailModal() {
             ? <Image source={{ uri: image.image_url }} style={st.fullImage} resizeMode="contain" />
             : (
               <View style={st.imageLoading}>
-                <ActivityIndicator size="large" color={Colors.accent} />
+                <ActivityIndicator size="large" color={colors.accent} />
                 <Text style={st.imageLoadingText}>{image.status === "failed" ? "Generation failed" : "Generating..."}</Text>
               </View>
             )
@@ -176,24 +179,24 @@ export default function ImageDetailModal() {
           <View style={st.actions}>
             {!image.is_saved && isDone && (
               <TouchableOpacity style={[st.actionBtn, st.actionSave]} onPress={handleSave} disabled={saving}>
-                {saving ? <ActivityIndicator size="small" color={Colors.success} /> : <Download size={16} color={Colors.success} />}
-                <Text style={[st.actionBtnText, { color: Colors.success }]}>Save to Gallery</Text>
+                {saving ? <ActivityIndicator size="small" color={colors.success} /> : <Download size={16} color={colors.success} />}
+                <Text style={[st.actionBtnText, { color: colors.success }]}>Save to Gallery</Text>
               </TouchableOpacity>
             )}
             {image.is_saved && (
               <View style={[st.actionBtn, st.actionSaved]}>
-                <Check size={16} color={Colors.success} />
-                <Text style={[st.actionBtnText, { color: Colors.success }]}>Saved</Text>
+                <Check size={16} color={colors.success} />
+                <Text style={[st.actionBtnText, { color: colors.success }]}>Saved</Text>
               </View>
             )}
             <TouchableOpacity style={[st.actionBtn, st.actionStar]} onPress={handleStar}>
-              <Star size={16} color={image.is_starred ? Colors.warning : Colors.textMuted} fill={image.is_starred ? Colors.warning : "none"} />
-              <Text style={[st.actionBtnText, { color: image.is_starred ? Colors.warning : Colors.textMuted }]}>
+              <Star size={16} color={image.is_starred ? colors.warning : colors.textMuted} fill={image.is_starred ? colors.warning : "none"} />
+              <Text style={[st.actionBtnText, { color: image.is_starred ? colors.warning : colors.textMuted }]}>
                 {image.is_starred ? "Starred" : "Star"}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity style={[st.actionBtn, st.actionDelete]} onPress={handleDelete}>
-              <Trash2 size={16} color={Colors.danger} />
+              <Trash2 size={16} color={colors.danger} />
             </TouchableOpacity>
           </View>
 
@@ -202,8 +205,8 @@ export default function ImageDetailModal() {
             <View style={st.sectionHeaderRow}>
               <Text style={st.sectionLabel}>PROMPT</Text>
               <TouchableOpacity style={st.copyBtn} onPress={copyPrompt}>
-                {copied ? <Check size={12} color={Colors.success} /> : <Copy size={12} color={Colors.textMuted} />}
-                <Text style={[st.copyBtnText, copied && { color: Colors.success }]}>{copied ? "Copied!" : "Copy"}</Text>
+                {copied ? <Check size={12} color={colors.success} /> : <Copy size={12} color={colors.textMuted} />}
+                <Text style={[st.copyBtnText, copied && { color: colors.success }]}>{copied ? "Copied!" : "Copy"}</Text>
               </TouchableOpacity>
             </View>
             <Text style={st.promptText}>{image.prompt}</Text>
@@ -251,19 +254,19 @@ export default function ImageDetailModal() {
   );
 }
 
-const st = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+const createStStyles = (colors: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
   topBar: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingBottom: 12 },
-  backBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: Colors.surface, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: Colors.border },
-  topTitle: { flex: 1, fontSize: 16, fontWeight: "700", color: Colors.text, textAlign: "center" },
-  topActionBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: Colors.surface, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: Colors.border },
+  backBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: colors.surfaceLight },
+  topTitle: { flex: 1, fontSize: 16, fontWeight: "700", color: colors.text, textAlign: "center" },
+  topActionBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: colors.surfaceLight },
 
   imageContainer: { width: SCREEN_W, height: SCREEN_W, backgroundColor: "rgba(255,255,255,0.02)", marginBottom: 16 },
   fullImage: { width: "100%", height: "100%" },
   imageLoading: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12 },
-  imageLoadingText: { fontSize: 14, color: Colors.textMuted },
+  imageLoadingText: { fontSize: 14, color: colors.textMuted },
 
-  infoCard: { marginHorizontal: 16, padding: 16, backgroundColor: "rgba(220,38,38,0.04)", borderRadius: 20, borderWidth: 1, borderColor: "rgba(220,38,38,0.1)" },
+  infoCard: { marginHorizontal: 16, padding: 16, backgroundColor: "rgba(220,38,38,0.04)", borderRadius: 20, borderWidth: 1, borderColor: colors.accentDim },
 
   actions: { flexDirection: "row", gap: 8, marginBottom: 16 },
   actionBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5, paddingVertical: 10, borderRadius: 12, borderWidth: 1 },
@@ -275,21 +278,21 @@ const st = StyleSheet.create({
 
   section: { marginBottom: 14 },
   sectionHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
-  sectionLabel: { fontSize: 10, fontWeight: "700", color: Colors.textMuted, letterSpacing: 1.2, textTransform: "uppercase" },
+  sectionLabel: { fontSize: 10, fontWeight: "700", color: colors.textMuted, letterSpacing: 1.2, textTransform: "uppercase" },
   copyBtn: { flexDirection: "row", alignItems: "center", gap: 4 },
-  copyBtnText: { fontSize: 11, fontWeight: "600", color: Colors.textMuted },
-  promptText: { fontSize: 15, color: Colors.text, lineHeight: 22 },
+  copyBtnText: { fontSize: 11, fontWeight: "600", color: colors.textMuted },
+  promptText: { fontSize: 15, color: colors.text, lineHeight: 22 },
 
   metaGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 14 },
-  metaItem: { width: (SCREEN_W - 80) / 3, backgroundColor: "rgba(255,255,255,0.04)", padding: 10, borderRadius: 10, borderWidth: 1, borderColor: "rgba(255,255,255,0.05)" },
-  metaLabel: { fontSize: 9, fontWeight: "700", color: Colors.textMuted, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 3 },
-  metaValue: { fontSize: 12, fontWeight: "700", color: Colors.text },
+  metaItem: { width: (SCREEN_W - 80) / 3, backgroundColor: colors.surface, padding: 10, borderRadius: 10, borderWidth: 1, borderColor: "rgba(255,255,255,0.05)" },
+  metaLabel: { fontSize: 9, fontWeight: "700", color: colors.textMuted, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 3 },
+  metaValue: { fontSize: 12, fontWeight: "700", color: colors.text },
 
   tagsRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
   tagChip: { backgroundColor: "rgba(220,38,38,0.08)", paddingHorizontal: 9, paddingVertical: 4, borderRadius: 8, borderWidth: 1, borderColor: "rgba(220,38,38,0.15)" },
-  tagText: { fontSize: 12, fontWeight: "600", color: Colors.accent },
+  tagText: { fontSize: 12, fontWeight: "600", color: colors.accent },
 
   errorCard: { backgroundColor: "rgba(248,113,113,0.08)", borderRadius: 10, padding: 12, borderWidth: 1, borderColor: "rgba(248,113,113,0.2)" },
-  errorLabel: { fontSize: 9, fontWeight: "800", color: Colors.danger, letterSpacing: 1, marginBottom: 4 },
-  errorText: { fontSize: 13, color: Colors.danger, lineHeight: 18 },
+  errorLabel: { fontSize: 9, fontWeight: "800", color: colors.accentBright, letterSpacing: 1, marginBottom: 4 },
+  errorText: { fontSize: 13, color: colors.accentBright, lineHeight: 18 },
 });

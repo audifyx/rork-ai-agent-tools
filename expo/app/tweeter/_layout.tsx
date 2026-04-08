@@ -1,16 +1,25 @@
 import { Tabs } from "expo-router";
 import { Brain, Activity, Flame, BarChart3, Calendar, Sliders } from "lucide-react-native";
 import { Platform, StyleSheet } from "react-native";
-import Colors from "@/constants/colors";
+import { useTheme } from "@/providers/ThemeProvider";
 
 export default function TweeterLayout() {
+  const { colors, theme } = useTheme();
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarStyle: styles.tabBar,
-        tabBarActiveTintColor: Colors.accent,
-        tabBarInactiveTintColor: Colors.textMuted,
+        tabBarStyle: {
+          backgroundColor: theme.dark ? colors.surfaceSolid : colors.background,
+          borderTopColor: colors.border,
+          borderTopWidth: 1,
+          height: Platform.OS === "ios" ? 72 : 62,
+          paddingBottom: Platform.OS === "ios" ? 12 : 6,
+          paddingTop: 8,
+        },
+        tabBarActiveTintColor: colors.accent,
+        tabBarInactiveTintColor: colors.textMuted,
         tabBarLabelStyle: styles.tabLabel,
         tabBarItemStyle: styles.tabItem,
       }}
@@ -26,14 +35,6 @@ export default function TweeterLayout() {
 }
 
 const styles = StyleSheet.create({
-  tabBar: {
-    backgroundColor: "#050505",
-    borderTopColor: "rgba(220,38,38,0.15)",
-    borderTopWidth: 1,
-    height: Platform.OS === "ios" ? 72 : 62,
-    paddingBottom: Platform.OS === "ios" ? 12 : 6,
-    paddingTop: 8,
-  },
-  tabLabel: { fontSize: 9, fontWeight: "700", marginTop: 2, letterSpacing: 0.3 },
+  tabLabel: { fontSize: 9, fontWeight: "700" as const, marginTop: 2, letterSpacing: 0.3 },
   tabItem: { paddingTop: 4 },
 });

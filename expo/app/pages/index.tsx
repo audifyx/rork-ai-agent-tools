@@ -12,7 +12,7 @@ import * as Clipboard from "expo-clipboard";
 import { useRouter } from "expo-router";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/authStore";
-import Colors from "@/constants/colors";
+import { useTheme } from "@/providers/ThemeProvider";
 
 const PLATFORM_EMOJI: Record<string, string> = {
   vercel: "▲", netlify: "◆", cloudflare: "☁️", "github-pages": "🐙",
@@ -33,6 +33,9 @@ function timeAgo(d: string | null) {
 }
 
 export default function SitesScreen() {
+  const { colors, theme } = useTheme();
+  const isDark = theme.dark;
+  const styles = createStylesStyles(colors);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuthStore();
@@ -115,30 +118,30 @@ export default function SitesScreen() {
     <ScrollView
       style={styles.container}
       contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: 100 }}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.accent} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
     >
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <ArrowLeft size={20} color={Colors.text} />
+          <ArrowLeft size={20} color={colors.text} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={styles.title}>🌐 ClawPages</Text>
           <Text style={styles.subtitle}>{liveCount} live · {archivedCount} archived</Text>
         </View>
         <TouchableOpacity style={styles.addBtn} onPress={() => setShowAdd(!showAdd)}>
-          {showAdd ? <X size={20} color={Colors.text} /> : <Plus size={20} color={Colors.text} />}
+          {showAdd ? <X size={20} color={colors.text} /> : <Plus size={20} color={colors.text} />}
         </TouchableOpacity>
       </View>
 
       {/* Search */}
       <View style={styles.searchRow}>
         <View style={styles.searchBox}>
-          <Search size={14} color={Colors.textMuted} />
+          <Search size={14} color={colors.textMuted} />
           <TextInput
             style={styles.searchInput}
             placeholder="Search deployments..."
-            placeholderTextColor={Colors.textMuted}
+            placeholderTextColor={colors.textMuted}
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
@@ -164,10 +167,10 @@ export default function SitesScreen() {
       {showAdd && (
         <View style={styles.addForm}>
           <Text style={styles.formTitle}>Add Deployment</Text>
-          <TextInput style={styles.input} placeholder="Site title" placeholderTextColor={Colors.textMuted} value={form.title} onChangeText={v => setForm({ ...form, title: v })} />
-          <TextInput style={styles.input} placeholder="URL (https://...)" placeholderTextColor={Colors.textMuted} value={form.url} onChangeText={v => setForm({ ...form, url: v })} autoCapitalize="none" keyboardType="url" />
-          <TextInput style={styles.input} placeholder="Description (optional)" placeholderTextColor={Colors.textMuted} value={form.description} onChangeText={v => setForm({ ...form, description: v })} />
-          <TextInput style={styles.input} placeholder="Agent name (optional)" placeholderTextColor={Colors.textMuted} value={form.agent_name} onChangeText={v => setForm({ ...form, agent_name: v })} />
+          <TextInput style={styles.input} placeholder="Site title" placeholderTextColor={colors.textMuted} value={form.title} onChangeText={v => setForm({ ...form, title: v })} />
+          <TextInput style={styles.input} placeholder="URL (https://...)" placeholderTextColor={colors.textMuted} value={form.url} onChangeText={v => setForm({ ...form, url: v })} autoCapitalize="none" keyboardType="url" />
+          <TextInput style={styles.input} placeholder="Description (optional)" placeholderTextColor={colors.textMuted} value={form.description} onChangeText={v => setForm({ ...form, description: v })} />
+          <TextInput style={styles.input} placeholder="Agent name (optional)" placeholderTextColor={colors.textMuted} value={form.agent_name} onChangeText={v => setForm({ ...form, agent_name: v })} />
           <Text style={styles.formLabel}>Platform</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
             {PLATFORMS.map(p => (
@@ -190,7 +193,7 @@ export default function SitesScreen() {
       {/* Deployments list */}
       {filtered.length === 0 ? (
         <View style={styles.empty}>
-          <Globe size={40} color={Colors.textMuted} />
+          <Globe size={40} color={colors.textMuted} />
           <Text style={styles.emptyText}>No deployments yet</Text>
           <Text style={styles.emptySubtext}>Add sites manually or let your agent post them via API</Text>
         </View>
@@ -202,12 +205,12 @@ export default function SitesScreen() {
               <View style={{ flex: 1 }}>
                 <View style={styles.titleRow}>
                   <Text style={styles.cardTitle} numberOfLines={1}>{d.title}</Text>
-                  {d.is_pinned && <Pin size={12} color={Colors.warning} />}
+                  {d.is_pinned && <Pin size={12} color={colors.warning} />}
                 </View>
                 <Text style={styles.cardUrl} numberOfLines={1}>{d.url}</Text>
               </View>
               <View style={[styles.statusDot, {
-                backgroundColor: d.status === "live" ? Colors.success : d.status === "down" ? Colors.danger : Colors.textMuted
+                backgroundColor: d.status === "live" ? colors.success : d.status === "down" ? colors.danger : colors.textMuted
               }]} />
             </View>
 
@@ -221,15 +224,15 @@ export default function SitesScreen() {
 
             <View style={styles.cardActions}>
               <TouchableOpacity style={styles.actionBtn} onPress={() => Linking.openURL(d.url)}>
-                <ExternalLink size={14} color={Colors.info} />
-                <Text style={[styles.actionText, { color: Colors.info }]}>Open</Text>
+                <ExternalLink size={14} color={colors.info} />
+                <Text style={[styles.actionText, { color: colors.info }]}>Open</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.actionBtn} onPress={async () => { await Clipboard.setStringAsync(d.url); Alert.alert("Copied!"); }}>
-                <Copy size={14} color={Colors.textSecondary} />
+                <Copy size={14} color={colors.textSecondary} />
                 <Text style={styles.actionText}>Copy</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.actionBtn} onPress={() => togglePin(d.id, d.is_pinned)}>
-                {d.is_pinned ? <PinOff size={14} color={Colors.warning} /> : <Pin size={14} color={Colors.textSecondary} />}
+                {d.is_pinned ? <PinOff size={14} color={colors.warning} /> : <Pin size={14} color={colors.textSecondary} />}
                 <Text style={styles.actionText}>{d.is_pinned ? "Unpin" : "Pin"}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.actionBtn} onPress={() => {
@@ -239,7 +242,7 @@ export default function SitesScreen() {
                 <Text style={styles.actionText}>{d.status === "live" ? "Archive" : "Restore"}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.actionBtn} onPress={() => deleteDeploy(d.id, d.title)}>
-                <Trash2 size={14} color={Colors.danger} />
+                <Trash2 size={14} color={colors.danger} />
               </TouchableOpacity>
             </View>
           </View>
@@ -249,44 +252,44 @@ export default function SitesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background, paddingHorizontal: 20 },
+const createStylesStyles = (colors: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background, paddingHorizontal: 20 },
   header: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 16 },
-  backBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: Colors.surface, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: Colors.border },
-  title: { fontSize: 22, fontWeight: "800", color: Colors.text, letterSpacing: -0.5 },
-  subtitle: { fontSize: 12, color: Colors.textMuted, marginTop: 2 },
-  addBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: Colors.accentDim, borderWidth: 1, borderColor: "rgba(220,38,38,0.2)", alignItems: "center", justifyContent: "center" },
+  backBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: colors.surfaceLight },
+  title: { fontSize: 22, fontWeight: "800", color: colors.text, letterSpacing: -0.5 },
+  subtitle: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
+  addBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: colors.accentDim, borderWidth: 1, borderColor: "rgba(220,38,38,0.2)", alignItems: "center", justifyContent: "center" },
   searchRow: { marginBottom: 12 },
-  searchBox: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: Colors.surface, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1, borderColor: Colors.border },
-  searchInput: { flex: 1, color: Colors.text, fontSize: 14 },
+  searchBox: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: colors.surface, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1, borderColor: colors.surfaceLight },
+  searchInput: { flex: 1, color: colors.text, fontSize: 14 },
   filterRow: { marginBottom: 16 },
-  filterChip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border, marginRight: 8 },
-  filterChipActive: { backgroundColor: Colors.accentDim, borderColor: "rgba(220,38,38,0.3)" },
-  filterText: { fontSize: 12, color: Colors.textSecondary },
-  filterTextActive: { color: Colors.accent, fontWeight: "700" },
-  addForm: { backgroundColor: Colors.surface, borderRadius: 16, padding: 18, marginBottom: 20, borderWidth: 1, borderColor: Colors.border },
-  formTitle: { fontSize: 16, fontWeight: "700", color: Colors.text, marginBottom: 14 },
-  formLabel: { fontSize: 11, fontWeight: "600", color: Colors.textMuted, marginBottom: 6, marginTop: 4, textTransform: "uppercase", letterSpacing: 0.5 },
-  input: { backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 12, color: Colors.text, fontSize: 14, marginBottom: 10, borderWidth: 1, borderColor: Colors.border },
-  platformChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: Colors.surfaceLight, borderWidth: 1, borderColor: Colors.border, marginRight: 6 },
-  platformChipActive: { backgroundColor: Colors.accentDim, borderColor: "rgba(220,38,38,0.3)" },
-  platformChipText: { fontSize: 12, color: Colors.textSecondary },
-  submitBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: Colors.accent, borderRadius: 12, paddingVertical: 14 },
+  filterChip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.surfaceLight, marginRight: 8 },
+  filterChipActive: { backgroundColor: colors.accentDim, borderColor: "rgba(220,38,38,0.3)" },
+  filterText: { fontSize: 12, color: colors.textSecondary },
+  filterTextActive: { color: colors.accent, fontWeight: "700" },
+  addForm: { backgroundColor: colors.surface, borderRadius: 16, padding: 18, marginBottom: 20, borderWidth: 1, borderColor: colors.surfaceLight },
+  formTitle: { fontSize: 16, fontWeight: "700", color: colors.text, marginBottom: 14 },
+  formLabel: { fontSize: 11, fontWeight: "600", color: colors.textMuted, marginBottom: 6, marginTop: 4, textTransform: "uppercase", letterSpacing: 0.5 },
+  input: { backgroundColor: colors.surfaceLight, borderRadius: 10, padding: 12, color: colors.text, fontSize: 14, marginBottom: 10, borderWidth: 1, borderColor: colors.surfaceLight },
+  platformChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: colors.surfaceLight, borderWidth: 1, borderColor: colors.surfaceLight, marginRight: 6 },
+  platformChipActive: { backgroundColor: colors.accentDim, borderColor: "rgba(220,38,38,0.3)" },
+  platformChipText: { fontSize: 12, color: colors.textSecondary },
+  submitBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: colors.accent, borderRadius: 12, paddingVertical: 14 },
   submitText: { fontSize: 14, fontWeight: "700", color: "#fff" },
   empty: { alignItems: "center", paddingTop: 60, gap: 10 },
-  emptyText: { fontSize: 16, fontWeight: "600", color: Colors.textSecondary },
-  emptySubtext: { fontSize: 13, color: Colors.textMuted, textAlign: "center", paddingHorizontal: 40 },
-  card: { backgroundColor: Colors.surface, borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: Colors.border },
+  emptyText: { fontSize: 16, fontWeight: "600", color: colors.textSecondary },
+  emptySubtext: { fontSize: 13, color: colors.textMuted, textAlign: "center", paddingHorizontal: 40 },
+  card: { backgroundColor: colors.surface, borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: colors.surfaceLight },
   cardHeader: { flexDirection: "row", alignItems: "center", gap: 12 },
   platformEmoji: { fontSize: 24 },
   titleRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  cardTitle: { fontSize: 15, fontWeight: "700", color: Colors.text, flex: 1 },
-  cardUrl: { fontSize: 12, color: Colors.info, marginTop: 2 },
+  cardTitle: { fontSize: 15, fontWeight: "700", color: colors.text, flex: 1 },
+  cardUrl: { fontSize: 12, color: colors.info, marginTop: 2 },
   statusDot: { width: 8, height: 8, borderRadius: 4 },
-  cardDesc: { fontSize: 13, color: Colors.textSecondary, marginTop: 10, lineHeight: 18 },
+  cardDesc: { fontSize: 13, color: colors.textSecondary, marginTop: 10, lineHeight: 18 },
   cardMeta: { flexDirection: "row", gap: 12, marginTop: 10, flexWrap: "wrap" },
-  metaText: { fontSize: 11, color: Colors.textMuted },
-  cardActions: { flexDirection: "row", gap: 6, marginTop: 12, borderTopWidth: 1, borderTopColor: Colors.border, paddingTop: 10 },
+  metaText: { fontSize: 11, color: colors.textMuted },
+  cardActions: { flexDirection: "row", gap: 6, marginTop: 12, borderTopWidth: 1, borderTopColor: colors.surfaceLight, paddingTop: 10 },
   actionBtn: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: "rgba(255,255,255,0.03)" },
-  actionText: { fontSize: 11, color: Colors.textSecondary, fontWeight: "600" },
+  actionText: { fontSize: 11, color: colors.textSecondary, fontWeight: "600" },
 });

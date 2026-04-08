@@ -8,13 +8,16 @@ import { Send, ArrowLeft, Trash2, ChevronDown } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { supabase, SUPABASE_URL } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/authStore";
-import Colors from "@/constants/colors";
+import { useTheme } from "@/providers/ThemeProvider";
 
 const ROLE_EMOJI: Record<string, string> = {
   assistant: "🤖", researcher: "🔬", coder: "💻", writer: "✍️", analyst: "📊", custom: "⚙️",
 };
 
 export default function ChatScreen() {
+  const { colors, theme } = useTheme();
+  const isDark = theme.dark;
+  const styles = createStylesStyles(colors);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuthStore();
@@ -109,15 +112,15 @@ export default function ChatScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <ArrowLeft size={20} color={Colors.text} />
+          <ArrowLeft size={20} color={colors.text} />
         </TouchableOpacity>
         <TouchableOpacity style={styles.agentPicker} onPress={() => setShowPicker(!showPicker)}>
           <Text style={styles.agentPickerEmoji}>{selectedAgent ? (ROLE_EMOJI[selectedAgent.role] || "🤖") : "🤖"}</Text>
           <Text style={styles.agentPickerName} numberOfLines={1}>{selectedAgent?.name || "Select agent"}</Text>
-          <ChevronDown size={14} color={Colors.textMuted} />
+          <ChevronDown size={14} color={colors.textMuted} />
         </TouchableOpacity>
         <TouchableOpacity style={styles.clearBtn} onPress={clearChat}>
-          <Trash2 size={16} color={Colors.textMuted} />
+          <Trash2 size={16} color={colors.textMuted} />
         </TouchableOpacity>
       </View>
 
@@ -150,7 +153,7 @@ export default function ChatScreen() {
         ))}
         {sending && (
           <View style={[styles.bubble, styles.bubbleAgent]}>
-            <ActivityIndicator size="small" color={Colors.accent} />
+            <ActivityIndicator size="small" color={colors.accent} />
           </View>
         )}
       </ScrollView>
@@ -160,7 +163,7 @@ export default function ChatScreen() {
         <TextInput
           style={styles.textInput}
           placeholder={selectedAgent ? `Message ${selectedAgent.name}...` : "Select an agent first"}
-          placeholderTextColor={Colors.textMuted}
+          placeholderTextColor={colors.textMuted}
           value={input}
           onChangeText={setInput}
           multiline
@@ -168,40 +171,40 @@ export default function ChatScreen() {
           editable={!!selectedAgent && !sending}
         />
         <TouchableOpacity style={[styles.sendBtn, (!input.trim() || sending) && styles.sendBtnDisabled]} onPress={sendMessage} disabled={!input.trim() || sending}>
-          <Send size={18} color={input.trim() && !sending ? "#fff" : Colors.textMuted} />
+          <Send size={18} color={input.trim() && !sending ? "#fff" : colors.textMuted} />
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background, paddingHorizontal: 16 },
+const createStylesStyles = (colors: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background, paddingHorizontal: 16 },
   header: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 8 },
-  backBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: Colors.surface, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: Colors.border },
-  agentPicker: { flex: 1, flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: Colors.surface, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1, borderColor: Colors.border },
+  backBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: colors.surfaceLight },
+  agentPicker: { flex: 1, flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: colors.surface, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1, borderColor: colors.surfaceLight },
   agentPickerEmoji: { fontSize: 18 },
-  agentPickerName: { flex: 1, fontSize: 14, fontWeight: "700", color: Colors.text },
-  clearBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: Colors.surface, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: Colors.border },
-  pickerDropdown: { backgroundColor: Colors.surface, borderRadius: 12, padding: 6, marginBottom: 8, borderWidth: 1, borderColor: Colors.border },
+  agentPickerName: { flex: 1, fontSize: 14, fontWeight: "700", color: colors.text },
+  clearBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: colors.surfaceLight },
+  pickerDropdown: { backgroundColor: colors.surface, borderRadius: 12, padding: 6, marginBottom: 8, borderWidth: 1, borderColor: colors.surfaceLight },
   pickerItem: { flexDirection: "row", alignItems: "center", gap: 10, padding: 10, borderRadius: 8 },
-  pickerItemActive: { backgroundColor: Colors.accentDim },
+  pickerItemActive: { backgroundColor: colors.accentDim },
   pickerEmoji: { fontSize: 18 },
-  pickerName: { fontSize: 14, color: Colors.textSecondary },
-  pickerNameActive: { color: Colors.accent, fontWeight: "700" },
+  pickerName: { fontSize: 14, color: colors.textSecondary },
+  pickerNameActive: { color: colors.accent, fontWeight: "700" },
   messagesArea: { flex: 1 },
   emptyChat: { alignItems: "center", paddingTop: 80, gap: 10 },
   emptyChatEmoji: { fontSize: 48 },
-  emptyChatText: { fontSize: 14, color: Colors.textMuted },
+  emptyChatText: { fontSize: 14, color: colors.textMuted },
   bubble: { maxWidth: "85%", borderRadius: 14, padding: 12, marginBottom: 8 },
-  bubbleUser: { backgroundColor: Colors.accent, alignSelf: "flex-end", borderBottomRightRadius: 4 },
-  bubbleAgent: { backgroundColor: Colors.surface, alignSelf: "flex-start", borderBottomLeftRadius: 4, borderWidth: 1, borderColor: Colors.border },
-  bubbleLabel: { fontSize: 10, fontWeight: "700", color: Colors.accent, marginBottom: 4 },
-  bubbleText: { fontSize: 14, color: Colors.text, lineHeight: 20 },
+  bubbleUser: { backgroundColor: colors.accent, alignSelf: "flex-end", borderBottomRightRadius: 4 },
+  bubbleAgent: { backgroundColor: colors.surface, alignSelf: "flex-start", borderBottomLeftRadius: 4, borderWidth: 1, borderColor: colors.surfaceLight },
+  bubbleLabel: { fontSize: 10, fontWeight: "700", color: colors.accent, marginBottom: 4 },
+  bubbleText: { fontSize: 14, color: colors.text, lineHeight: 20 },
   bubbleTextUser: { color: "#fff" },
-  bubbleTokens: { fontSize: 10, color: Colors.textMuted, marginTop: 4, alignSelf: "flex-end" },
-  inputBar: { flexDirection: "row", alignItems: "flex-end", gap: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: Colors.border },
-  textInput: { flex: 1, backgroundColor: Colors.surface, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, color: Colors.text, fontSize: 14, maxHeight: 100, borderWidth: 1, borderColor: Colors.border },
-  sendBtn: { width: 44, height: 44, borderRadius: 14, backgroundColor: Colors.accent, alignItems: "center", justifyContent: "center" },
-  sendBtnDisabled: { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border },
+  bubbleTokens: { fontSize: 10, color: colors.textMuted, marginTop: 4, alignSelf: "flex-end" },
+  inputBar: { flexDirection: "row", alignItems: "flex-end", gap: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: colors.surfaceLight },
+  textInput: { flex: 1, backgroundColor: colors.surface, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, color: colors.text, fontSize: 14, maxHeight: 100, borderWidth: 1, borderColor: colors.surfaceLight },
+  sendBtn: { width: 44, height: 44, borderRadius: 14, backgroundColor: colors.accent, alignItems: "center", justifyContent: "center" },
+  sendBtnDisabled: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.surfaceLight },
 });

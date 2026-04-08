@@ -19,7 +19,7 @@ const { width: W } = Dimensions.get("window");
 const CARD_W = (W - 48 - 12) / 3;
 const CARD_H = CARD_W * 1.35;
 
-function ThemeCard({ t, isActive, onSelect }: { t: ThemeDefinition; isActive: boolean; onSelect: () => void }) {
+function ThemeCard({ t, isActive, onSelect, activeAccent }: { t: ThemeDefinition; isActive: boolean; onSelect: () => void; activeAccent: string }) {
   const scale = useRef(new Animated.Value(1)).current;
 
   const pressIn = useCallback(() => {
@@ -37,14 +37,14 @@ function ThemeCard({ t, isActive, onSelect }: { t: ThemeDefinition; isActive: bo
       onPressIn={pressIn}
       onPressOut={pressOut}
     >
-      <Animated.View style={[styles.card, isActive && styles.cardActive, { transform: [{ scale }] }]}>
+      <Animated.View style={[styles.card, isActive && [styles.cardActive, { borderColor: activeAccent }], { transform: [{ scale }] }]}>
         <View style={styles.cardPreview}>
           {t.preview.map((c, i) => (
             <View key={i} style={[styles.previewStripe, { backgroundColor: c, flex: 1 }]} />
           ))}
           {isActive && (
             <View style={styles.checkOverlay}>
-              <View style={styles.checkCircle}>
+              <View style={[styles.checkCircle, { backgroundColor: activeAccent }]}>
                 <Check size={14} color="#fff" strokeWidth={3} />
               </View>
             </View>
@@ -52,7 +52,7 @@ function ThemeCard({ t, isActive, onSelect }: { t: ThemeDefinition; isActive: bo
         </View>
         <View style={styles.cardInfo}>
           <Text style={styles.cardEmoji}>{t.emoji}</Text>
-          <Text style={[styles.cardName, isActive && styles.cardNameActive]} numberOfLines={1}>{t.name}</Text>
+          <Text style={[styles.cardName, { color: t.dark ? "#aaa" : "#666" }, isActive && [styles.cardNameActive, { color: activeAccent }]]} numberOfLines={1}>{t.name}</Text>
         </View>
         {t.dark && (
           <View style={styles.darkBadge}>
@@ -117,14 +117,14 @@ export default function ThemeSettingsScreen() {
         <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>DARK THEMES ({darkThemes.length})</Text>
         <View style={styles.grid}>
           {darkThemes.map(t => (
-            <ThemeCard key={t.id} t={t} isActive={themeId === t.id} onSelect={() => handleSelect(t.id)} />
+            <ThemeCard key={t.id} t={t} isActive={themeId === t.id} onSelect={() => handleSelect(t.id)} activeAccent={colors.accent} />
           ))}
         </View>
 
         <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>LIGHT THEMES ({lightThemes.length})</Text>
         <View style={styles.grid}>
           {lightThemes.map(t => (
-            <ThemeCard key={t.id} t={t} isActive={themeId === t.id} onSelect={() => handleSelect(t.id)} />
+            <ThemeCard key={t.id} t={t} isActive={themeId === t.id} onSelect={() => handleSelect(t.id)} activeAccent={colors.accent} />
           ))}
         </View>
       </ScrollView>
@@ -180,7 +180,6 @@ const styles = StyleSheet.create({
     borderColor: "rgba(128,128,128,0.12)",
   },
   cardActive: {
-    borderColor: "#D4A017",
     borderWidth: 2,
   },
   cardPreview: {
@@ -201,7 +200,6 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: "#D4A017",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -213,8 +211,8 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   cardEmoji: { fontSize: 12 },
-  cardName: { fontSize: 10, fontWeight: "600" as const, color: "#888", flex: 1 },
-  cardNameActive: { color: "#D4A017", fontWeight: "700" as const },
+  cardName: { fontSize: 10, fontWeight: "600" as const, flex: 1 },
+  cardNameActive: { fontWeight: "700" as const },
   darkBadge: {
     position: "absolute",
     top: 4,

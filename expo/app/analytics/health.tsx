@@ -3,16 +3,19 @@ import { StyleSheet, Text, View, ScrollView, RefreshControl, Platform } from "re
 import { Activity, CheckCircle2, AlertTriangle, XCircle, Wifi } from "lucide-react-native";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/authStore";
-import Colors from "@/constants/colors";
+import { useTheme } from "@/providers/ThemeProvider";
 
 const STATUS_CONFIG: Record<string, { icon: any; color: string }> = {
-  healthy: { icon: CheckCircle2, color: Colors.success },
-  degraded: { icon: AlertTriangle, color: Colors.warning },
-  down: { icon: XCircle, color: Colors.danger },
-  unknown: { icon: Activity, color: Colors.textMuted },
+  healthy: { icon: CheckCircle2, color: colors.success },
+  degraded: { icon: AlertTriangle, color: colors.warning },
+  down: { icon: XCircle, color: colors.danger },
+  unknown: { icon: Activity, color: colors.textMuted },
 };
 
 export default function HealthScreen() {
+  const { colors, theme } = useTheme();
+  const isDark = theme.dark;
+  const styles = createStylesStyles(colors);
   const { user } = useAuthStore();
   const [checks, setChecks] = useState<any[]>([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -31,12 +34,12 @@ export default function HealthScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingTop: 16, paddingBottom: 120 }}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.success} />}>
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.success} />}>
       <Text style={styles.title}>💚 Health</Text>
       <Text style={styles.subtitle}>Agent tool health checks</Text>
 
       {Object.keys(latestByTool).length === 0 ? (
-        <View style={styles.empty}><Wifi size={48} color={Colors.textMuted} /><Text style={styles.emptyText}>No health checks yet</Text><Text style={styles.emptySub}>Your agent reports health via the analytics API</Text></View>
+        <View style={styles.empty}><Wifi size={48} color={colors.textMuted} /><Text style={styles.emptyText}>No health checks yet</Text><Text style={styles.emptySub}>Your agent reports health via the analytics API</Text></View>
       ) : (
         Object.entries(latestByTool).map(([tool, c]) => {
           const cfg = STATUS_CONFIG[c.status] || STATUS_CONFIG.unknown;
@@ -52,8 +55,8 @@ export default function HealthScreen() {
               </View>
               <View style={styles.metricsRow}>
                 {c.latency_ms != null && <View style={styles.metric}><Text style={styles.metricVal}>{c.latency_ms}ms</Text><Text style={styles.metricLabel}>Latency</Text></View>}
-                <View style={styles.metric}><Text style={[styles.metricVal, { color: Colors.success }]}>{c.success_count}</Text><Text style={styles.metricLabel}>Success</Text></View>
-                <View style={styles.metric}><Text style={[styles.metricVal, { color: Colors.danger }]}>{c.error_count}</Text><Text style={styles.metricLabel}>Errors</Text></View>
+                <View style={styles.metric}><Text style={[styles.metricVal, { color: colors.success }]}>{c.success_count}</Text><Text style={styles.metricLabel}>Success</Text></View>
+                <View style={styles.metric}><Text style={[styles.metricVal, { color: colors.danger }]}>{c.error_count}</Text><Text style={styles.metricLabel}>Errors</Text></View>
               </View>
               {c.last_error && <Text style={styles.lastError}>Last error: {c.last_error}</Text>}
               <Text style={styles.checkedAt}>Checked: {new Date(c.checked_at).toLocaleString()}</Text>
@@ -83,28 +86,28 @@ export default function HealthScreen() {
 }
 
 const mono = Platform.OS === "ios" ? "Menlo" : "monospace";
-const styles = StyleSheet.create({
+const createStylesStyles = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: "#000", paddingHorizontal: 16 },
-  title: { fontSize: 24, fontWeight: "800", color: Colors.text },
-  subtitle: { fontSize: 12, color: Colors.textMuted, marginTop: 3, marginBottom: 20 },
-  secLabel: { fontSize: 11, fontWeight: "700", color: Colors.textMuted, letterSpacing: 1.5, marginTop: 20, marginBottom: 10 },
-  empty: { padding: 48, alignItems: "center", backgroundColor: "rgba(255,255,255,0.02)", borderRadius: 20, borderWidth: 1, borderColor: Colors.border },
-  emptyText: { fontSize: 16, fontWeight: "600", color: Colors.textSecondary, marginTop: 16 },
-  emptySub: { fontSize: 13, color: Colors.textMuted, marginTop: 4 },
-  card: { backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 16, padding: 16, borderWidth: 1, borderColor: "rgba(255,255,255,0.06)", marginBottom: 10 },
+  title: { fontSize: 24, fontWeight: "800", color: colors.text },
+  subtitle: { fontSize: 12, color: colors.textMuted, marginTop: 3, marginBottom: 20 },
+  secLabel: { fontSize: 11, fontWeight: "700", color: colors.textMuted, letterSpacing: 1.5, marginTop: 20, marginBottom: 10 },
+  empty: { padding: 48, alignItems: "center", backgroundColor: "rgba(255,255,255,0.02)", borderRadius: 20, borderWidth: 1, borderColor: colors.surfaceLight },
+  emptyText: { fontSize: 16, fontWeight: "600", color: colors.textSecondary, marginTop: 16 },
+  emptySub: { fontSize: 13, color: colors.textMuted, marginTop: 4 },
+  card: { backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.surfaceLight, marginBottom: 10 },
   cardRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 12 },
-  toolName: { fontSize: 16, fontWeight: "700", color: Colors.text, flex: 1, textTransform: "capitalize" },
+  toolName: { fontSize: 16, fontWeight: "700", color: colors.text, flex: 1, textTransform: "capitalize" },
   statusBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 8 },
   statusText: { fontSize: 11, fontWeight: "700", textTransform: "capitalize" },
   metricsRow: { flexDirection: "row", gap: 20, marginBottom: 8 },
   metric: { alignItems: "center" },
-  metricVal: { fontSize: 18, fontWeight: "700", color: Colors.text, fontFamily: mono },
-  metricLabel: { fontSize: 10, color: Colors.textMuted, marginTop: 2 },
-  lastError: { fontSize: 11, color: Colors.danger, marginTop: 4 },
-  checkedAt: { fontSize: 10, color: Colors.textMuted, fontFamily: mono, marginTop: 6 },
-  historyRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.04)" },
+  metricVal: { fontSize: 18, fontWeight: "700", color: colors.text, fontFamily: mono },
+  metricLabel: { fontSize: 10, color: colors.textMuted, marginTop: 2 },
+  lastError: { fontSize: 11, color: colors.accentBright, marginTop: 4 },
+  checkedAt: { fontSize: 10, color: colors.textMuted, fontFamily: mono, marginTop: 6 },
+  historyRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.surface },
   dot: { width: 8, height: 8, borderRadius: 4 },
-  histTool: { fontSize: 13, color: Colors.text, flex: 1, textTransform: "capitalize" },
+  histTool: { fontSize: 13, color: colors.text, flex: 1, textTransform: "capitalize" },
   histStatus: { fontSize: 12, fontWeight: "600", fontFamily: mono },
-  histTime: { fontSize: 10, color: Colors.textMuted, fontFamily: mono },
+  histTime: { fontSize: 10, color: colors.textMuted, fontFamily: mono },
 });

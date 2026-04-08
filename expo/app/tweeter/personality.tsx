@@ -9,7 +9,7 @@ import {
 } from "lucide-react-native";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/authStore";
-import Colors from "@/constants/colors";
+import { useTheme } from "@/providers/ThemeProvider";
 import { LobsterWatermark } from "@/components/tweeter/LobsterWatermark";
 
 const TRAIT_ICONS: Record<string, any> = {
@@ -17,7 +17,7 @@ const TRAIT_ICONS: Record<string, any> = {
 };
 const TRAIT_COLORS: Record<string, string> = {
   humor: "#FBBF24", sarcasm: "#F472B6", optimism: "#34D399",
-  curiosity: "#38BDF8", boldness: Colors.accent, empathy: "#A78BFA",
+  curiosity: "#38BDF8", boldness: colors.accent, empathy: "#A78BFA",
 };
 
 const MOOD_EMOJI: Record<string, string> = {
@@ -27,6 +27,9 @@ const MOOD_EMOJI: Record<string, string> = {
 };
 
 export default function PersonalityScreen() {
+  const { colors, theme } = useTheme();
+  const isDark = theme.dark;
+  const st = createStStyles(colors);
   const insets = useSafeAreaInsets();
   const { user } = useAuthStore();
   const [personality, setPersonality] = useState<any>(null);
@@ -53,20 +56,20 @@ export default function PersonalityScreen() {
     <ScrollView
       style={st.container}
       contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: 120 }}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.accent} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
       showsVerticalScrollIndicator={false}
     >
       <View style={st.redGlow} />
       <LobsterWatermark style={st.watermark} />
 
       <View style={st.header}>
-        <Text style={st.title}>🧠 Agent <Text style={{ color: Colors.accent }}>Brain</Text></Text>
+        <Text style={st.title}>🧠 Agent <Text style={{ color: colors.accent }}>Brain</Text></Text>
         <Text style={st.subtitle}>Personality, memory & evolution</Text>
       </View>
 
       {!personality ? (
         <View style={st.empty}>
-          <Brain size={48} color={Colors.accent} style={{ opacity: 0.4 }} />
+          <Brain size={48} color={colors.accent} style={{ opacity: 0.4 }} />
           <Text style={st.emptyTitle}>No personality yet</Text>
           <Text style={st.emptySub}>Use the API to initialize your agent's brain. It will grow and evolve over time.</Text>
         </View>
@@ -85,8 +88,8 @@ export default function PersonalityScreen() {
                 <View style={st.chipRow}>
                   <View style={st.chip}><Text style={st.chipText}>✍️ {personality.writing_style}</Text></View>
                   <View style={st.chip}><Text style={st.chipText}>🎭 {personality.tone}</Text></View>
-                  <View style={[st.chip, { backgroundColor: Colors.accentDim, borderColor: "rgba(220,38,38,0.15)" }]}>
-                    <Text style={[st.chipText, { color: Colors.accent }]}>{MOOD_EMOJI[personality.current_mood] || "🤖"} {personality.current_mood}</Text>
+                  <View style={[st.chip, { backgroundColor: colors.accentDim, borderColor: "rgba(220,38,38,0.15)" }]}>
+                    <Text style={[st.chipText, { color: colors.accent }]}>{MOOD_EMOJI[personality.current_mood] || "🤖"} {personality.current_mood}</Text>
                   </View>
                 </View>
               </View>
@@ -98,7 +101,7 @@ export default function PersonalityScreen() {
           <View style={st.card}>
             {Object.entries(traits).map(([trait, value]) => {
               const TIcon = TRAIT_ICONS[trait] || Zap;
-              const color = TRAIT_COLORS[trait] || Colors.accent;
+              const color = TRAIT_COLORS[trait] || colors.accent;
               const pct = Math.round((value as number) * 100);
               return (
                 <View key={trait} style={st.traitRow}>
@@ -138,7 +141,7 @@ export default function PersonalityScreen() {
                 { label: "Facts", val: memory.facts_learned?.length ?? 0, icon: BookOpen, color: "#38BDF8" },
                 { label: "Opinions", val: memory.opinions_formed?.length ?? 0, icon: Lightbulb, color: "#FBBF24" },
                 { label: "Topics", val: memory.topics_explored?.length ?? 0, icon: MessageSquare, color: "#34D399" },
-                { label: "Interactions", val: memory.interactions_count ?? 0, icon: Zap, color: Colors.accent },
+                { label: "Interactions", val: memory.interactions_count ?? 0, icon: Zap, color: colors.accent },
               ].map(item => (
                 <View key={item.label} style={st.memStatBox}>
                   <item.icon size={14} color={item.color} />
@@ -180,9 +183,9 @@ export default function PersonalityScreen() {
               <Text style={st.secLabel}>EVOLUTION LOG</Text>
               <TouchableOpacity style={st.card} onPress={() => setShowEvolution(!showEvolution)} activeOpacity={0.7}>
                 <View style={st.evoHeader}>
-                  <TrendingUp size={14} color={Colors.accent} />
+                  <TrendingUp size={14} color={colors.accent} />
                   <Text style={st.evoTitle}>{evoLog.length} evolution{evoLog.length !== 1 ? "s" : ""}</Text>
-                  {showEvolution ? <ChevronUp size={14} color={Colors.textMuted} /> : <ChevronDown size={14} color={Colors.textMuted} />}
+                  {showEvolution ? <ChevronUp size={14} color={colors.textMuted} /> : <ChevronDown size={14} color={colors.textMuted} />}
                 </View>
                 {showEvolution && evoLog.slice(-5).reverse().map((entry: any, i: number) => (
                   <View key={i} style={st.evoRow}>
@@ -201,17 +204,17 @@ export default function PersonalityScreen() {
           <Text style={st.secLabel}>OVERVIEW</Text>
           <View style={st.statsRow}>
             <View style={st.statBox}>
-              <Flame size={16} color={Colors.accent} />
+              <Flame size={16} color={colors.accent} />
               <Text style={st.statVal}>{personality.total_tweets}</Text>
               <Text style={st.statLabel}>Tweets</Text>
             </View>
             <View style={st.statBox}>
-              <Clock size={16} color={Colors.accent} />
+              <Clock size={16} color={colors.accent} />
               <Text style={st.statVal}>{memory.days_active ?? 0}</Text>
               <Text style={st.statLabel}>Days</Text>
             </View>
             <View style={st.statBox}>
-              <Zap size={16} color={Colors.accent} />
+              <Zap size={16} color={colors.accent} />
               <Text style={st.statVal}>{memory.interactions_count ?? 0}</Text>
               <Text style={st.statLabel}>Calls</Text>
             </View>
@@ -228,7 +231,7 @@ function ExpandableList({ title, items, color, expanded, onToggle }: { title: st
       <TouchableOpacity style={st.expandHeader} onPress={onToggle} activeOpacity={0.7}>
         <View style={[st.expandDot, { backgroundColor: color }]} />
         <Text style={st.expandTitle}>{title} ({items.length})</Text>
-        {expanded ? <ChevronUp size={14} color={Colors.textMuted} /> : <ChevronDown size={14} color={Colors.textMuted} />}
+        {expanded ? <ChevronUp size={14} color={colors.textMuted} /> : <ChevronDown size={14} color={colors.textMuted} />}
       </TouchableOpacity>
       {expanded && items.map((item, i) => (
         <View key={i} style={st.expandItem}>
@@ -241,14 +244,14 @@ function ExpandableList({ title, items, color, expanded, onToggle }: { title: st
 
 const mono = Platform.OS === "ios" ? "Menlo" : "monospace";
 
-const st = StyleSheet.create({
+const createStStyles = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: "#000", paddingHorizontal: 16 },
   redGlow: { position: "absolute", top: 0, left: 0, right: 0, height: 250, backgroundColor: "rgba(220,38,38,0.03)" },
   watermark: { top: 18, right: -28 },
   header: { marginBottom: 20 },
-  title: { fontSize: 26, fontWeight: "900", color: Colors.text, letterSpacing: -1 },
-  subtitle: { fontSize: 12, color: Colors.textMuted, marginTop: 3 },
-  secLabel: { fontSize: 10, fontWeight: "800", color: Colors.textMuted, letterSpacing: 1.5, marginTop: 20, marginBottom: 10 },
+  title: { fontSize: 26, fontWeight: "900", color: colors.text, letterSpacing: -1 },
+  subtitle: { fontSize: 12, color: colors.textMuted, marginTop: 3 },
+  secLabel: { fontSize: 10, fontWeight: "800", color: colors.textMuted, letterSpacing: 1.5, marginTop: 20, marginBottom: 10 },
 
   card: {
     backgroundColor: "rgba(220,38,38,0.03)", borderRadius: 18,
@@ -260,23 +263,23 @@ const st = StyleSheet.create({
   identityRow: { flexDirection: "row", gap: 14 },
   identityAvatar: {
     width: 68, height: 68, borderRadius: 34,
-    backgroundColor: "rgba(220,38,38,0.1)", borderWidth: 2, borderColor: "rgba(220,38,38,0.2)",
+    backgroundColor: colors.accentDim, borderWidth: 2, borderColor: "rgba(220,38,38,0.2)",
     alignItems: "center", justifyContent: "center",
   },
-  identityName: { fontSize: 20, fontWeight: "900", color: Colors.text },
-  identityBio: { fontSize: 12, color: Colors.textSecondary, marginTop: 3, lineHeight: 17 },
+  identityName: { fontSize: 20, fontWeight: "900", color: colors.text },
+  identityBio: { fontSize: 12, color: colors.textSecondary, marginTop: 3, lineHeight: 17 },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 5, marginTop: 8 },
   chip: {
     paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8,
-    backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(255,255,255,0.06)",
+    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.surfaceLight,
   },
-  chipText: { fontSize: 10, fontWeight: "600", color: Colors.textMuted },
+  chipText: { fontSize: 10, fontWeight: "600", color: colors.textMuted },
 
   // Traits
   traitRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 },
   traitIcon: { width: 24, height: 24, borderRadius: 6, alignItems: "center", justifyContent: "center" },
-  traitName: { fontSize: 12, color: Colors.textSecondary, width: 65, textTransform: "capitalize", fontWeight: "600" },
-  traitBar: { flex: 1, height: 8, backgroundColor: "rgba(255,255,255,0.06)", borderRadius: 4, overflow: "hidden" },
+  traitName: { fontSize: 12, color: colors.textSecondary, width: 65, textTransform: "capitalize", fontWeight: "600" },
+  traitBar: { flex: 1, height: 8, backgroundColor: colors.surfaceLight, borderRadius: 4, overflow: "hidden" },
   traitFill: { height: 8, borderRadius: 4 },
   traitVal: { fontSize: 11, fontWeight: "800", width: 34, textAlign: "right", fontFamily: mono },
 
@@ -286,36 +289,36 @@ const st = StyleSheet.create({
     backgroundColor: "rgba(220,38,38,0.08)", borderRadius: 10,
     paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: "rgba(220,38,38,0.12)",
   },
-  interestText: { fontSize: 12, fontWeight: "700", color: Colors.accent },
+  interestText: { fontSize: 12, fontWeight: "700", color: colors.accent },
 
   // Memory
   memStats: { flexDirection: "row", gap: 8, marginBottom: 14 },
   memStatBox: { flex: 1, alignItems: "center", gap: 4, paddingVertical: 10, backgroundColor: "rgba(255,255,255,0.02)", borderRadius: 12 },
-  memStatVal: { fontSize: 16, fontWeight: "800", color: Colors.text },
-  memStatLabel: { fontSize: 9, fontWeight: "600", color: Colors.textMuted, textTransform: "uppercase" },
+  memStatVal: { fontSize: 16, fontWeight: "800", color: colors.text },
+  memStatLabel: { fontSize: 9, fontWeight: "600", color: colors.textMuted, textTransform: "uppercase" },
 
-  expandable: { marginTop: 10, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.04)", paddingTop: 10 },
+  expandable: { marginTop: 10, borderTopWidth: 1, borderTopColor: colors.surface, paddingTop: 10 },
   expandHeader: { flexDirection: "row", alignItems: "center", gap: 8 },
   expandDot: { width: 8, height: 8, borderRadius: 4 },
-  expandTitle: { fontSize: 13, fontWeight: "700", color: Colors.text, flex: 1 },
+  expandTitle: { fontSize: 13, fontWeight: "700", color: colors.text, flex: 1 },
   expandItem: { paddingLeft: 16, paddingVertical: 4 },
-  expandItemText: { fontSize: 12, color: Colors.textSecondary, lineHeight: 18 },
+  expandItemText: { fontSize: 12, color: colors.textSecondary, lineHeight: 18 },
 
   // Mood timeline
   moodTimeline: { marginBottom: 10 },
   moodDot: {
     width: 32, height: 32, borderRadius: 16,
-    backgroundColor: "rgba(220,38,38,0.06)", borderWidth: 1, borderColor: "rgba(220,38,38,0.1)",
+    backgroundColor: "rgba(220,38,38,0.06)", borderWidth: 1, borderColor: colors.accentDim,
     alignItems: "center", justifyContent: "center",
   },
 
   // Evolution
   evoHeader: { flexDirection: "row", alignItems: "center", gap: 8 },
-  evoTitle: { fontSize: 14, fontWeight: "700", color: Colors.text, flex: 1 },
+  evoTitle: { fontSize: 14, fontWeight: "700", color: colors.text, flex: 1 },
   evoRow: { flexDirection: "row", alignItems: "flex-start", gap: 10, marginTop: 12, paddingLeft: 4 },
-  evoDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.accent, marginTop: 4 },
-  evoMood: { fontSize: 12, fontWeight: "600", color: Colors.text },
-  evoTime: { fontSize: 10, color: Colors.textMuted, marginTop: 2, fontFamily: mono },
+  evoDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.accent, marginTop: 4 },
+  evoMood: { fontSize: 12, fontWeight: "600", color: colors.text },
+  evoTime: { fontSize: 10, color: colors.textMuted, marginTop: 2, fontFamily: mono },
 
   // Stats
   statsRow: { flexDirection: "row", gap: 8 },
@@ -324,8 +327,8 @@ const st = StyleSheet.create({
     backgroundColor: "rgba(220,38,38,0.04)", borderRadius: 16,
     borderWidth: 1, borderColor: "rgba(220,38,38,0.08)",
   },
-  statVal: { fontSize: 20, fontWeight: "900", color: Colors.text },
-  statLabel: { fontSize: 9, fontWeight: "700", color: Colors.textMuted, textTransform: "uppercase", letterSpacing: 0.5 },
+  statVal: { fontSize: 20, fontWeight: "900", color: colors.text },
+  statLabel: { fontSize: 9, fontWeight: "700", color: colors.textMuted, textTransform: "uppercase", letterSpacing: 0.5 },
 
   // Empty
   empty: {
@@ -333,6 +336,6 @@ const st = StyleSheet.create({
     backgroundColor: "rgba(220,38,38,0.03)", borderRadius: 20,
     borderWidth: 1, borderColor: "rgba(220,38,38,0.08)",
   },
-  emptyTitle: { fontSize: 16, fontWeight: "700", color: Colors.textSecondary, marginTop: 16 },
-  emptySub: { fontSize: 13, color: Colors.textMuted, marginTop: 4, textAlign: "center", lineHeight: 20 },
+  emptyTitle: { fontSize: 16, fontWeight: "700", color: colors.textSecondary, marginTop: 16 },
+  emptySub: { fontSize: 13, color: colors.textMuted, marginTop: 4, textAlign: "center", lineHeight: 20 },
 });

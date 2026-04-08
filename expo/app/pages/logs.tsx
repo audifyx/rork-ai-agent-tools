@@ -8,7 +8,7 @@ import { Activity, ArrowLeft, Trash2 } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/authStore";
-import Colors from "@/constants/colors";
+import { useTheme } from "@/providers/ThemeProvider";
 
 const ACTION_ICONS: Record<string, string> = {
   add_deployment: "🚀",
@@ -31,6 +31,9 @@ function timeAgo(d: string) {
 }
 
 export default function LogsScreen() {
+  const { colors, theme } = useTheme();
+  const isDark = theme.dark;
+  const styles = createStylesStyles(colors);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuthStore();
@@ -55,11 +58,11 @@ export default function LogsScreen() {
     <ScrollView
       style={styles.container}
       contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: 100 }}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.accent} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
     >
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <ArrowLeft size={20} color={Colors.text} />
+          <ArrowLeft size={20} color={colors.text} />
         </TouchableOpacity>
         <View>
           <Text style={styles.title}>📋 Pages Logs</Text>
@@ -69,7 +72,7 @@ export default function LogsScreen() {
 
       {logs.length === 0 ? (
         <View style={styles.empty}>
-          <Activity size={40} color={Colors.textMuted} />
+          <Activity size={40} color={colors.textMuted} />
           <Text style={styles.emptyText}>No activity yet</Text>
           <Text style={styles.emptySubtext}>API calls and actions will appear here</Text>
         </View>
@@ -89,18 +92,18 @@ export default function LogsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background, paddingHorizontal: 20 },
+const createStylesStyles = (colors: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background, paddingHorizontal: 20 },
   header: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 20 },
-  backBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: Colors.surface, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: Colors.border },
-  title: { fontSize: 22, fontWeight: "800", color: Colors.text, letterSpacing: -0.5 },
-  subtitle: { fontSize: 12, color: Colors.textMuted, marginTop: 2 },
+  backBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: colors.surfaceLight },
+  title: { fontSize: 22, fontWeight: "800", color: colors.text, letterSpacing: -0.5 },
+  subtitle: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
   empty: { alignItems: "center", paddingTop: 60, gap: 10 },
-  emptyText: { fontSize: 16, fontWeight: "600", color: Colors.textSecondary },
-  emptySubtext: { fontSize: 13, color: Colors.textMuted },
-  logItem: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: Colors.surface, borderRadius: 12, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: Colors.border },
+  emptyText: { fontSize: 16, fontWeight: "600", color: colors.textSecondary },
+  emptySubtext: { fontSize: 13, color: colors.textMuted },
+  logItem: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: colors.surface, borderRadius: 12, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: colors.surfaceLight },
   logIcon: { fontSize: 20 },
-  logAction: { fontSize: 13, fontWeight: "700", color: Colors.text },
-  logDesc: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
-  logTime: { fontSize: 11, color: Colors.textMuted },
+  logAction: { fontSize: 13, fontWeight: "700", color: colors.text },
+  logDesc: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
+  logTime: { fontSize: 11, color: colors.textMuted },
 });

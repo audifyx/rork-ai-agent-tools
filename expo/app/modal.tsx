@@ -1,4 +1,3 @@
-// template
 import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import {
@@ -10,8 +9,12 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useTheme } from "@/providers/ThemeProvider";
 
 export default function ModalScreen() {
+  const { colors, theme } = useTheme();
+  const isDark = theme.dark;
+
   return (
     <Modal
       animationType="fade"
@@ -20,15 +23,15 @@ export default function ModalScreen() {
       onRequestClose={() => router.back()}
     >
       <Pressable style={styles.overlay} onPress={() => router.back()}>
-        <View style={styles.modalContent}>
-          <Text style={styles.title}>Modal</Text>
-          <Text style={styles.description}>
+        <View style={[styles.modalContent, { backgroundColor: isDark ? colors.surfaceSolid : "#FFFFFF", borderColor: colors.glassBorder, borderWidth: 1 }]}>
+          <Text style={[styles.title, { color: colors.text }]}>Modal</Text>
+          <Text style={[styles.description, { color: colors.textSecondary }]}>
             This is an example modal with proper fade animation. You can edit it
             in app/modal.tsx.
           </Text>
 
           <TouchableOpacity
-            style={styles.closeButton}
+            style={[styles.closeButton, { backgroundColor: colors.accent }]}
             onPress={() => router.back()}
           >
             <Text style={styles.closeButtonText}>Close</Text>
@@ -36,7 +39,6 @@ export default function ModalScreen() {
         </View>
       </Pressable>
 
-      {/* Use a light status bar on iOS to account for the black space above the modal */}
       <StatusBar style={Platform.OS === "ios" ? "light" : "auto"} />
     </Modal>
   );
@@ -50,7 +52,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   modalContent: {
-    backgroundColor: "white",
     borderRadius: 20,
     padding: 24,
     margin: 20,
@@ -59,17 +60,15 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 20,
-    fontWeight: "bold",
+    fontWeight: "bold" as const,
     marginBottom: 16,
   },
   description: {
     textAlign: "center",
     marginBottom: 24,
-    color: "#666",
     lineHeight: 20,
   },
   closeButton: {
-    backgroundColor: "#007AFF",
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 10,
@@ -77,7 +76,7 @@ const styles = StyleSheet.create({
   },
   closeButtonText: {
     color: "white",
-    fontWeight: "600",
+    fontWeight: "600" as const,
     textAlign: "center",
   },
 });

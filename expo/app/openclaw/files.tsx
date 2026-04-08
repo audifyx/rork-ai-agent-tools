@@ -18,7 +18,7 @@ import {
 } from "lucide-react-native";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/authStore";
-import Colors from "@/constants/colors";
+import { useTheme } from "@/providers/ThemeProvider";
 
 const { width: SW, height: SH } = Dimensions.get("window");
 
@@ -28,9 +28,9 @@ const CATEGORY_ICONS: Record<string, any> = {
   code: Code, archive: FileArchive, web: Globe, general: File,
 };
 const CATEGORY_COLORS: Record<string, string> = {
-  image: Colors.success, audio: "#A78BFA", video: Colors.danger,
-  text: Colors.info, code: Colors.warning, archive: "#F472B6",
-  web: "#38BDF8", general: Colors.textMuted,
+  image: colors.success, audio: "#A78BFA", video: colors.danger,
+  text: colors.info, code: colors.warning, archive: "#F472B6",
+  web: "#38BDF8", general: colors.textMuted,
 };
 const CATEGORY_LABELS: Record<string, string> = {
   all: "All", image: "Images", audio: "Audio", video: "Video",
@@ -130,7 +130,7 @@ function AudioPlayer({ url, filename }: { url: string; filename: string }) {
       <Text style={pStyles.audioFilename} numberOfLines={1}>{filename}</Text>
       <View style={pStyles.audioRow}>
         <TouchableOpacity style={pStyles.playBtn} onPress={toggle}>{playing ? <Pause size={22} color="#fff" /> : <Play size={22} color="#fff" />}</TouchableOpacity>
-        <TouchableOpacity style={pStyles.stopBtn} onPress={stop}><Square size={16} color={Colors.textMuted} /></TouchableOpacity>
+        <TouchableOpacity style={pStyles.stopBtn} onPress={stop}><Square size={16} color={colors.textMuted} /></TouchableOpacity>
       </View>
       <View style={pStyles.progressBar}><View style={[pStyles.progressFill, { width: `${prog * 100}%` }]} /></View>
       <View style={pStyles.timeRow}><Text style={pStyles.timeText}>{fmt(position)}</Text><Text style={pStyles.timeText}>{fmt(duration)}</Text></View>
@@ -161,17 +161,17 @@ function HtmlCodePreview({ url, mime }: { url: string; mime: string }) {
     })();
   }, [url]);
 
-  if (loading) return <ActivityIndicator color={Colors.accent} style={{ marginTop: 40 }} />;
+  if (loading) return <ActivityIndicator color={colors.accent} style={{ marginTop: 40 }} />;
 
   return (
     <View style={pStyles.htmlContainer}>
       {isHtml && (
         <View style={pStyles.toggleRow}>
           <TouchableOpacity style={[pStyles.toggleBtn, !showCode && pStyles.toggleActive]} onPress={() => setShowCode(false)}>
-            <Eye size={13} color={!showCode ? "#000" : Colors.textMuted} /><Text style={[pStyles.toggleText, !showCode && { color: "#000" }]}>Live Preview</Text>
+            <Eye size={13} color={!showCode ? "#000" : colors.textMuted} /><Text style={[pStyles.toggleText, !showCode && { color: "#000" }]}>Live Preview</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[pStyles.toggleBtn, showCode && pStyles.toggleActive]} onPress={() => setShowCode(true)}>
-            <Code2 size={13} color={showCode ? "#000" : Colors.textMuted} /><Text style={[pStyles.toggleText, showCode && { color: "#000" }]}>Source</Text>
+            <Code2 size={13} color={showCode ? "#000" : colors.textMuted} /><Text style={[pStyles.toggleText, showCode && { color: "#000" }]}>Source</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -202,10 +202,10 @@ function FilePreviewModal({ visible, file, onClose }: { visible: boolean; file: 
   const mime = file.mime_type || "";
   const cat = file.category || getCategory(mime, file.filename);
   const Icon = CATEGORY_ICONS[cat] || File;
-  const color = CATEGORY_COLORS[cat] || Colors.textMuted;
+  const color = CATEGORY_COLORS[cat] || colors.textMuted;
 
   const renderPreview = () => {
-    if (loading || !url) return <ActivityIndicator color={Colors.accent} size="large" style={{ marginTop: 60 }} />;
+    if (loading || !url) return <ActivityIndicator color={colors.accent} size="large" style={{ marginTop: 60 }} />;
     if (mime.startsWith("image/")) return <ImagePreview url={url} />;
     if (mime.startsWith("audio/")) return <AudioPlayer url={url} filename={file.filename} />;
     if (mime.startsWith("video/")) return <VideoPlayer url={url} />;
@@ -213,7 +213,7 @@ function FilePreviewModal({ visible, file, onClose }: { visible: boolean; file: 
       return <HtmlCodePreview url={url} mime={mime} />;
     return (
       <View style={pStyles.unsupported}>
-        <File size={48} color={Colors.textMuted} />
+        <File size={48} color={colors.textMuted} />
         <Text style={pStyles.unsupportedText}>No preview for this file type</Text>
         <Text style={pStyles.unsupportedMime}>{mime || "unknown"}</Text>
       </View>
@@ -229,7 +229,7 @@ function FilePreviewModal({ visible, file, onClose }: { visible: boolean; file: 
             <Text style={pStyles.headerTitle} numberOfLines={1}>{file.filename}</Text>
             <Text style={pStyles.headerMeta}>{formatBytes(file.file_size)} · {cat} · {mime}</Text>
           </View>
-          <TouchableOpacity style={pStyles.closeBtn} onPress={onClose}><X size={20} color={Colors.text} /></TouchableOpacity>
+          <TouchableOpacity style={pStyles.closeBtn} onPress={onClose}><X size={20} color={colors.text} /></TouchableOpacity>
         </View>
         <View style={{ flex: 1 }}>{renderPreview()}</View>
       </View>
@@ -239,6 +239,10 @@ function FilePreviewModal({ visible, file, onClose }: { visible: boolean; file: 
 
 // ─── Main Files Tab ────────────────────────────────────
 export default function FilesTab() {
+  const { colors, theme } = useTheme();
+  const isDark = theme.dark;
+  const pStyles = createPstylesStyles(colors);
+  const s = createSStyles(colors);
   const insets = useSafeAreaInsets();
   const { user } = useAuthStore();
   const [files, setFiles] = useState<any[]>([]);
@@ -373,12 +377,12 @@ export default function FilesTab() {
       <ScrollView
         style={s.container}
         contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: 120 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.accent} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
       >
         {/* Header */}
         <View style={s.headerRow}>
           <View>
-            <Text style={s.title}>File <Text style={{ color: Colors.accent }}>System</Text></Text>
+            <Text style={s.title}>File <Text style={{ color: colors.accent }}>System</Text></Text>
             <Text style={s.subtitle}>{files.length} files · {formatBytes(totalSize)}</Text>
           </View>
           <TouchableOpacity style={s.uploadBtn} onPress={handleUpload} disabled={uploading} activeOpacity={0.7}>
@@ -399,7 +403,7 @@ export default function FilesTab() {
                 onPress={() => setSortMode(mode)}
                 activeOpacity={0.7}
               >
-                <SIcon size={12} color={active ? "#000" : Colors.textMuted} />
+                <SIcon size={12} color={active ? "#000" : colors.textMuted} />
                 <Text style={[s.sortChipText, active && s.sortChipTextActive]}>{sortLabels[mode]}</Text>
               </TouchableOpacity>
             );
@@ -410,7 +414,7 @@ export default function FilesTab() {
             onPress={() => setShowFilters(!showFilters)}
             activeOpacity={0.7}
           >
-            <Filter size={14} color={showFilters ? "#000" : Colors.textMuted} />
+            <Filter size={14} color={showFilters ? "#000" : colors.textMuted} />
           </TouchableOpacity>
         </View>
 
@@ -422,7 +426,7 @@ export default function FilesTab() {
               if (cat !== "all" && count === 0) return null;
               const active = filterCat === cat;
               const CIcon = cat === "all" ? Grid : (CATEGORY_ICONS[cat] || File);
-              const clr = cat === "all" ? Colors.accent : (CATEGORY_COLORS[cat] || Colors.textMuted);
+              const clr = cat === "all" ? colors.accent : (CATEGORY_COLORS[cat] || colors.textMuted);
               return (
                 <TouchableOpacity
                   key={cat}
@@ -443,14 +447,14 @@ export default function FilesTab() {
         {/* Breadcrumb */}
         <View style={s.breadcrumb}>
           <TouchableOpacity onPress={() => setCurrentPath([])} style={s.breadcrumbItem}>
-            <Home size={13} color={currentPath.length === 0 ? Colors.accent : Colors.textMuted} />
-            <Text style={[s.breadcrumbText, currentPath.length === 0 && { color: Colors.accent }]}>Root</Text>
+            <Home size={13} color={currentPath.length === 0 ? colors.accent : colors.textMuted} />
+            <Text style={[s.breadcrumbText, currentPath.length === 0 && { color: colors.accent }]}>Root</Text>
           </TouchableOpacity>
           {currentPath.map((seg, i) => (
             <React.Fragment key={i}>
-              <ChevronRight size={11} color={Colors.textMuted} />
+              <ChevronRight size={11} color={colors.textMuted} />
               <TouchableOpacity onPress={() => setCurrentPath(currentPath.slice(0, i + 1))} style={s.breadcrumbItem}>
-                <Text style={[s.breadcrumbText, i === currentPath.length - 1 && { color: Colors.accent }]}>{seg}</Text>
+                <Text style={[s.breadcrumbText, i === currentPath.length - 1 && { color: colors.accent }]}>{seg}</Text>
               </TouchableOpacity>
             </React.Fragment>
           ))}
@@ -459,26 +463,26 @@ export default function FilesTab() {
         {/* Back */}
         {currentPath.length > 0 && (
           <TouchableOpacity style={s.backBtn} onPress={() => setCurrentPath(currentPath.slice(0, -1))} activeOpacity={0.7}>
-            <ArrowLeft size={15} color={Colors.textSecondary} /><Text style={s.backText}>Back</Text>
+            <ArrowLeft size={15} color={colors.textSecondary} /><Text style={s.backText}>Back</Text>
           </TouchableOpacity>
         )}
 
         {/* Folders */}
         {currentItems.folders.map(folder => (
           <TouchableOpacity key={folder} style={s.folderRow} onPress={() => setCurrentPath([...currentPath, folder])} activeOpacity={0.7}>
-            <View style={s.folderIcon}><FolderClosed size={18} color={Colors.accent} /></View>
+            <View style={s.folderIcon}><FolderClosed size={18} color={colors.accent} /></View>
             <View style={{ flex: 1 }}>
               <Text style={s.folderName}>{folder}</Text>
               <Text style={s.folderMeta}>Folder</Text>
             </View>
-            <ChevronRight size={16} color={Colors.textMuted} />
+            <ChevronRight size={16} color={colors.textMuted} />
           </TouchableOpacity>
         ))}
 
         {/* Files */}
         {currentItems.files.length === 0 && currentItems.folders.length === 0 ? (
           <View style={s.empty}>
-            <FolderOpen size={48} color={Colors.textMuted} />
+            <FolderOpen size={48} color={colors.textMuted} />
             <Text style={s.emptyText}>No files here</Text>
             <Text style={s.emptySub}>Tap + to upload any file type</Text>
           </View>
@@ -486,7 +490,7 @@ export default function FilesTab() {
           currentItems.files.map(file => {
             const cat = file.category || getCategory(file.mime_type, file.filename);
             const Icon = CATEGORY_ICONS[cat] || File;
-            const color = CATEGORY_COLORS[cat] || Colors.textMuted;
+            const color = CATEGORY_COLORS[cat] || colors.textMuted;
             const ext = getFileExt(file.filename);
             const canPreview = isPreviewable(file.mime_type);
 
@@ -517,10 +521,10 @@ export default function FilesTab() {
                 </View>
                 {/* Actions */}
                 {canPreview && (
-                  <View style={s.previewBadge}><Eye size={12} color={Colors.accent} /></View>
+                  <View style={s.previewBadge}><Eye size={12} color={colors.accent} /></View>
                 )}
                 <TouchableOpacity onPress={() => handleDelete(file)} style={s.deleteBtn} activeOpacity={0.6}>
-                  <Trash2 size={15} color={Colors.textMuted} />
+                  <Trash2 size={15} color={colors.textMuted} />
                 </TouchableOpacity>
               </TouchableOpacity>
             );
@@ -536,73 +540,73 @@ export default function FilesTab() {
 // ─── Styles ────────────────────────────────────────────
 const mono = Platform.OS === "ios" ? "Menlo" : "monospace";
 
-const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background, paddingHorizontal: 16 },
+const createSStyles = (colors: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background, paddingHorizontal: 16 },
   headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 },
-  title: { fontSize: 28, fontWeight: "700", color: Colors.text, letterSpacing: -0.5 },
-  subtitle: { fontSize: 13, color: Colors.textMuted, marginTop: 4 },
-  uploadBtn: { width: 44, height: 44, borderRadius: 14, backgroundColor: Colors.accent, alignItems: "center", justifyContent: "center" },
+  title: { fontSize: 28, fontWeight: "700", color: colors.text, letterSpacing: -0.5 },
+  subtitle: { fontSize: 13, color: colors.textMuted, marginTop: 4 },
+  uploadBtn: { width: 44, height: 44, borderRadius: 14, backgroundColor: colors.accent, alignItems: "center", justifyContent: "center" },
 
   // Toolbar
   toolbar: { flexDirection: "row", gap: 6, marginBottom: 10, alignItems: "center" },
   sortChip: {
     flexDirection: "row", alignItems: "center", gap: 4,
     paddingHorizontal: 10, paddingVertical: 7, borderRadius: 10,
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
+    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.surfaceLight,
   },
-  sortChipActive: { backgroundColor: Colors.accent, borderColor: Colors.accent },
-  sortChipText: { fontSize: 11, fontWeight: "600", color: Colors.textMuted },
+  sortChipActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+  sortChipText: { fontSize: 11, fontWeight: "600", color: colors.textMuted },
   sortChipTextActive: { color: "#000" },
   filterToggle: {
     marginLeft: "auto", width: 34, height: 34, borderRadius: 10,
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
+    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.surfaceLight,
     alignItems: "center", justifyContent: "center",
   },
-  filterToggleActive: { backgroundColor: Colors.accent, borderColor: Colors.accent },
+  filterToggleActive: { backgroundColor: colors.accent, borderColor: colors.accent },
 
   // Filters
   filterRow: { marginBottom: 12 },
   filterChip: {
     flexDirection: "row", alignItems: "center", gap: 5,
     paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10,
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
+    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.surfaceLight,
   },
-  filterChipText: { fontSize: 11, fontWeight: "600", color: Colors.textMuted },
+  filterChipText: { fontSize: 11, fontWeight: "600", color: colors.textMuted },
 
   // Breadcrumb
   breadcrumb: {
     flexDirection: "row", alignItems: "center", gap: 5,
-    backgroundColor: Colors.surface, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9,
-    borderWidth: 1, borderColor: Colors.border, marginBottom: 10, flexWrap: "wrap",
+    backgroundColor: colors.surface, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9,
+    borderWidth: 1, borderColor: colors.surfaceLight, marginBottom: 10, flexWrap: "wrap",
   },
   breadcrumbItem: { flexDirection: "row", alignItems: "center", gap: 4 },
-  breadcrumbText: { fontSize: 12, fontWeight: "600", color: Colors.textMuted },
+  breadcrumbText: { fontSize: 12, fontWeight: "600", color: colors.textMuted },
   backBtn: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 10 },
-  backText: { fontSize: 13, color: Colors.textSecondary },
+  backText: { fontSize: 13, color: colors.textSecondary },
 
   // Folders
   folderRow: {
     flexDirection: "row", alignItems: "center", gap: 12,
-    backgroundColor: Colors.surface, borderRadius: 14, padding: 14,
-    borderWidth: 1, borderColor: Colors.border, marginBottom: 6,
+    backgroundColor: colors.surface, borderRadius: 14, padding: 14,
+    borderWidth: 1, borderColor: colors.surfaceLight, marginBottom: 6,
   },
-  folderIcon: { width: 38, height: 38, borderRadius: 10, backgroundColor: Colors.accentDim, alignItems: "center", justifyContent: "center" },
-  folderName: { fontSize: 15, fontWeight: "600", color: Colors.text },
-  folderMeta: { fontSize: 11, color: Colors.textMuted, marginTop: 1 },
+  folderIcon: { width: 38, height: 38, borderRadius: 10, backgroundColor: colors.accentDim, alignItems: "center", justifyContent: "center" },
+  folderName: { fontSize: 15, fontWeight: "600", color: colors.text },
+  folderMeta: { fontSize: 11, color: colors.textMuted, marginTop: 1 },
 
   // Empty
   empty: {
-    backgroundColor: Colors.surface, borderRadius: 20, padding: 48,
-    alignItems: "center", borderWidth: 1, borderColor: Colors.border, marginTop: 8,
+    backgroundColor: colors.surface, borderRadius: 20, padding: 48,
+    alignItems: "center", borderWidth: 1, borderColor: colors.surfaceLight, marginTop: 8,
   },
-  emptyText: { fontSize: 16, fontWeight: "600", color: Colors.textSecondary, marginTop: 16 },
-  emptySub: { fontSize: 13, color: Colors.textMuted, marginTop: 4 },
+  emptyText: { fontSize: 16, fontWeight: "600", color: colors.textSecondary, marginTop: 16 },
+  emptySub: { fontSize: 13, color: colors.textMuted, marginTop: 4 },
 
   // Files
   fileRow: {
     flexDirection: "row", alignItems: "center", gap: 10,
-    backgroundColor: Colors.surface, borderRadius: 14, padding: 12,
-    borderWidth: 1, borderColor: Colors.border, marginBottom: 6,
+    backgroundColor: colors.surface, borderRadius: 14, padding: 12,
+    borderWidth: 1, borderColor: colors.surfaceLight, marginBottom: 6,
   },
   fileIconWrap: { position: "relative" },
   fileIcon: { width: 40, height: 40, borderRadius: 10, alignItems: "center", justifyContent: "center" },
@@ -612,49 +616,49 @@ const s = StyleSheet.create({
   },
   extText: { fontSize: 7, fontWeight: "800", color: "#000" },
   fileInfo: { flex: 1 },
-  fileName: { fontSize: 14, fontWeight: "600", color: Colors.text },
+  fileName: { fontSize: 14, fontWeight: "600", color: colors.text },
   fileMetaRow: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 3 },
-  fileMeta: { fontSize: 10, color: Colors.textMuted },
-  metaDot: { width: 3, height: 3, borderRadius: 1.5, backgroundColor: Colors.textMuted, opacity: 0.4 },
-  previewBadge: { width: 26, height: 26, borderRadius: 7, backgroundColor: Colors.accentDim, alignItems: "center", justifyContent: "center" },
+  fileMeta: { fontSize: 10, color: colors.textMuted },
+  metaDot: { width: 3, height: 3, borderRadius: 1.5, backgroundColor: colors.textMuted, opacity: 0.4 },
+  previewBadge: { width: 26, height: 26, borderRadius: 7, backgroundColor: colors.accentDim, alignItems: "center", justifyContent: "center" },
   deleteBtn: { padding: 7 },
 });
 
-const pStyles = StyleSheet.create({
+const createPstylesStyles = (colors: any) => StyleSheet.create({
   modal: { flex: 1, backgroundColor: "#000" },
-  header: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: Colors.border },
+  header: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.surfaceLight },
   headerIcon: { width: 38, height: 38, borderRadius: 10, alignItems: "center", justifyContent: "center" },
-  headerTitle: { fontSize: 15, fontWeight: "700", color: Colors.text },
-  headerMeta: { fontSize: 10, color: Colors.textMuted, marginTop: 2 },
-  closeBtn: { width: 34, height: 34, borderRadius: 17, backgroundColor: Colors.surfaceLight, alignItems: "center", justifyContent: "center" },
+  headerTitle: { fontSize: 15, fontWeight: "700", color: colors.text },
+  headerMeta: { fontSize: 10, color: colors.textMuted, marginTop: 2 },
+  closeBtn: { width: 34, height: 34, borderRadius: 17, backgroundColor: colors.surfaceLight, alignItems: "center", justifyContent: "center" },
 
   imageContainer: { flex: 1, justifyContent: "center", alignItems: "center", padding: 16 },
   image: { width: SW - 32, height: SH * 0.65, borderRadius: 12 },
 
   audioContainer: { flex: 1, justifyContent: "center", alignItems: "center", padding: 32, gap: 20 },
   audioDisc: { width: 90, height: 90, borderRadius: 45, backgroundColor: "rgba(167,139,250,0.1)", borderWidth: 2, borderColor: "rgba(167,139,250,0.2)", alignItems: "center", justifyContent: "center" },
-  audioFilename: { fontSize: 14, fontWeight: "600", color: Colors.text, textAlign: "center" },
+  audioFilename: { fontSize: 14, fontWeight: "600", color: colors.text, textAlign: "center" },
   audioRow: { flexDirection: "row", gap: 14, alignItems: "center" },
   playBtn: { width: 52, height: 52, borderRadius: 26, backgroundColor: "#A78BFA", alignItems: "center", justifyContent: "center" },
-  stopBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.surfaceLight, alignItems: "center", justifyContent: "center" },
-  progressBar: { width: "100%", height: 4, backgroundColor: Colors.surfaceLight, borderRadius: 2, overflow: "hidden" },
+  stopBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surfaceLight, alignItems: "center", justifyContent: "center" },
+  progressBar: { width: "100%", height: 4, backgroundColor: colors.surfaceLight, borderRadius: 2, overflow: "hidden" },
   progressFill: { height: 4, backgroundColor: "#A78BFA", borderRadius: 2 },
   timeRow: { flexDirection: "row", justifyContent: "space-between", width: "100%" },
-  timeText: { fontSize: 11, color: Colors.textMuted, fontFamily: mono },
+  timeText: { fontSize: 11, color: colors.textMuted, fontFamily: mono },
 
   videoContainer: { flex: 1, justifyContent: "center", backgroundColor: "#000" },
   video: { width: SW, height: SH * 0.5, alignSelf: "center" },
 
   htmlContainer: { flex: 1 },
-  toggleRow: { flexDirection: "row", gap: 8, paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: Colors.border },
-  toggleBtn: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 8, backgroundColor: Colors.surfaceLight },
-  toggleActive: { backgroundColor: Colors.accent },
-  toggleText: { fontSize: 12, fontWeight: "600", color: Colors.textMuted },
-  webviewWrap: { flex: 1, margin: 12, borderRadius: 10, overflow: "hidden", borderWidth: 1, borderColor: Colors.border },
+  toggleRow: { flexDirection: "row", gap: 8, paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.surfaceLight },
+  toggleBtn: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 8, backgroundColor: colors.surfaceLight },
+  toggleActive: { backgroundColor: colors.accent },
+  toggleText: { fontSize: 12, fontWeight: "600", color: colors.textMuted },
+  webviewWrap: { flex: 1, margin: 12, borderRadius: 10, overflow: "hidden", borderWidth: 1, borderColor: colors.surfaceLight },
   codeScroll: { flex: 1, padding: 16 },
-  codeText: { fontSize: 11, color: Colors.textSecondary, fontFamily: mono, lineHeight: 18 },
+  codeText: { fontSize: 11, color: colors.textSecondary, fontFamily: mono, lineHeight: 18 },
 
   unsupported: { flex: 1, justifyContent: "center", alignItems: "center", gap: 12 },
-  unsupportedText: { fontSize: 15, color: Colors.textSecondary },
-  unsupportedMime: { fontSize: 12, color: Colors.textMuted, fontFamily: mono },
+  unsupportedText: { fontSize: 15, color: colors.textSecondary },
+  unsupportedMime: { fontSize: 12, color: colors.textMuted, fontFamily: mono },
 });

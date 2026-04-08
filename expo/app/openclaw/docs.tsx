@@ -8,7 +8,7 @@ import {
   Copy, Check, ExternalLink, Shield,
 } from "lucide-react-native";
 import { SUPABASE_URL } from "@/lib/supabase";
-import Colors from "@/constants/colors";
+import { useTheme } from "@/providers/ThemeProvider";
 
 const API_URL = `${SUPABASE_URL}/functions/v1/openclaw-api`;
 
@@ -263,6 +263,9 @@ For every action, send a POST request with JSON body containing "action" and opt
 Responses always return { "success": true/false, "data": ... } or { "success": false, "error": "..." }.`;
 
 export default function DocsTab() {
+  const { colors, theme } = useTheme();
+  const isDark = theme.dark;
+  const styles = createStylesStyles(colors);
   const insets = useSafeAreaInsets();
   const [copied, setCopied] = useState(false);
 
@@ -280,11 +283,11 @@ export default function DocsTab() {
       {/* Header + Copy All */}
       <View style={styles.headerRow}>
         <View>
-          <Text style={styles.title}>API <Text style={{ color: Colors.accent }}>Docs</Text></Text>
+          <Text style={styles.title}>API <Text style={{ color: colors.accent }}>Docs</Text></Text>
           <Text style={styles.subtitle}>OpenClaw Agent API · one copy</Text>
         </View>
         <TouchableOpacity style={[styles.copyAllBtn, copied && styles.copyAllBtnDone]} onPress={handleCopyAll} activeOpacity={0.7}>
-          {copied ? <Check size={15} color={Colors.background} /> : <Copy size={15} color={Colors.background} />}
+          {copied ? <Check size={15} color={colors.background} /> : <Copy size={15} color={colors.background} />}
           <Text style={styles.copyAllText}>{copied ? "Copied!" : "Copy All Docs"}</Text>
         </TouchableOpacity>
       </View>
@@ -292,7 +295,7 @@ export default function DocsTab() {
       {/* Quick info */}
       <View style={styles.infoCard}>
         <View style={styles.infoRow}>
-          <ExternalLink size={14} color={Colors.accent} />
+          <ExternalLink size={14} color={colors.accent} />
           <Text style={styles.infoLabel}>Endpoint</Text>
         </View>
         <View style={styles.urlBox}>
@@ -302,7 +305,7 @@ export default function DocsTab() {
       </View>
 
       <View style={styles.authCard}>
-        <Shield size={14} color={Colors.accent} />
+        <Shield size={14} color={colors.accent} />
         <Text style={styles.authLabel}>Auth</Text>
         <Text style={styles.authCode}>Authorization: Bearer oc_YOUR_API_KEY</Text>
       </View>
@@ -318,7 +321,7 @@ export default function DocsTab() {
 
       {/* Bottom copy button */}
       <TouchableOpacity style={[styles.bottomCopyBtn, copied && styles.bottomCopyBtnDone]} onPress={handleCopyAll} activeOpacity={0.7}>
-        {copied ? <Check size={18} color={Colors.background} /> : <Copy size={18} color={Colors.background} />}
+        {copied ? <Check size={18} color={colors.background} /> : <Copy size={18} color={colors.background} />}
         <Text style={styles.bottomCopyText}>{copied ? "Copied to Clipboard!" : "Copy All Docs"}</Text>
       </TouchableOpacity>
     </ScrollView>
@@ -327,60 +330,60 @@ export default function DocsTab() {
 
 const mono = Platform.OS === "ios" ? "Menlo" : "monospace";
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background, paddingHorizontal: 16 },
+const createStylesStyles = (colors: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background, paddingHorizontal: 16 },
 
   headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 },
-  title: { fontSize: 28, fontWeight: "700", color: Colors.text, letterSpacing: -0.5 },
-  subtitle: { fontSize: 13, color: Colors.textMuted, marginTop: 4 },
+  title: { fontSize: 28, fontWeight: "700", color: colors.text, letterSpacing: -0.5 },
+  subtitle: { fontSize: 13, color: colors.textMuted, marginTop: 4 },
 
   copyAllBtn: {
     flexDirection: "row", alignItems: "center", gap: 6,
-    backgroundColor: Colors.accent, paddingHorizontal: 16, paddingVertical: 11, borderRadius: 14,
+    backgroundColor: colors.accent, paddingHorizontal: 16, paddingVertical: 11, borderRadius: 14,
   },
   copyAllBtnDone: { backgroundColor: "#34D399" },
-  copyAllText: { fontSize: 13, fontWeight: "800", color: Colors.background },
+  copyAllText: { fontSize: 13, fontWeight: "800", color: colors.background },
 
-  secLabel: { fontSize: 11, fontWeight: "700", color: Colors.textMuted, letterSpacing: 1.5, marginTop: 20, marginBottom: 10 },
+  secLabel: { fontSize: 11, fontWeight: "700", color: colors.textMuted, letterSpacing: 1.5, marginTop: 20, marginBottom: 10 },
 
   infoCard: {
-    backgroundColor: Colors.surface, borderRadius: 16, padding: 14,
-    borderWidth: 1, borderColor: Colors.border,
+    backgroundColor: colors.surface, borderRadius: 16, padding: 14,
+    borderWidth: 1, borderColor: colors.surfaceLight,
   },
   infoRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 },
-  infoLabel: { fontSize: 12, fontWeight: "700", color: Colors.accent },
+  infoLabel: { fontSize: 12, fontWeight: "700", color: colors.accent },
   urlBox: {
     flexDirection: "row", alignItems: "center", gap: 8,
-    backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 10,
+    backgroundColor: colors.surfaceLight, borderRadius: 10, padding: 10,
   },
   urlMethod: {
-    fontSize: 10, fontWeight: "800", color: Colors.accent, fontFamily: mono,
-    backgroundColor: Colors.accentDim, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4,
+    fontSize: 10, fontWeight: "800", color: colors.accent, fontFamily: mono,
+    backgroundColor: colors.accentDim, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4,
   },
-  urlText: { fontSize: 10, color: Colors.textSecondary, fontFamily: mono, flex: 1 },
+  urlText: { fontSize: 10, color: colors.textSecondary, fontFamily: mono, flex: 1 },
 
   authCard: {
     flexDirection: "row", alignItems: "center", gap: 8,
-    backgroundColor: Colors.surface, borderRadius: 14, padding: 14,
-    borderWidth: 1, borderColor: Colors.border, marginTop: 10,
+    backgroundColor: colors.surface, borderRadius: 14, padding: 14,
+    borderWidth: 1, borderColor: colors.surfaceLight, marginTop: 10,
   },
-  authLabel: { fontSize: 12, fontWeight: "700", color: Colors.accent },
-  authCode: { fontSize: 11, color: Colors.textSecondary, fontFamily: mono, flex: 1 },
+  authLabel: { fontSize: 12, fontWeight: "700", color: colors.accent },
+  authCode: { fontSize: 11, color: colors.textSecondary, fontFamily: mono, flex: 1 },
 
   docsCard: {
-    backgroundColor: Colors.surface, borderRadius: 18,
-    borderWidth: 1, borderColor: Colors.border, padding: 16,
+    backgroundColor: colors.surface, borderRadius: 18,
+    borderWidth: 1, borderColor: colors.surfaceLight, padding: 16,
   },
-  docsHint: { fontSize: 12, color: Colors.accent, fontWeight: "600", marginBottom: 12 },
+  docsHint: { fontSize: 12, color: colors.accent, fontWeight: "600", marginBottom: 12 },
   docsBox: {
-    backgroundColor: Colors.surfaceLight, borderRadius: 12, padding: 14,
+    backgroundColor: colors.surfaceLight, borderRadius: 12, padding: 14,
   },
-  docsText: { fontSize: 10, color: Colors.textSecondary, fontFamily: mono, lineHeight: 16 },
+  docsText: { fontSize: 10, color: colors.textSecondary, fontFamily: mono, lineHeight: 16 },
 
   bottomCopyBtn: {
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
-    backgroundColor: Colors.accent, borderRadius: 16, paddingVertical: 16, marginTop: 16, marginBottom: 20,
+    backgroundColor: colors.accent, borderRadius: 16, paddingVertical: 16, marginTop: 16, marginBottom: 20,
   },
   bottomCopyBtnDone: { backgroundColor: "#34D399" },
-  bottomCopyText: { fontSize: 16, fontWeight: "800", color: Colors.background },
+  bottomCopyText: { fontSize: 16, fontWeight: "800", color: colors.background },
 });

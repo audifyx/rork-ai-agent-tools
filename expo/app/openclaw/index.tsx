@@ -10,7 +10,7 @@ import {
 } from "lucide-react-native";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/authStore";
-import Colors from "@/constants/colors";
+import { useTheme } from "@/providers/ThemeProvider";
 
 function formatBytes(b: number) {
   if (b < 1024) return `${b} B`;
@@ -19,22 +19,22 @@ function formatBytes(b: number) {
   return `${(b / 1073741824).toFixed(2)} GB`;
 }
 
-function GlassCard({ children, style }: { children: React.ReactNode; style?: any }) {
+function GlassCard({ children, style, isDark, colors }: { children: React.ReactNode; style?: any; isDark: boolean; colors: any }) {
   if (Platform.OS === "ios") {
     return (
-      <BlurView intensity={20} tint="dark" style={[styles.glass, style]}>
+      <BlurView intensity={20} tint={isDark ? "dark" : "light"} style={[{ borderRadius: 20, overflow: "hidden" as const, borderWidth: 1, borderColor: isDark ? "rgba(255,255,255,0.06)" : colors.glassBorder }, style]}>
         <View>{children}</View>
       </BlurView>
     );
   }
-  return <View style={[styles.glassFb, style]}>{children}</View>;
+  return <View style={[{ borderRadius: 20, overflow: "hidden" as const, backgroundColor: colors.glassBg, borderWidth: 1, borderColor: isDark ? "rgba(255,255,255,0.06)" : colors.glassBorder }, style]}>{children}</View>;
 }
 
-function SectionHeader({ title, icon: Icon }: { title: string; icon?: any }) {
+function SectionHeader({ title, icon: Icon, colors }: { title: string; icon?: any; colors: any }) {
   return (
     <View style={styles.secHeader}>
-      {Icon && <Icon size={14} color={Colors.textMuted} />}
-      <Text style={styles.secHeaderText}>{title}</Text>
+      {Icon && <Icon size={14} color={colors.textMuted} />}
+      <Text style={[styles.secHeaderText, { color: colors.textMuted }]}>{title}</Text>
     </View>
   );
 }
@@ -42,6 +42,8 @@ function SectionHeader({ title, icon: Icon }: { title: string; icon?: any }) {
 export default function OpenClawDashboard() {
   const _insets = useSafeAreaInsets();
   const { user } = useAuthStore();
+  const { colors, theme } = useTheme();
+  const isDark = theme.dark;
   const [refreshing, setRefreshing] = useState(false);
   const [stats, setStats] = useState({
     files: 0, leads: 0, webhooks: 0, agents: 0,
@@ -83,68 +85,65 @@ export default function OpenClawDashboard() {
 
   return (
     <ScrollView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: colors.background }]}
       contentContainerStyle={{ paddingTop: 16, paddingBottom: 120 }}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.accent} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.header}>
-        <Text style={styles.title}>Command <Text style={{ color: Colors.accent }}>Center</Text></Text>
-        <View style={styles.liveBadge}>
+        <Text style={[styles.title, { color: colors.text }]}>Command <Text style={{ color: colors.accent }}>Center</Text></Text>
+        <View style={[styles.liveBadge, { backgroundColor: "rgba(52,211,153,0.1)", borderColor: "rgba(52,211,153,0.15)" }]}>
           <View style={styles.liveDot} />
           <Text style={styles.liveText}>Live</Text>
         </View>
       </View>
 
-      {/* Stat widgets */}
-      <SectionHeader title="OVERVIEW" icon={Activity} />
+      <SectionHeader title="OVERVIEW" icon={Activity} colors={colors} />
       <View style={styles.widgetGrid}>
-        <GlassCard style={styles.widgetLg}>
+        <GlassCard style={styles.widgetLg} isDark={isDark} colors={colors}>
           <View style={styles.wRow}>
             <View style={[styles.wIcon, { backgroundColor: "rgba(56,189,248,0.12)" }]}>
               <FolderOpen size={20} color="#38BDF8" />
             </View>
             <View style={styles.wTrend}>
-              <TrendingUp size={12} color={Colors.textMuted} />
-              <Text style={styles.wTrendText}>{stats.recentFiles} today</Text>
+              <TrendingUp size={12} color={colors.textMuted} />
+              <Text style={[styles.wTrendText, { color: colors.textMuted }]}>{stats.recentFiles} today</Text>
             </View>
           </View>
           <Text style={[styles.wVal, { color: "#38BDF8" }]}>{stats.files}</Text>
-          <Text style={styles.wLabel}>Files</Text>
-          <View style={styles.meter}><View style={[styles.meterFill, { width: `${Math.min((stats.totalSize / 104857600) * 100, 100)}%`, backgroundColor: "#38BDF8" }]} /></View>
-          <Text style={styles.wMeta}>{formatBytes(stats.totalSize)} used</Text>
+          <Text style={[styles.wLabel, { color: colors.textSecondary }]}>Files</Text>
+          <View style={[styles.meter, { backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)" }]}><View style={[styles.meterFill, { width: `${Math.min((stats.totalSize / 104857600) * 100, 100)}%`, backgroundColor: "#38BDF8" }]} /></View>
+          <Text style={[styles.wMeta, { color: colors.textMuted }]}>{formatBytes(stats.totalSize)} used</Text>
         </GlassCard>
         <View style={styles.widgetStack}>
-          <GlassCard style={styles.widgetSm}>
+          <GlassCard style={styles.widgetSm} isDark={isDark} colors={colors}>
             <View style={[styles.wIconSm, { backgroundColor: "rgba(52,211,153,0.12)" }]}><Users size={16} color="#34D399" /></View>
             <Text style={[styles.wValSm, { color: "#34D399" }]}>{stats.leads}</Text>
-            <Text style={styles.wLabelSm}>Leads</Text>
+            <Text style={[styles.wLabelSm, { color: colors.textMuted }]}>Leads</Text>
           </GlassCard>
-          <GlassCard style={styles.widgetSm}>
+          <GlassCard style={styles.widgetSm} isDark={isDark} colors={colors}>
             <View style={[styles.wIconSm, { backgroundColor: "rgba(251,191,36,0.12)" }]}><Webhook size={16} color="#FBBF24" /></View>
             <Text style={[styles.wValSm, { color: "#FBBF24" }]}>{stats.webhooks}</Text>
-            <Text style={styles.wLabelSm}>API Calls</Text>
+            <Text style={[styles.wLabelSm, { color: colors.textMuted }]}>API Calls</Text>
           </GlassCard>
         </View>
       </View>
 
-      {/* Agent status */}
-      <GlassCard style={styles.agentCard}>
+      <GlassCard style={styles.agentCard} isDark={isDark} colors={colors}>
         <View style={styles.agentRow}>
-          <View style={[styles.wIcon, { backgroundColor: Colors.accentDim }]}><Bot size={20} color={Colors.accent} /></View>
+          <View style={[styles.wIcon, { backgroundColor: colors.accentDim }]}><Bot size={20} color={colors.accent} /></View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.agentTitle}>Agent Status</Text>
-            <Text style={styles.agentSub}>{stats.agents} configured · Key {stats.apiKeyActive ? "active" : "inactive"}</Text>
+            <Text style={[styles.agentTitle, { color: colors.text }]}>Agent Status</Text>
+            <Text style={[styles.agentSub, { color: colors.textMuted }]}>{stats.agents} configured · Key {stats.apiKeyActive ? "active" : "inactive"}</Text>
           </View>
-          <View style={[styles.agentBadge, stats.apiKeyActive && styles.agentBadgeOn]}>
-            <Text style={[styles.agentBadgeText, stats.apiKeyActive && { color: Colors.accent }]}>{stats.apiKeyActive ? "Ready" : "Setup"}</Text>
+          <View style={[styles.agentBadge, { backgroundColor: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)", borderColor: colors.border }, stats.apiKeyActive && { backgroundColor: colors.accentDim, borderColor: colors.accentGlow }]}>
+            <Text style={[styles.agentBadgeText, { color: colors.textMuted }, stats.apiKeyActive && { color: colors.accent }]}>{stats.apiKeyActive ? "Ready" : "Setup"}</Text>
           </View>
         </View>
       </GlassCard>
 
-      {/* Metrics */}
-      <SectionHeader title="METRICS" icon={Zap} />
-      <GlassCard style={{ padding: 0 }}>
+      <SectionHeader title="METRICS" icon={Zap} colors={colors} />
+      <GlassCard style={{ padding: 0 }} isDark={isDark} colors={colors}>
         <View style={styles.metricsGrid}>
           {[
             { label: "Storage", value: formatBytes(stats.totalSize), icon: HardDrive },
@@ -152,23 +151,22 @@ export default function OpenClawDashboard() {
             { label: "API Key", value: stats.apiKeyActive ? "Active" : "None", icon: Shield },
             { label: "Endpoint", value: "Online", icon: Globe },
           ].map((m, i) => (
-            <View key={m.label} style={[styles.metricItem, i < 2 && styles.metricBorder]}>
-              <m.icon size={14} color={Colors.textMuted} />
-              <Text style={styles.metricVal}>{m.value}</Text>
-              <Text style={styles.metricLabel}>{m.label}</Text>
+            <View key={m.label} style={[styles.metricItem, i < 2 && { borderBottomWidth: 1, borderBottomColor: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)" }]}>
+              <m.icon size={14} color={colors.textMuted} />
+              <Text style={[styles.metricVal, { color: colors.text }]}>{m.value}</Text>
+              <Text style={[styles.metricLabel, { color: colors.textMuted }]}>{m.label}</Text>
             </View>
           ))}
         </View>
       </GlassCard>
 
-      {/* System */}
-      <SectionHeader title="SYSTEM" icon={CircleDot} />
-      <GlassCard style={{ padding: 0 }}>
+      <SectionHeader title="SYSTEM" icon={CircleDot} colors={colors} />
+      <GlassCard style={{ padding: 0 }} isDark={isDark} colors={colors}>
         {["Database", "File Storage", "API Endpoint", "Realtime"].map((name, i, arr) => (
-          <View key={name} style={[styles.statusRow, i < arr.length - 1 && styles.statusBorder]}>
+          <View key={name} style={[styles.statusRow, i < arr.length - 1 && { borderBottomWidth: 1, borderBottomColor: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)" }]}>
             <View style={styles.dotWrap}><View style={styles.dotOuter} /><View style={styles.dotInner} /></View>
-            <Text style={styles.statusName}>{name}</Text>
-            <Text style={styles.statusVal}>Online</Text>
+            <Text style={[styles.statusName, { color: colors.text }]}>{name}</Text>
+            <Text style={[styles.statusVal, { fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace" }]}>Online</Text>
           </View>
         ))}
       </GlassCard>
@@ -177,18 +175,15 @@ export default function OpenClawDashboard() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background, paddingHorizontal: 20 },
+  container: { flex: 1, paddingHorizontal: 20 },
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
-  title: { fontSize: 24, fontWeight: "800", color: Colors.text, letterSpacing: -0.8 },
-  liveBadge: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "rgba(52,211,153,0.1)", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: "rgba(52,211,153,0.15)" },
+  title: { fontSize: 24, fontWeight: "800" as const, letterSpacing: -0.8 },
+  liveBadge: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1 },
   liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "#34D399" },
-  liveText: { fontSize: 12, fontWeight: "700", color: "#34D399" },
+  liveText: { fontSize: 12, fontWeight: "700" as const, color: "#34D399" },
 
   secHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 10, marginTop: 24 },
-  secHeaderText: { fontSize: 11, fontWeight: "700", color: Colors.textMuted, letterSpacing: 1.5 },
-
-  glass: { borderRadius: 20, overflow: "hidden", borderWidth: 1, borderColor: "rgba(255,255,255,0.06)" },
-  glassFb: { borderRadius: 20, overflow: "hidden", backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(255,255,255,0.06)" },
+  secHeaderText: { fontSize: 11, fontWeight: "700" as const, letterSpacing: 1.5 },
 
   widgetGrid: { flexDirection: "row", gap: 10 },
   widgetLg: { flex: 1.2, padding: 18 },
@@ -199,34 +194,31 @@ const styles = StyleSheet.create({
   wIcon: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   wIconSm: { width: 34, height: 34, borderRadius: 10, alignItems: "center", justifyContent: "center", marginBottom: 10 },
   wTrend: { flexDirection: "row", alignItems: "center", gap: 4 },
-  wTrendText: { fontSize: 11, color: Colors.textMuted },
-  wVal: { fontSize: 36, fontWeight: "800", letterSpacing: -1.5 },
-  wValSm: { fontSize: 28, fontWeight: "800", letterSpacing: -1 },
-  wLabel: { fontSize: 13, color: Colors.textSecondary, marginTop: 2 },
-  wLabelSm: { fontSize: 12, color: Colors.textMuted, marginTop: 2 },
-  meter: { height: 3, backgroundColor: "rgba(255,255,255,0.06)", borderRadius: 2, marginTop: 14, overflow: "hidden" },
+  wTrendText: { fontSize: 11 },
+  wVal: { fontSize: 36, fontWeight: "800" as const, letterSpacing: -1.5 },
+  wValSm: { fontSize: 28, fontWeight: "800" as const, letterSpacing: -1 },
+  wLabel: { fontSize: 13, marginTop: 2 },
+  wLabelSm: { fontSize: 12, marginTop: 2 },
+  meter: { height: 3, borderRadius: 2, marginTop: 14, overflow: "hidden" },
   meterFill: { height: 3, borderRadius: 2 },
-  wMeta: { fontSize: 10, color: Colors.textMuted, marginTop: 6 },
+  wMeta: { fontSize: 10, marginTop: 6 },
 
   agentCard: { marginTop: 10, padding: 16 },
   agentRow: { flexDirection: "row", alignItems: "center", gap: 14 },
-  agentTitle: { fontSize: 15, fontWeight: "700", color: Colors.text },
-  agentSub: { fontSize: 12, color: Colors.textMuted, marginTop: 2 },
-  agentBadge: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: Colors.border },
-  agentBadgeOn: { backgroundColor: Colors.accentDim, borderColor: "rgba(220,38,38,0.2)" },
-  agentBadgeText: { fontSize: 11, fontWeight: "700", color: Colors.textMuted },
+  agentTitle: { fontSize: 15, fontWeight: "700" as const },
+  agentSub: { fontSize: 12, marginTop: 2 },
+  agentBadge: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 10, borderWidth: 1 },
+  agentBadgeText: { fontSize: 11, fontWeight: "700" as const },
 
   metricsGrid: { flexDirection: "row", flexWrap: "wrap" },
   metricItem: { width: "50%" as any, paddingVertical: 16, paddingHorizontal: 18, gap: 6 },
-  metricBorder: { borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.04)" },
-  metricVal: { fontSize: 16, fontWeight: "700", color: Colors.text },
-  metricLabel: { fontSize: 11, color: Colors.textMuted },
+  metricVal: { fontSize: 16, fontWeight: "700" as const },
+  metricLabel: { fontSize: 11 },
 
   statusRow: { flexDirection: "row", alignItems: "center", paddingVertical: 14, paddingHorizontal: 18 },
-  statusBorder: { borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.04)" },
   dotWrap: { width: 20, height: 20, alignItems: "center", justifyContent: "center", marginRight: 12 },
   dotOuter: { position: "absolute", width: 16, height: 16, borderRadius: 8, backgroundColor: "rgba(52,211,153,0.15)" },
   dotInner: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#34D399" },
-  statusName: { fontSize: 15, color: Colors.text, flex: 1 },
-  statusVal: { fontSize: 12, fontWeight: "700", color: "#34D399", fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace" },
+  statusName: { fontSize: 15, flex: 1 },
+  statusVal: { fontSize: 12, fontWeight: "700" as const, color: "#34D399" },
 });

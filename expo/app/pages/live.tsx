@@ -15,7 +15,7 @@ import * as Clipboard from "expo-clipboard";
 import { useRouter } from "expo-router";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/authStore";
-import Colors from "@/constants/colors";
+import { useTheme } from "@/providers/ThemeProvider";
 
 function timeAgo(d: string | null) {
   if (!d) return "never";
@@ -29,6 +29,9 @@ function timeAgo(d: string | null) {
 }
 
 export default function LiveScreen() {
+  const { colors, theme } = useTheme();
+  const isDark = theme.dark;
+  const styles = createStylesStyles(colors);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuthStore();
@@ -202,7 +205,7 @@ export default function LiveScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <ArrowLeft size={20} color={Colors.text} />
+          <ArrowLeft size={20} color={colors.text} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={styles.title}>📡 Live Preview</Text>
@@ -214,10 +217,10 @@ export default function LiveScreen() {
           style={[styles.autoBtn, autoRefresh && styles.autoBtnActive]}
           onPress={() => setAutoRefresh(!autoRefresh)}
         >
-          <RefreshCw size={14} color={autoRefresh ? Colors.success : Colors.textMuted} />
+          <RefreshCw size={14} color={autoRefresh ? colors.success : colors.textMuted} />
         </TouchableOpacity>
         <TouchableOpacity style={styles.addBtn} onPress={() => setShowCreate(!showCreate)}>
-          {showCreate ? <X size={18} color={Colors.text} /> : <Plus size={18} color={Colors.text} />}
+          {showCreate ? <X size={18} color={colors.text} /> : <Plus size={18} color={colors.text} />}
         </TouchableOpacity>
       </View>
 
@@ -230,7 +233,7 @@ export default function LiveScreen() {
             onPress={() => setActiveSession(s)}
             onLongPress={() => deleteSession(s.id, s.session_name)}
           >
-            <Radio size={10} color={activeSession?.id === s.id ? Colors.accent : Colors.textMuted} />
+            <Radio size={10} color={activeSession?.id === s.id ? colors.accent : colors.textMuted} />
             <Text style={[styles.sessionChipText, activeSession?.id === s.id && styles.sessionChipTextActive]} numberOfLines={1}>
               {s.session_name}
             </Text>
@@ -245,7 +248,7 @@ export default function LiveScreen() {
           <TextInput
             style={styles.input}
             placeholder="Session name..."
-            placeholderTextColor={Colors.textMuted}
+            placeholderTextColor={colors.textMuted}
             value={sessionName}
             onChangeText={setSessionName}
           />
@@ -262,14 +265,14 @@ export default function LiveScreen() {
           style={[styles.toggleBtn, !showSource && styles.toggleBtnActive]}
           onPress={() => setShowSource(false)}
         >
-          <Eye size={14} color={!showSource ? Colors.accent : Colors.textMuted} />
+          <Eye size={14} color={!showSource ? colors.accent : colors.textMuted} />
           <Text style={[styles.toggleText, !showSource && styles.toggleTextActive]}>Preview</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.toggleBtn, showSource && styles.toggleBtnActive]}
           onPress={() => setShowSource(true)}
         >
-          <Code size={14} color={showSource ? Colors.accent : Colors.textMuted} />
+          <Code size={14} color={showSource ? colors.accent : colors.textMuted} />
           <Text style={[styles.toggleText, showSource && styles.toggleTextActive]}>Source</Text>
         </TouchableOpacity>
       </View>
@@ -278,15 +281,15 @@ export default function LiveScreen() {
       {activeSession && (
         <View style={styles.actionBar}>
           <TouchableOpacity style={styles.actionBtn} onPress={downloadHtml}>
-            <Download size={14} color={Colors.info} />
-            <Text style={[styles.actionText, { color: Colors.info }]}>Download</Text>
+            <Download size={14} color={colors.info} />
+            <Text style={[styles.actionText, { color: colors.info }]}>Download</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.actionBtn} onPress={saveToOpenClaw}>
-            <FolderOpen size={14} color={Colors.success} />
-            <Text style={[styles.actionText, { color: Colors.success }]}>Save to Files</Text>
+            <FolderOpen size={14} color={colors.success} />
+            <Text style={[styles.actionText, { color: colors.success }]}>Save to Files</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.actionBtn} onPress={copySource}>
-            <Copy size={14} color={Colors.textSecondary} />
+            <Copy size={14} color={colors.textSecondary} />
             <Text style={styles.actionText}>Copy HTML</Text>
           </TouchableOpacity>
         </View>
@@ -295,12 +298,12 @@ export default function LiveScreen() {
       {/* Content area */}
       {!activeSession ? (
         <View style={styles.empty}>
-          <Radio size={40} color={Colors.textMuted} />
+          <Radio size={40} color={colors.textMuted} />
           <Text style={styles.emptyText}>No live sessions</Text>
           <Text style={styles.emptySubtext}>Create a session, then your agent pushes HTML to it in real-time</Text>
         </View>
       ) : showSource ? (
-        <ScrollView style={styles.sourceView} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.accent} />}>
+        <ScrollView style={styles.sourceView} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}>
           <Text style={styles.sourceCode} selectable>{buildHtml(activeSession)}</Text>
         </ScrollView>
       ) : (
@@ -315,7 +318,7 @@ export default function LiveScreen() {
             startInLoadingState
             renderLoading={() => (
               <View style={styles.webviewLoading}>
-                <ActivityIndicator color={Colors.accent} />
+                <ActivityIndicator color={colors.accent} />
               </View>
             )}
           />
@@ -325,39 +328,39 @@ export default function LiveScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background, paddingHorizontal: 16 },
+const createStylesStyles = (colors: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background, paddingHorizontal: 16 },
   header: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 12 },
-  backBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: Colors.surface, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: Colors.border },
-  title: { fontSize: 20, fontWeight: "800", color: Colors.text, letterSpacing: -0.5 },
-  subtitle: { fontSize: 11, color: Colors.textMuted, marginTop: 1 },
-  addBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: Colors.accentDim, borderWidth: 1, borderColor: "rgba(220,38,38,0.2)", alignItems: "center", justifyContent: "center" },
-  autoBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border, alignItems: "center", justifyContent: "center" },
+  backBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: colors.surfaceLight },
+  title: { fontSize: 20, fontWeight: "800", color: colors.text, letterSpacing: -0.5 },
+  subtitle: { fontSize: 11, color: colors.textMuted, marginTop: 1 },
+  addBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: colors.accentDim, borderWidth: 1, borderColor: "rgba(220,38,38,0.2)", alignItems: "center", justifyContent: "center" },
+  autoBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.surfaceLight, alignItems: "center", justifyContent: "center" },
   autoBtnActive: { borderColor: "rgba(52,211,153,0.3)", backgroundColor: "rgba(52,211,153,0.08)" },
   sessionRow: { marginBottom: 10, maxHeight: 40 },
-  sessionChip: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border, marginRight: 8 },
-  sessionChipActive: { backgroundColor: Colors.accentDim, borderColor: "rgba(220,38,38,0.3)" },
-  sessionChipText: { fontSize: 12, color: Colors.textSecondary, maxWidth: 100 },
-  sessionChipTextActive: { color: Colors.accent, fontWeight: "700" },
-  sessionVersion: { fontSize: 10, color: Colors.textMuted, fontWeight: "600" },
+  sessionChip: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.surfaceLight, marginRight: 8 },
+  sessionChipActive: { backgroundColor: colors.accentDim, borderColor: "rgba(220,38,38,0.3)" },
+  sessionChipText: { fontSize: 12, color: colors.textSecondary, maxWidth: 100 },
+  sessionChipTextActive: { color: colors.accent, fontWeight: "700" },
+  sessionVersion: { fontSize: 10, color: colors.textMuted, fontWeight: "600" },
   createForm: { flexDirection: "row", gap: 8, marginBottom: 10 },
-  input: { flex: 1, backgroundColor: Colors.surface, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, color: Colors.text, fontSize: 14, borderWidth: 1, borderColor: Colors.border },
-  createBtn: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: Colors.accent, borderRadius: 10, paddingHorizontal: 16 },
+  input: { flex: 1, backgroundColor: colors.surface, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, color: colors.text, fontSize: 14, borderWidth: 1, borderColor: colors.surfaceLight },
+  createBtn: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: colors.accent, borderRadius: 10, paddingHorizontal: 16 },
   createBtnText: { color: "#fff", fontWeight: "700", fontSize: 13 },
-  viewToggle: { flexDirection: "row", marginBottom: 10, borderRadius: 10, overflow: "hidden", borderWidth: 1, borderColor: Colors.border },
-  toggleBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 8, backgroundColor: Colors.surface },
-  toggleBtnActive: { backgroundColor: Colors.accentDim },
-  toggleText: { fontSize: 12, color: Colors.textMuted, fontWeight: "600" },
-  toggleTextActive: { color: Colors.accent },
+  viewToggle: { flexDirection: "row", marginBottom: 10, borderRadius: 10, overflow: "hidden", borderWidth: 1, borderColor: colors.surfaceLight },
+  toggleBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 8, backgroundColor: colors.surface },
+  toggleBtnActive: { backgroundColor: colors.accentDim },
+  toggleText: { fontSize: 12, color: colors.textMuted, fontWeight: "600" },
+  toggleTextActive: { color: colors.accent },
   actionBar: { flexDirection: "row", gap: 6, marginBottom: 10 },
-  actionBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5, paddingVertical: 9, borderRadius: 10, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border },
-  actionText: { fontSize: 11, fontWeight: "600", color: Colors.textSecondary },
+  actionBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5, paddingVertical: 9, borderRadius: 10, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.surfaceLight },
+  actionText: { fontSize: 11, fontWeight: "600", color: colors.textSecondary },
   empty: { flex: 1, alignItems: "center", justifyContent: "center", paddingTop: 80, gap: 10 },
-  emptyText: { fontSize: 16, fontWeight: "600", color: Colors.textSecondary },
-  emptySubtext: { fontSize: 13, color: Colors.textMuted, textAlign: "center", paddingHorizontal: 40 },
-  webviewContainer: { flex: 1, borderRadius: 12, overflow: "hidden", borderWidth: 1, borderColor: Colors.border, marginBottom: 10 },
+  emptyText: { fontSize: 16, fontWeight: "600", color: colors.textSecondary },
+  emptySubtext: { fontSize: 13, color: colors.textMuted, textAlign: "center", paddingHorizontal: 40 },
+  webviewContainer: { flex: 1, borderRadius: 12, overflow: "hidden", borderWidth: 1, borderColor: colors.surfaceLight, marginBottom: 10 },
   webview: { flex: 1, backgroundColor: "#fff" },
-  webviewLoading: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, alignItems: "center", justifyContent: "center", backgroundColor: Colors.surface },
-  sourceView: { flex: 1, backgroundColor: Colors.surface, borderRadius: 12, padding: 14, borderWidth: 1, borderColor: Colors.border, marginBottom: 10 },
-  sourceCode: { fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace", fontSize: 11, color: Colors.textSecondary, lineHeight: 18 },
+  webviewLoading: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, alignItems: "center", justifyContent: "center", backgroundColor: colors.surface },
+  sourceView: { flex: 1, backgroundColor: colors.surface, borderRadius: 12, padding: 14, borderWidth: 1, borderColor: colors.surfaceLight, marginBottom: 10 },
+  sourceCode: { fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace", fontSize: 11, color: colors.textSecondary, lineHeight: 18 },
 });

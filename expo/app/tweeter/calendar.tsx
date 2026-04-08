@@ -10,7 +10,7 @@ import {
 } from "lucide-react-native";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/authStore";
-import Colors from "@/constants/colors";
+import { useTheme } from "@/providers/ThemeProvider";
 import { LobsterWatermark } from "@/components/tweeter/LobsterWatermark";
 
 const SCREEN_W = Dimensions.get("window").width;
@@ -62,8 +62,8 @@ function WeekView({ tweets, weekStart }: { tweets: TweetData[]; weekStart: Date 
 
         return (
           <View key={i} style={[st.weekDay, isToday && st.weekDayToday]}>
-            <Text style={[st.weekDayLabel, isToday && { color: Colors.accent }]}>{WEEKDAYS[i]}</Text>
-            <Text style={[st.weekDateNum, isToday && { color: Colors.accent }]}>{day.getDate()}</Text>
+            <Text style={[st.weekDayLabel, isToday && { color: colors.accent }]}>{WEEKDAYS[i]}</Text>
+            <Text style={[st.weekDateNum, isToday && { color: colors.accent }]}>{day.getDate()}</Text>
             {hasTweets ? (
               <View style={st.weekContent}>
                 <Text style={st.weekCount}>{dayTweets.length}</Text>
@@ -86,6 +86,9 @@ function WeekView({ tweets, weekStart }: { tweets: TweetData[]; weekStart: Date 
 }
 
 export default function ContentCalendar() {
+  const { colors, theme } = useTheme();
+  const isDark = theme.dark;
+  const st = createStStyles(colors);
   const insets = useSafeAreaInsets();
   const { user } = useAuthStore();
   const [tweets, setTweets] = useState<TweetData[]>([]);
@@ -183,14 +186,14 @@ export default function ContentCalendar() {
     <ScrollView
       style={st.container}
       contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: 120 }}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.accent} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
       showsVerticalScrollIndicator={false}
     >
       <View style={st.redGlow} />
       <LobsterWatermark style={st.watermark} />
 
       <View style={st.header}>
-        <Text style={st.title}>📅 Content <Text style={{ color: Colors.accent }}>Calendar</Text></Text>
+        <Text style={st.title}>📅 Content <Text style={{ color: colors.accent }}>Calendar</Text></Text>
         <Text style={st.subtitle}>{monthTweets.length} tweets this month</Text>
       </View>
 
@@ -217,11 +220,11 @@ export default function ContentCalendar() {
           {/* Month nav */}
           <View style={st.monthNav}>
             <TouchableOpacity onPress={prevMonth} style={st.navBtn}>
-              <ChevronLeft size={18} color={Colors.text} />
+              <ChevronLeft size={18} color={colors.text} />
             </TouchableOpacity>
             <Text style={st.monthLabel}>{MONTH_NAMES[month]} {year}</Text>
             <TouchableOpacity onPress={nextMonth} style={st.navBtn}>
-              <ChevronRight size={18} color={Colors.text} />
+              <ChevronRight size={18} color={colors.text} />
             </TouchableOpacity>
           </View>
 
@@ -254,7 +257,7 @@ export default function ContentCalendar() {
                 >
                   {cell.day !== null && (
                     <>
-                      <Text style={[st.calDayNum, isToday && { color: Colors.accent, fontWeight: "900" as const }]}>
+                      <Text style={[st.calDayNum, isToday && { color: colors.accent, fontWeight: "900" as const }]}>
                         {cell.day}
                       </Text>
                       {hasTweets ? (
@@ -293,7 +296,7 @@ export default function ContentCalendar() {
           <Text style={st.summaryLabel}>Gap Days</Text>
         </View>
         <View style={st.summaryCard}>
-          <TrendingUp size={14} color={Colors.accent} />
+          <TrendingUp size={14} color={colors.accent} />
           <Text style={st.summaryVal}>
             {daysInMonth > 0 ? (monthTweets.length / daysInMonth).toFixed(1) : "0"}
           </Text>
@@ -329,7 +332,7 @@ export default function ContentCalendar() {
           <View style={st.themeCard}>
             {topThemes.map(([tag, count]) => (
               <View key={tag} style={st.themeRow}>
-                <Hash size={12} color={Colors.accent} />
+                <Hash size={12} color={colors.accent} />
                 <Text style={st.themeName}>{tag}</Text>
                 <View style={st.themeBarBg}>
                   <View style={[st.themeBarFill, { width: `${(count / (topThemes[0]?.[1] || 1)) * 100}%` }]} />
@@ -363,30 +366,30 @@ export default function ContentCalendar() {
 const mono = Platform.OS === "ios" ? "Menlo" : "monospace" as const;
 const cellW = (SCREEN_W - 32 - 12) / 7;
 
-const st = StyleSheet.create({
+const createStStyles = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: "#000", paddingHorizontal: 16 },
   redGlow: { position: "absolute", top: 0, left: 0, right: 0, height: 250, backgroundColor: "rgba(220,38,38,0.03)" },
   watermark: { top: 18, right: -28 },
   header: { marginBottom: 16 },
-  title: { fontSize: 26, fontWeight: "900", color: Colors.text, letterSpacing: -1 },
-  subtitle: { fontSize: 12, color: Colors.textMuted, marginTop: 3 },
+  title: { fontSize: 26, fontWeight: "900", color: colors.text, letterSpacing: -1 },
+  subtitle: { fontSize: 12, color: colors.textMuted, marginTop: 3 },
 
   toggleRow: { flexDirection: "row", gap: 6, marginBottom: 16 },
   toggleBtn: {
     paddingHorizontal: 16, paddingVertical: 8, borderRadius: 10,
-    backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(255,255,255,0.06)",
+    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.surfaceLight,
   },
-  toggleBtnActive: { backgroundColor: Colors.accent, borderColor: Colors.accent },
-  toggleText: { fontSize: 12, fontWeight: "700", color: Colors.textMuted },
+  toggleBtnActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+  toggleText: { fontSize: 12, fontWeight: "700", color: colors.textMuted },
   toggleTextActive: { color: "#000" },
 
   monthNav: { flexDirection: "row", alignItems: "center", justifyContent: "center", marginBottom: 14, gap: 16 },
-  navBtn: { padding: 8, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.04)" },
-  monthLabel: { fontSize: 17, fontWeight: "900", color: Colors.text, width: 180, textAlign: "center" },
+  navBtn: { padding: 8, borderRadius: 10, backgroundColor: colors.surface },
+  monthLabel: { fontSize: 17, fontWeight: "900", color: colors.text, width: 180, textAlign: "center" },
 
   weekdayRow: { flexDirection: "row", marginBottom: 4 },
   weekdayCell: { width: cellW, alignItems: "center" },
-  weekdayText: { fontSize: 10, fontWeight: "700", color: Colors.textMuted, textTransform: "uppercase" },
+  weekdayText: { fontSize: 10, fontWeight: "700", color: colors.textMuted, textTransform: "uppercase" },
 
   calGrid: { flexDirection: "row", flexWrap: "wrap" },
   calCell: {
@@ -394,29 +397,29 @@ const st = StyleSheet.create({
     borderWidth: 1, borderColor: "rgba(255,255,255,0.03)", borderRadius: 8, marginBottom: 2,
     alignItems: "center",
   },
-  calCellToday: { borderColor: Colors.accent, borderWidth: 1.5 },
-  calDayNum: { fontSize: 11, fontWeight: "700", color: Colors.textSecondary, marginBottom: 2 },
+  calCellToday: { borderColor: colors.accent, borderWidth: 1.5 },
+  calDayNum: { fontSize: 11, fontWeight: "700", color: colors.textSecondary, marginBottom: 2 },
   calDots: { alignItems: "center", gap: 1 },
   calDotEmoji: { fontSize: 10 },
-  calMoreText: { fontSize: 8, color: Colors.textMuted, fontWeight: "700" },
-  calGap: { width: 4, height: 4, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.06)", marginTop: 4 },
+  calMoreText: { fontSize: 8, color: colors.textMuted, fontWeight: "700" },
+  calGap: { width: 4, height: 4, borderRadius: 2, backgroundColor: colors.surfaceLight, marginTop: 4 },
 
   weekGrid: { flexDirection: "row", gap: 4, marginBottom: 16 },
   weekDay: {
     flex: 1, padding: 6, borderRadius: 12,
-    backgroundColor: "rgba(255,255,255,0.02)", borderWidth: 1, borderColor: "rgba(255,255,255,0.04)",
+    backgroundColor: "rgba(255,255,255,0.02)", borderWidth: 1, borderColor: colors.surface,
     alignItems: "center", minHeight: 110,
   },
   weekDayToday: { borderColor: "rgba(220,38,38,0.3)", backgroundColor: "rgba(220,38,38,0.04)" },
-  weekDayLabel: { fontSize: 9, fontWeight: "700", color: Colors.textMuted, textTransform: "uppercase" },
-  weekDateNum: { fontSize: 16, fontWeight: "900", color: Colors.text, marginVertical: 4 },
+  weekDayLabel: { fontSize: 9, fontWeight: "700", color: colors.textMuted, textTransform: "uppercase" },
+  weekDateNum: { fontSize: 16, fontWeight: "900", color: colors.text, marginVertical: 4 },
   weekContent: { alignItems: "center", gap: 2 },
-  weekCount: { fontSize: 11, fontWeight: "800", color: Colors.accent, fontFamily: mono },
+  weekCount: { fontSize: 11, fontWeight: "800", color: colors.accent, fontFamily: mono },
   weekMood: { fontSize: 14 },
-  weekEng: { fontSize: 8, color: Colors.textMuted },
-  weekTag: { fontSize: 7, color: Colors.accent, fontWeight: "600" },
+  weekEng: { fontSize: 8, color: colors.textMuted },
+  weekTag: { fontSize: 7, color: colors.accent, fontWeight: "600" },
   weekEmpty: { flex: 1, justifyContent: "center", alignItems: "center" },
-  gapDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "rgba(255,255,255,0.06)" },
+  gapDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.surfaceLight },
 
   summaryRow: { flexDirection: "row", gap: 6, marginTop: 16, marginBottom: 12 },
   summaryCard: {
@@ -424,20 +427,20 @@ const st = StyleSheet.create({
     backgroundColor: "rgba(220,38,38,0.04)", borderRadius: 14,
     borderWidth: 1, borderColor: "rgba(220,38,38,0.08)",
   },
-  summaryVal: { fontSize: 18, fontWeight: "900", color: Colors.text, fontFamily: mono },
-  summaryLabel: { fontSize: 8, fontWeight: "700", color: Colors.textMuted, textTransform: "uppercase", letterSpacing: 0.5 },
+  summaryVal: { fontSize: 18, fontWeight: "900", color: colors.text, fontFamily: mono },
+  summaryLabel: { fontSize: 8, fontWeight: "700", color: colors.textMuted, textTransform: "uppercase", letterSpacing: 0.5 },
 
-  secLabel: { fontSize: 10, fontWeight: "800", color: Colors.textMuted, letterSpacing: 1.5, marginTop: 16, marginBottom: 10 },
+  secLabel: { fontSize: 10, fontWeight: "800", color: colors.textMuted, letterSpacing: 1.5, marginTop: 16, marginBottom: 10 },
 
   themeCard: {
     backgroundColor: "rgba(220,38,38,0.03)", borderRadius: 18,
     borderWidth: 1, borderColor: "rgba(220,38,38,0.08)", padding: 14, marginBottom: 12,
   },
   themeRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 8 },
-  themeName: { fontSize: 12, fontWeight: "700", color: Colors.text, width: 70 },
-  themeBarBg: { flex: 1, height: 6, backgroundColor: "rgba(255,255,255,0.04)", borderRadius: 3, overflow: "hidden" },
-  themeBarFill: { height: 6, backgroundColor: Colors.accent, borderRadius: 3 },
-  themeCount: { fontSize: 11, fontWeight: "800", color: Colors.textMuted, fontFamily: mono, width: 24, textAlign: "right" },
+  themeName: { fontSize: 12, fontWeight: "700", color: colors.text, width: 70 },
+  themeBarBg: { flex: 1, height: 6, backgroundColor: colors.surface, borderRadius: 3, overflow: "hidden" },
+  themeBarFill: { height: 6, backgroundColor: colors.accent, borderRadius: 3 },
+  themeCount: { fontSize: 11, fontWeight: "800", color: colors.textMuted, fontFamily: mono, width: 24, textAlign: "right" },
 
   moodCard: {
     alignItems: "center", gap: 4, paddingVertical: 14, paddingHorizontal: 18,
@@ -445,6 +448,6 @@ const st = StyleSheet.create({
     borderWidth: 1, borderColor: "rgba(220,38,38,0.08)",
   },
   moodEmoji: { fontSize: 22 },
-  moodName: { fontSize: 10, fontWeight: "700", color: Colors.textSecondary, textTransform: "capitalize" },
-  moodCount: { fontSize: 14, fontWeight: "900", color: Colors.text, fontFamily: mono },
+  moodName: { fontSize: 10, fontWeight: "700", color: colors.textSecondary, textTransform: "capitalize" },
+  moodCount: { fontSize: 14, fontWeight: "900", color: colors.text, fontFamily: mono },
 });

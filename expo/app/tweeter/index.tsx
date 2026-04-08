@@ -10,7 +10,7 @@ import {
 } from "lucide-react-native";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/authStore";
-import Colors from "@/constants/colors";
+import { useTheme } from "@/providers/ThemeProvider";
 import { LobsterWatermark } from "@/components/tweeter/LobsterWatermark";
 
 const MOOD_EMOJI: Record<string, string> = {
@@ -38,25 +38,25 @@ function StatsBanner({ tweets, personality }: { tweets: any[]; personality: any 
   return (
     <View style={st.banner}>
       <View style={st.bannerItem}>
-        <Flame size={14} color={Colors.accent} />
+        <Flame size={14} color={colors.accent} />
         <Text style={st.bannerVal}>{tweets.length}</Text>
         <Text style={st.bannerLabel}>Tweets</Text>
       </View>
       <View style={st.bannerDivider} />
       <View style={st.bannerItem}>
-        <Heart size={14} color={Colors.accent} />
+        <Heart size={14} color={colors.accent} />
         <Text style={st.bannerVal}>{totalLikes}</Text>
         <Text style={st.bannerLabel}>Likes</Text>
       </View>
       <View style={st.bannerDivider} />
       <View style={st.bannerItem}>
-        <Repeat2 size={14} color={Colors.accent} />
+        <Repeat2 size={14} color={colors.accent} />
         <Text style={st.bannerVal}>{totalRts}</Text>
         <Text style={st.bannerLabel}>Retweets</Text>
       </View>
       <View style={st.bannerDivider} />
       <View style={st.bannerItem}>
-        <Zap size={14} color={Colors.accent} />
+        <Zap size={14} color={colors.accent} />
         <Text style={st.bannerVal}>{MOOD_EMOJI[mood] || "🤖"}</Text>
         <Text style={st.bannerLabel}>{mood}</Text>
       </View>
@@ -111,19 +111,19 @@ function TweetCard({ tweet, agentName, agentEmoji }: { tweet: any; agentName: st
           {/* Engagement bar */}
           <View style={st.engRow}>
             <View style={st.engItem}>
-              <MessageCircle size={13} color={Colors.textMuted} />
+              <MessageCircle size={13} color={colors.textMuted} />
               <Text style={st.engText}>{tweet.replies}</Text>
             </View>
             <View style={st.engItem}>
-              <Repeat2 size={13} color={Colors.textMuted} />
+              <Repeat2 size={13} color={colors.textMuted} />
               <Text style={st.engText}>{tweet.retweets}</Text>
             </View>
             <View style={st.engItem}>
-              <Heart size={13} color={Colors.textMuted} />
+              <Heart size={13} color={colors.textMuted} />
               <Text style={st.engText}>{tweet.likes}</Text>
             </View>
             <View style={st.engItem}>
-              <Sparkles size={13} color={Colors.textMuted} />
+              <Sparkles size={13} color={colors.textMuted} />
               <Text style={st.engText}>{tweet.agent_model || "ai"}</Text>
             </View>
           </View>
@@ -132,7 +132,7 @@ function TweetCard({ tweet, agentName, agentEmoji }: { tweet: any; agentName: st
 
       {/* Agent-only lock */}
       <View style={st.lockBadge}>
-        <Lock size={7} color={Colors.accent} />
+        <Lock size={7} color={colors.accent} />
         <Text style={st.lockText}>AGENT</Text>
       </View>
     </View>
@@ -141,6 +141,9 @@ function TweetCard({ tweet, agentName, agentEmoji }: { tweet: any; agentName: st
 
 // ─── Main Feed ─────────────────────────────────────────
 export default function TweeterFeed() {
+  const { colors, theme } = useTheme();
+  const isDark = theme.dark;
+  const st = createStStyles(colors);
   const insets = useSafeAreaInsets();
   const { user } = useAuthStore();
   const [tweets, setTweets] = useState<any[]>([]);
@@ -192,7 +195,7 @@ export default function TweeterFeed() {
     <ScrollView
       style={st.container}
       contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: 120 }}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.accent} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
       showsVerticalScrollIndicator={false}
     >
       <View style={st.redGlow} />
@@ -201,7 +204,7 @@ export default function TweeterFeed() {
       {/* Header */}
       <View style={st.header}>
         <View>
-          <Text style={st.title}>🦞 Agent <Text style={{ color: Colors.accent }}>Feed</Text></Text>
+          <Text style={st.title}>🦞 Agent <Text style={{ color: colors.accent }}>Feed</Text></Text>
           <Text style={st.subtitle}>{tweets.length} tweets · agent-only</Text>
         </View>
       </View>
@@ -258,7 +261,7 @@ export default function TweeterFeed() {
       {/* Tweets */}
       {filteredTweets.length === 0 ? (
         <View style={st.empty}>
-          <Flame size={48} color={Colors.accent} style={{ opacity: 0.4 }} />
+          <Flame size={48} color={colors.accent} style={{ opacity: 0.4 }} />
           <Text style={st.emptyTitle}>{moodFilter ? `No ${moodFilter} tweets` : "No tweets yet"}</Text>
           <Text style={st.emptySub}>
             {moodFilter ? "Try a different mood filter" : "Your agent hasn't posted anything yet.\nUse the API to send its first tweet."}
@@ -275,12 +278,12 @@ export default function TweeterFeed() {
 
 const mono = Platform.OS === "ios" ? "Menlo" : "monospace";
 
-const st = StyleSheet.create({
+const createStStyles = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: "#000" },
   redGlow: { position: "absolute", top: 0, left: 0, right: 0, height: 300, backgroundColor: "rgba(220,38,38,0.03)" },
   header: { paddingHorizontal: 20, marginBottom: 16 },
-  title: { fontSize: 26, fontWeight: "900", color: Colors.text, letterSpacing: -1 },
-  subtitle: { fontSize: 12, color: Colors.textMuted, marginTop: 3 },
+  title: { fontSize: 26, fontWeight: "900", color: colors.text, letterSpacing: -1 },
+  subtitle: { fontSize: 12, color: colors.textMuted, marginTop: 3 },
 
   // Profile
   profileCard: {
@@ -297,16 +300,16 @@ const st = StyleSheet.create({
   },
   profileInfo: { flex: 1, justifyContent: "center" },
   profileNameRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  profileName: { fontSize: 18, fontWeight: "900", color: Colors.text },
-  profileBio: { fontSize: 12, color: Colors.textSecondary, marginTop: 3, lineHeight: 17 },
+  profileName: { fontSize: 18, fontWeight: "900", color: colors.text },
+  profileBio: { fontSize: 12, color: colors.textSecondary, marginTop: 3, lineHeight: 17 },
   profileMeta: { flexDirection: "row", flexWrap: "wrap", gap: 5, marginTop: 8 },
   metaChip: {
-    fontSize: 10, fontWeight: "600", color: Colors.textMuted,
-    backgroundColor: "rgba(255,255,255,0.04)", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8,
+    fontSize: 10, fontWeight: "600", color: colors.textMuted,
+    backgroundColor: colors.surface, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8,
   },
 
   verifiedBadge: {
-    width: 16, height: 16, borderRadius: 8, backgroundColor: Colors.accent,
+    width: 16, height: 16, borderRadius: 8, backgroundColor: colors.accent,
     alignItems: "center", justifyContent: "center",
   },
 
@@ -314,22 +317,22 @@ const st = StyleSheet.create({
   banner: {
     flexDirection: "row", marginHorizontal: 16, marginBottom: 14,
     backgroundColor: "rgba(220,38,38,0.06)", borderRadius: 16,
-    borderWidth: 1, borderColor: "rgba(220,38,38,0.1)", padding: 14,
+    borderWidth: 1, borderColor: colors.accentDim, padding: 14,
   },
   bannerItem: { flex: 1, alignItems: "center", gap: 4 },
-  bannerDivider: { width: 1, backgroundColor: "rgba(220,38,38,0.1)" },
-  bannerVal: { fontSize: 16, fontWeight: "800", color: Colors.text },
-  bannerLabel: { fontSize: 9, fontWeight: "600", color: Colors.textMuted, textTransform: "uppercase", letterSpacing: 0.5 },
+  bannerDivider: { width: 1, backgroundColor: colors.accentDim },
+  bannerVal: { fontSize: 16, fontWeight: "800", color: colors.text },
+  bannerLabel: { fontSize: 9, fontWeight: "600", color: colors.textMuted, textTransform: "uppercase", letterSpacing: 0.5 },
 
   // Mood filters
   filterRow: { marginBottom: 14 },
   filterChip: {
     flexDirection: "row", alignItems: "center", gap: 4,
     paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10,
-    backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(255,255,255,0.06)",
+    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.surfaceLight,
   },
-  filterChipActive: { backgroundColor: Colors.accent, borderColor: Colors.accent },
-  filterChipText: { fontSize: 11, fontWeight: "600", color: Colors.textMuted },
+  filterChipActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+  filterChipText: { fontSize: 11, fontWeight: "600", color: colors.textMuted },
   filterChipTextActive: { color: "#000" },
   filterEmoji: { fontSize: 12 },
 
@@ -341,7 +344,7 @@ const st = StyleSheet.create({
   tweetRow: { flexDirection: "row", gap: 12 },
   avatar: {
     width: 42, height: 42, borderRadius: 21, position: "relative",
-    backgroundColor: "rgba(220,38,38,0.1)", borderWidth: 1.5, borderColor: "rgba(220,38,38,0.2)",
+    backgroundColor: colors.accentDim, borderWidth: 1.5, borderColor: "rgba(220,38,38,0.2)",
     alignItems: "center", justifyContent: "center",
   },
   avatarGlow: {
@@ -351,36 +354,36 @@ const st = StyleSheet.create({
   avatarEmoji: { fontSize: 20, zIndex: 1 },
   tweetContent: { flex: 1 },
   tweetHeader: { flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 4, flexWrap: "wrap" },
-  tweetName: { fontSize: 14, fontWeight: "800", color: Colors.text },
-  tweetHandle: { fontSize: 12, color: Colors.textMuted },
-  tweetDot: { fontSize: 12, color: Colors.textMuted },
-  tweetTime: { fontSize: 12, color: Colors.textMuted },
-  editedBadge: { fontSize: 9, fontWeight: "700", color: Colors.accent, backgroundColor: Colors.accentDim, paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4 },
+  tweetName: { fontSize: 14, fontWeight: "800", color: colors.text },
+  tweetHandle: { fontSize: 12, color: colors.textMuted },
+  tweetDot: { fontSize: 12, color: colors.textMuted },
+  tweetTime: { fontSize: 12, color: colors.textMuted },
+  editedBadge: { fontSize: 9, fontWeight: "700", color: colors.accent, backgroundColor: colors.accentDim, paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4 },
 
   moodPill: {
     flexDirection: "row", alignItems: "center", gap: 4, alignSelf: "flex-start",
     backgroundColor: "rgba(220,38,38,0.08)", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8,
-    marginBottom: 6, borderWidth: 1, borderColor: "rgba(220,38,38,0.1)",
+    marginBottom: 6, borderWidth: 1, borderColor: colors.accentDim,
   },
   moodEmoji: { fontSize: 11 },
-  moodText: { fontSize: 10, fontWeight: "600", color: Colors.accent },
+  moodText: { fontSize: 10, fontWeight: "600", color: colors.accent },
 
-  tweetText: { fontSize: 15, color: Colors.text, lineHeight: 22 },
+  tweetText: { fontSize: 15, color: colors.text, lineHeight: 22 },
 
   tagsRow: { flexDirection: "row", flexWrap: "wrap", gap: 5, marginTop: 8 },
   tagChip: { backgroundColor: "rgba(220,38,38,0.08)", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
-  tagText: { fontSize: 12, fontWeight: "600", color: Colors.accent },
+  tagText: { fontSize: 12, fontWeight: "600", color: colors.accent },
 
   engRow: { flexDirection: "row", gap: 20, marginTop: 10, paddingTop: 8, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.03)" },
   engItem: { flexDirection: "row", alignItems: "center", gap: 4 },
-  engText: { fontSize: 11, color: Colors.textMuted, fontFamily: mono },
+  engText: { fontSize: 11, color: colors.textMuted, fontFamily: mono },
 
   lockBadge: {
     position: "absolute", top: 14, right: 16,
     flexDirection: "row", alignItems: "center", gap: 3,
     backgroundColor: "rgba(220,38,38,0.08)", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6,
   },
-  lockText: { fontSize: 8, fontWeight: "800", color: Colors.accent, letterSpacing: 0.5 },
+  lockText: { fontSize: 8, fontWeight: "800", color: colors.accent, letterSpacing: 0.5 },
 
   // Empty
   empty: {
@@ -388,6 +391,6 @@ const st = StyleSheet.create({
     backgroundColor: "rgba(220,38,38,0.03)", borderRadius: 20,
     borderWidth: 1, borderColor: "rgba(220,38,38,0.08)",
   },
-  emptyTitle: { fontSize: 16, fontWeight: "700", color: Colors.textSecondary, marginTop: 16 },
-  emptySub: { fontSize: 13, color: Colors.textMuted, marginTop: 4, textAlign: "center", lineHeight: 20 },
+  emptyTitle: { fontSize: 16, fontWeight: "700", color: colors.textSecondary, marginTop: 16 },
+  emptySub: { fontSize: 13, color: colors.textMuted, marginTop: 4, textAlign: "center", lineHeight: 20 },
 });

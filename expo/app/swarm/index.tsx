@@ -12,7 +12,7 @@ import * as Clipboard from "expo-clipboard";
 import { useRouter } from "expo-router";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/authStore";
-import Colors from "@/constants/colors";
+import { useTheme } from "@/providers/ThemeProvider";
 
 const ROLES = ["assistant", "researcher", "coder", "writer", "analyst", "custom"];
 const ROLE_EMOJI: Record<string, string> = {
@@ -31,6 +31,9 @@ function timeAgo(d: string | null) {
 }
 
 export default function AgentsScreen() {
+  const { colors, theme } = useTheme();
+  const isDark = theme.dark;
+  const styles = createStylesStyles(colors);
   const router = useRouter();
   const { user } = useAuthStore();
   const [agents, setAgents] = useState<any[]>([]);
@@ -134,25 +137,25 @@ export default function AgentsScreen() {
     <ScrollView
       style={styles.container}
       contentContainerStyle={{ paddingTop: 12, paddingBottom: 100 }}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.accent} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
     >
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <ArrowLeft size={20} color={Colors.text} />
+          <ArrowLeft size={20} color={colors.text} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={styles.title}>🐝 ClawSwarm</Text>
           <Text style={styles.subtitle}>{activeCount} active · {totalTokens.toLocaleString()} tokens</Text>
         </View>
         <TouchableOpacity style={styles.addBtn} onPress={() => setShowCreate(!showCreate)}>
-          {showCreate ? <X size={18} color={Colors.text} /> : <Plus size={18} color={Colors.text} />}
+          {showCreate ? <X size={18} color={colors.text} /> : <Plus size={18} color={colors.text} />}
         </TouchableOpacity>
       </View>
 
       {/* OpenRouter Key Setup */}
       {!keySet ? (
         <TouchableOpacity style={styles.setupBanner} onPress={() => setShowSetup(true)}>
-          <Key size={18} color={Colors.warning} />
+          <Key size={18} color={colors.warning} />
           <View style={{ flex: 1 }}>
             <Text style={styles.setupTitle}>Set up OpenRouter API Key</Text>
             <Text style={styles.setupDesc}>Required to power your sub-agents. Tap to add your key.</Text>
@@ -160,7 +163,7 @@ export default function AgentsScreen() {
         </TouchableOpacity>
       ) : (
         <View style={styles.keyOkBanner}>
-          <Zap size={14} color={Colors.success} />
+          <Zap size={14} color={colors.success} />
           <Text style={styles.keyOkText}>OpenRouter connected · stepfun/step-3.5-flash:free</Text>
           <TouchableOpacity onPress={() => setShowSetup(true)}>
             <Text style={styles.keyChangeText}>Change</Text>
@@ -174,7 +177,7 @@ export default function AgentsScreen() {
           <TextInput
             style={styles.input}
             placeholder="sk-or-v1-..."
-            placeholderTextColor={Colors.textMuted}
+            placeholderTextColor={colors.textMuted}
             value={orKey}
             onChangeText={setOrKey}
             autoCapitalize="none"
@@ -192,8 +195,8 @@ export default function AgentsScreen() {
       {showCreate && (
         <View style={styles.createForm}>
           <Text style={styles.formTitle}>Create Sub-Agent</Text>
-          <TextInput style={styles.input} placeholder="Agent name" placeholderTextColor={Colors.textMuted} value={form.name} onChangeText={v => setForm({ ...form, name: v })} />
-          <TextInput style={styles.input} placeholder="Description (optional)" placeholderTextColor={Colors.textMuted} value={form.description} onChangeText={v => setForm({ ...form, description: v })} />
+          <TextInput style={styles.input} placeholder="Agent name" placeholderTextColor={colors.textMuted} value={form.name} onChangeText={v => setForm({ ...form, name: v })} />
+          <TextInput style={styles.input} placeholder="Description (optional)" placeholderTextColor={colors.textMuted} value={form.description} onChangeText={v => setForm({ ...form, description: v })} />
           <Text style={styles.formLabel}>Role</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
             {ROLES.map(r => (
@@ -205,7 +208,7 @@ export default function AgentsScreen() {
           <TextInput
             style={[styles.input, { height: 80, textAlignVertical: "top" }]}
             placeholder="Custom system prompt (optional — role default used if empty)"
-            placeholderTextColor={Colors.textMuted}
+            placeholderTextColor={colors.textMuted}
             value={form.system_prompt}
             onChangeText={v => setForm({ ...form, system_prompt: v })}
             multiline
@@ -220,7 +223,7 @@ export default function AgentsScreen() {
       {/* Agents list */}
       {agents.length === 0 ? (
         <View style={styles.empty}>
-          <Bot size={40} color={Colors.textMuted} />
+          <Bot size={40} color={colors.textMuted} />
           <Text style={styles.emptyText}>No sub-agents yet</Text>
           <Text style={styles.emptySubtext}>Create agents to build your swarm</Text>
         </View>
@@ -233,8 +236,8 @@ export default function AgentsScreen() {
                 <View style={styles.nameRow}>
                   <Text style={styles.agentName}>{a.name}</Text>
                   <View style={[styles.statusBadge, { backgroundColor: a.status === "active" ? "rgba(52,211,153,0.15)" : "rgba(255,255,255,0.05)" }]}>
-                    <View style={[styles.statusDot, { backgroundColor: a.status === "active" ? Colors.success : Colors.textMuted }]} />
-                    <Text style={[styles.statusText, { color: a.status === "active" ? Colors.success : Colors.textMuted }]}>{a.status}</Text>
+                    <View style={[styles.statusDot, { backgroundColor: a.status === "active" ? colors.success : colors.textMuted }]} />
+                    <Text style={[styles.statusText, { color: a.status === "active" ? colors.success : colors.textMuted }]}>{a.status}</Text>
                   </View>
                 </View>
                 <Text style={styles.agentRole}>{a.role} · {a.total_messages || 0} msgs · {(a.total_tokens_used || 0).toLocaleString()} tokens</Text>
@@ -244,15 +247,15 @@ export default function AgentsScreen() {
             <Text style={styles.agentMeta}>Last active: {timeAgo(a.last_active_at)} · Created: {timeAgo(a.created_at)}</Text>
             <View style={styles.cardActions}>
               <TouchableOpacity style={styles.actionBtn} onPress={() => toggleStatus(a.id, a.status)}>
-                {a.status === "active" ? <Pause size={13} color={Colors.warning} /> : <Play size={13} color={Colors.success} />}
+                {a.status === "active" ? <Pause size={13} color={colors.warning} /> : <Play size={13} color={colors.success} />}
                 <Text style={styles.actionText}>{a.status === "active" ? "Pause" : "Resume"}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.actionBtn} onPress={async () => { await Clipboard.setStringAsync(a.id); Alert.alert("Copied!", "Agent ID copied"); }}>
-                <Copy size={13} color={Colors.textSecondary} />
+                <Copy size={13} color={colors.textSecondary} />
                 <Text style={styles.actionText}>ID</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.actionBtn} onPress={() => deleteAgent(a.id, a.name)}>
-                <Trash2 size={13} color={Colors.danger} />
+                <Trash2 size={13} color={colors.danger} />
               </TouchableOpacity>
             </View>
           </View>
@@ -262,46 +265,46 @@ export default function AgentsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background, paddingHorizontal: 20 },
+const createStylesStyles = (colors: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background, paddingHorizontal: 20 },
   header: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 16 },
-  backBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: Colors.surface, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: Colors.border },
-  title: { fontSize: 22, fontWeight: "800", color: Colors.text, letterSpacing: -0.5 },
-  subtitle: { fontSize: 12, color: Colors.textMuted, marginTop: 2 },
-  addBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: Colors.accentDim, borderWidth: 1, borderColor: "rgba(220,38,38,0.2)", alignItems: "center", justifyContent: "center" },
+  backBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: colors.surfaceLight },
+  title: { fontSize: 22, fontWeight: "800", color: colors.text, letterSpacing: -0.5 },
+  subtitle: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
+  addBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: colors.accentDim, borderWidth: 1, borderColor: "rgba(220,38,38,0.2)", alignItems: "center", justifyContent: "center" },
   setupBanner: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "rgba(251,191,36,0.08)", borderRadius: 14, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: "rgba(251,191,36,0.2)" },
-  setupTitle: { fontSize: 14, fontWeight: "700", color: Colors.warning },
-  setupDesc: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
+  setupTitle: { fontSize: 14, fontWeight: "700", color: colors.warning },
+  setupDesc: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
   keyOkBanner: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "rgba(52,211,153,0.06)", borderRadius: 10, padding: 10, marginBottom: 14, borderWidth: 1, borderColor: "rgba(52,211,153,0.15)" },
-  keyOkText: { fontSize: 12, color: Colors.success, flex: 1 },
-  keyChangeText: { fontSize: 11, color: Colors.textMuted, fontWeight: "600" },
-  setupForm: { backgroundColor: Colors.surface, borderRadius: 16, padding: 18, marginBottom: 16, borderWidth: 1, borderColor: Colors.border },
-  formLabel: { fontSize: 11, fontWeight: "600", color: Colors.textMuted, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 },
-  formTitle: { fontSize: 16, fontWeight: "700", color: Colors.text, marginBottom: 14 },
-  input: { backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 12, color: Colors.text, fontSize: 14, marginBottom: 10, borderWidth: 1, borderColor: Colors.border },
-  setupHint: { fontSize: 11, color: Colors.textMuted, marginBottom: 12 },
-  submitBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: Colors.accent, borderRadius: 12, paddingVertical: 14 },
+  keyOkText: { fontSize: 12, color: colors.success, flex: 1 },
+  keyChangeText: { fontSize: 11, color: colors.textMuted, fontWeight: "600" },
+  setupForm: { backgroundColor: colors.surface, borderRadius: 16, padding: 18, marginBottom: 16, borderWidth: 1, borderColor: colors.surfaceLight },
+  formLabel: { fontSize: 11, fontWeight: "600", color: colors.textMuted, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 },
+  formTitle: { fontSize: 16, fontWeight: "700", color: colors.text, marginBottom: 14 },
+  input: { backgroundColor: colors.surfaceLight, borderRadius: 10, padding: 12, color: colors.text, fontSize: 14, marginBottom: 10, borderWidth: 1, borderColor: colors.surfaceLight },
+  setupHint: { fontSize: 11, color: colors.textMuted, marginBottom: 12 },
+  submitBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: colors.accent, borderRadius: 12, paddingVertical: 14 },
   submitText: { fontSize: 14, fontWeight: "700", color: "#fff" },
-  createForm: { backgroundColor: Colors.surface, borderRadius: 16, padding: 18, marginBottom: 16, borderWidth: 1, borderColor: Colors.border },
-  roleChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: Colors.surfaceLight, borderWidth: 1, borderColor: Colors.border, marginRight: 6 },
-  roleChipActive: { backgroundColor: Colors.accentDim, borderColor: "rgba(220,38,38,0.3)" },
-  roleChipText: { fontSize: 12, color: Colors.textSecondary },
+  createForm: { backgroundColor: colors.surface, borderRadius: 16, padding: 18, marginBottom: 16, borderWidth: 1, borderColor: colors.surfaceLight },
+  roleChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: colors.surfaceLight, borderWidth: 1, borderColor: colors.surfaceLight, marginRight: 6 },
+  roleChipActive: { backgroundColor: colors.accentDim, borderColor: "rgba(220,38,38,0.3)" },
+  roleChipText: { fontSize: 12, color: colors.textSecondary },
   empty: { alignItems: "center", paddingTop: 60, gap: 10 },
-  emptyText: { fontSize: 16, fontWeight: "600", color: Colors.textSecondary },
-  emptySubtext: { fontSize: 13, color: Colors.textMuted },
-  card: { backgroundColor: Colors.surface, borderRadius: 14, padding: 16, marginBottom: 10, borderWidth: 1, borderColor: Colors.border },
+  emptyText: { fontSize: 16, fontWeight: "600", color: colors.textSecondary },
+  emptySubtext: { fontSize: 13, color: colors.textMuted },
+  card: { backgroundColor: colors.surface, borderRadius: 14, padding: 16, marginBottom: 10, borderWidth: 1, borderColor: colors.surfaceLight },
   cardPaused: { opacity: 0.5 },
   cardHeader: { flexDirection: "row", alignItems: "center", gap: 12 },
   agentEmoji: { fontSize: 28 },
   nameRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  agentName: { fontSize: 16, fontWeight: "700", color: Colors.text },
+  agentName: { fontSize: 16, fontWeight: "700", color: colors.text },
   statusBadge: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
   statusDot: { width: 6, height: 6, borderRadius: 3 },
   statusText: { fontSize: 10, fontWeight: "600" },
-  agentRole: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
-  agentDesc: { fontSize: 13, color: Colors.textSecondary, marginTop: 10, lineHeight: 18 },
-  agentMeta: { fontSize: 11, color: Colors.textMuted, marginTop: 8 },
-  cardActions: { flexDirection: "row", gap: 6, marginTop: 10, borderTopWidth: 1, borderTopColor: Colors.border, paddingTop: 10 },
+  agentRole: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
+  agentDesc: { fontSize: 13, color: colors.textSecondary, marginTop: 10, lineHeight: 18 },
+  agentMeta: { fontSize: 11, color: colors.textMuted, marginTop: 8 },
+  cardActions: { flexDirection: "row", gap: 6, marginTop: 10, borderTopWidth: 1, borderTopColor: colors.surfaceLight, paddingTop: 10 },
   actionBtn: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: "rgba(255,255,255,0.03)" },
-  actionText: { fontSize: 11, color: Colors.textSecondary, fontWeight: "600" },
+  actionText: { fontSize: 11, color: colors.textSecondary, fontWeight: "600" },
 });

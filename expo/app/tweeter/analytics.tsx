@@ -11,7 +11,7 @@ import {
 } from "lucide-react-native";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/authStore";
-import Colors from "@/constants/colors";
+import { useTheme } from "@/providers/ThemeProvider";
 import { LobsterWatermark } from "@/components/tweeter/LobsterWatermark";
 
 interface TweetData {
@@ -76,7 +76,7 @@ function EngagementChart({ tweets }: { tweets: TweetData[] }) {
   return (
     <View style={st.chartCard}>
       <View style={st.chartHeader}>
-        <BarChart3 size={14} color={Colors.accent} />
+        <BarChart3 size={14} color={colors.accent} />
         <Text style={st.chartTitle}>Engagement by Time</Text>
       </View>
       <View style={st.chartArea}>
@@ -86,7 +86,7 @@ function EngagementChart({ tweets }: { tweets: TweetData[] }) {
               <AnimatedBar
                 height={Math.max((val / max) * 80, 3)}
                 delay={i * 60}
-                color={val === Math.max(...hourBuckets) ? Colors.accent : "rgba(220,38,38,0.35)"}
+                color={val === Math.max(...hourBuckets) ? colors.accent : "rgba(220,38,38,0.35)"}
               />
             </View>
             <Text style={st.barLabel}>{HOUR_LABELS[i]}</Text>
@@ -134,7 +134,7 @@ function DayHeatmap({ tweets }: { tweets: TweetData[] }) {
                   },
                 ]}
               >
-                <Text style={[st.heatVal, intensity > 0.5 && { color: Colors.text }]}>{val}</Text>
+                <Text style={[st.heatVal, intensity > 0.5 && { color: colors.text }]}>{val}</Text>
               </View>
               <Text style={st.heatLabel}>{DAY_LABELS[i]}</Text>
             </View>
@@ -163,12 +163,12 @@ function TopTweets({ tweets }: { tweets: TweetData[] }) {
       {top.map((t, i) => (
         <View key={t.id} style={st.topTweet}>
           <View style={[st.rankBadge, i === 0 && { backgroundColor: "rgba(220,38,38,0.15)", borderColor: "rgba(220,38,38,0.25)" }]}>
-            <Text style={[st.rankText, i === 0 && { color: Colors.accent }]}>#{i + 1}</Text>
+            <Text style={[st.rankText, i === 0 && { color: colors.accent }]}>#{i + 1}</Text>
           </View>
           <View style={{ flex: 1 }}>
             <Text style={st.topContent} numberOfLines={2}>{t.content}</Text>
             <View style={st.topStats}>
-              <Heart size={10} color={Colors.accent} />
+              <Heart size={10} color={colors.accent} />
               <Text style={st.topStatText}>{t.likes || 0}</Text>
               <Repeat2 size={10} color="#38BDF8" />
               <Text style={st.topStatText}>{t.retweets || 0}</Text>
@@ -183,6 +183,9 @@ function TopTweets({ tweets }: { tweets: TweetData[] }) {
 }
 
 export default function AnalyticsScreen() {
+  const { colors, theme } = useTheme();
+  const isDark = theme.dark;
+  const st = createStStyles(colors);
   const insets = useSafeAreaInsets();
   const { user } = useAuthStore();
   const [tweets, setTweets] = useState<TweetData[]>([]);
@@ -191,7 +194,7 @@ export default function AnalyticsScreen() {
 
   const [automationRules, setAutomationRules] = useState<AutomationRule[]>([
     { id: "auto_post", label: "Auto Post", description: "Automatically post tweets at optimal times", enabled: false, icon: Play, color: "#34D399" },
-    { id: "mood_adapt", label: "Mood Adapt", description: "Adjust tone based on engagement trends", enabled: true, icon: Zap, color: Colors.accent },
+    { id: "mood_adapt", label: "Mood Adapt", description: "Adjust tone based on engagement trends", enabled: true, icon: Zap, color: colors.accent },
     { id: "peak_boost", label: "Peak Boost", description: "Increase posting during high-engagement windows", enabled: false, icon: ArrowUpRight, color: "#FBBF24" },
     { id: "cool_down", label: "Cool Down", description: "Reduce frequency if engagement drops", enabled: true, icon: Pause, color: "#38BDF8" },
   ]);
@@ -246,14 +249,14 @@ export default function AnalyticsScreen() {
     <ScrollView
       style={st.container}
       contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: 120 }}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.accent} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
       showsVerticalScrollIndicator={false}
     >
       <View style={st.redGlow} />
       <LobsterWatermark style={st.watermark} />
 
       <View style={st.header}>
-        <Text style={st.title}>📈 <Text style={{ color: Colors.accent }}>Analytics</Text></Text>
+        <Text style={st.title}>📈 <Text style={{ color: colors.accent }}>Analytics</Text></Text>
         <Text style={st.subtitle}>{stats.count} tweets analyzed</Text>
       </View>
 
@@ -276,7 +279,7 @@ export default function AnalyticsScreen() {
       <View style={st.kpiGrid}>
         <View style={st.kpiCard}>
           <View style={st.kpiIconWrap}>
-            <Eye size={14} color={Colors.accent} />
+            <Eye size={14} color={colors.accent} />
           </View>
           <Text style={st.kpiVal}>{stats.engagement}</Text>
           <Text style={st.kpiLabel}>Total Engagement</Text>
@@ -320,7 +323,7 @@ export default function AnalyticsScreen() {
       <Text style={st.secLabel}>AUTOMATION</Text>
       <View style={st.autoCard}>
         <View style={st.autoHeader}>
-          <Settings2 size={14} color={Colors.accent} />
+          <Settings2 size={14} color={colors.accent} />
           <Text style={st.autoTitle}>Agent Automation Rules</Text>
           <View style={st.autoCountBadge}>
             <Text style={st.autoCountText}>{automationRules.filter(r => r.enabled).length} active</Text>
@@ -341,7 +344,7 @@ export default function AnalyticsScreen() {
                 value={rule.enabled}
                 onValueChange={() => toggleAutomation(rule.id)}
                 trackColor={{ false: "rgba(255,255,255,0.08)", true: rule.color + "40" }}
-                thumbColor={rule.enabled ? rule.color : "#666"}
+                thumbColor={rule.enabled ? rule.color : colors.textSecondary}
               />
             </View>
           );
@@ -350,7 +353,7 @@ export default function AnalyticsScreen() {
 
       {/* Best posting time */}
       <View style={st.insightCard}>
-        <Clock size={16} color={Colors.accent} />
+        <Clock size={16} color={colors.accent} />
         <View style={{ flex: 1, marginLeft: 12 }}>
           <Text style={st.insightTitle}>Best Posting Window</Text>
           <Text style={st.insightVal}>
@@ -375,21 +378,21 @@ export default function AnalyticsScreen() {
 
 const mono = Platform.OS === "ios" ? "Menlo" : "monospace" as const;
 
-const st = StyleSheet.create({
+const createStStyles = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: "#000", paddingHorizontal: 16 },
   redGlow: { position: "absolute", top: 0, left: 0, right: 0, height: 250, backgroundColor: "rgba(220,38,38,0.03)" },
   watermark: { top: 18, right: -28 },
   header: { marginBottom: 16 },
-  title: { fontSize: 26, fontWeight: "900" as const, color: Colors.text, letterSpacing: -1 },
-  subtitle: { fontSize: 12, color: Colors.textMuted, marginTop: 3 },
+  title: { fontSize: 26, fontWeight: "900" as const, color: colors.text, letterSpacing: -1 },
+  subtitle: { fontSize: 12, color: colors.textMuted, marginTop: 3 },
 
   rangeRow: { flexDirection: "row" as const, gap: 6, marginBottom: 16 },
   rangeChip: {
     paddingHorizontal: 14, paddingVertical: 7, borderRadius: 10,
-    backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(255,255,255,0.06)",
+    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.surfaceLight,
   },
-  rangeChipActive: { backgroundColor: Colors.accent, borderColor: Colors.accent },
-  rangeText: { fontSize: 11, fontWeight: "700" as const, color: Colors.textMuted },
+  rangeChipActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+  rangeText: { fontSize: 11, fontWeight: "700" as const, color: colors.textMuted },
   rangeTextActive: { color: "#000" },
 
   kpiGrid: { flexDirection: "row" as const, flexWrap: "wrap" as const, gap: 8, marginBottom: 16 },
@@ -401,8 +404,8 @@ const st = StyleSheet.create({
     width: 28, height: 28, borderRadius: 8, alignItems: "center" as const, justifyContent: "center" as const,
     backgroundColor: "rgba(220,38,38,0.12)", marginBottom: 8,
   },
-  kpiVal: { fontSize: 22, fontWeight: "900" as const, color: Colors.text, fontFamily: mono },
-  kpiLabel: { fontSize: 10, fontWeight: "600" as const, color: Colors.textMuted, marginTop: 2, textTransform: "uppercase" as const, letterSpacing: 0.5 },
+  kpiVal: { fontSize: 22, fontWeight: "900" as const, color: colors.text, fontFamily: mono },
+  kpiLabel: { fontSize: 10, fontWeight: "600" as const, color: colors.textMuted, marginTop: 2, textTransform: "uppercase" as const, letterSpacing: 0.5 },
   trendBadge: {
     flexDirection: "row" as const, alignItems: "center" as const, gap: 2, alignSelf: "flex-start" as const,
     paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, marginTop: 6,
@@ -414,12 +417,12 @@ const st = StyleSheet.create({
     borderWidth: 1, borderColor: "rgba(220,38,38,0.08)", padding: 16, marginBottom: 12,
   },
   chartHeader: { flexDirection: "row" as const, alignItems: "center" as const, gap: 8, marginBottom: 14 },
-  chartTitle: { fontSize: 14, fontWeight: "800" as const, color: Colors.text },
+  chartTitle: { fontSize: 14, fontWeight: "800" as const, color: colors.text },
   chartArea: { flexDirection: "row" as const, justifyContent: "space-between" as const, alignItems: "flex-end" as const, height: 100, paddingHorizontal: 4 },
   barCol: { alignItems: "center" as const, flex: 1 },
   barWrapper: { height: 80, justifyContent: "flex-end" as const },
-  barLabel: { fontSize: 9, color: Colors.textMuted, marginTop: 6, fontWeight: "600" as const },
-  chartHint: { fontSize: 9, color: Colors.textMuted, marginTop: 10, textAlign: "center" as const },
+  barLabel: { fontSize: 9, color: colors.textMuted, marginTop: 6, fontWeight: "600" as const },
+  chartHint: { fontSize: 9, color: colors.textMuted, marginTop: 10, textAlign: "center" as const },
 
   heatmapRow: { flexDirection: "row" as const, gap: 4 },
   heatCell: { flex: 1, alignItems: "center" as const },
@@ -427,42 +430,42 @@ const st = StyleSheet.create({
     width: "100%" as any, aspectRatio: 1, borderRadius: 10,
     alignItems: "center" as const, justifyContent: "center" as const, borderWidth: 1,
   },
-  heatVal: { fontSize: 13, fontWeight: "800" as const, color: Colors.textMuted, fontFamily: mono },
-  heatLabel: { fontSize: 9, color: Colors.textMuted, marginTop: 5, fontWeight: "600" as const },
+  heatVal: { fontSize: 13, fontWeight: "800" as const, color: colors.textMuted, fontFamily: mono },
+  heatLabel: { fontSize: 9, color: colors.textMuted, marginTop: 5, fontWeight: "600" as const },
 
   topTweet: { flexDirection: "row" as const, gap: 10, alignItems: "center" as const, paddingVertical: 10, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.03)" },
   rankBadge: {
     width: 32, height: 32, borderRadius: 10, alignItems: "center" as const, justifyContent: "center" as const,
-    backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(255,255,255,0.06)",
+    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.surfaceLight,
   },
-  rankText: { fontSize: 12, fontWeight: "900" as const, color: Colors.textMuted },
-  topContent: { fontSize: 12, color: Colors.text, lineHeight: 17 },
+  rankText: { fontSize: 12, fontWeight: "900" as const, color: colors.textMuted },
+  topContent: { fontSize: 12, color: colors.text, lineHeight: 17 },
   topStats: { flexDirection: "row" as const, alignItems: "center" as const, gap: 6, marginTop: 4 },
-  topStatText: { fontSize: 10, color: Colors.textMuted, fontFamily: mono },
+  topStatText: { fontSize: 10, color: colors.textMuted, fontFamily: mono },
 
-  secLabel: { fontSize: 10, fontWeight: "800" as const, color: Colors.textMuted, letterSpacing: 1.5, marginTop: 16, marginBottom: 10 },
+  secLabel: { fontSize: 10, fontWeight: "800" as const, color: colors.textMuted, letterSpacing: 1.5, marginTop: 16, marginBottom: 10 },
 
   autoCard: {
     backgroundColor: "rgba(220,38,38,0.03)", borderRadius: 18,
     borderWidth: 1, borderColor: "rgba(220,38,38,0.08)", padding: 16, marginBottom: 12,
   },
   autoHeader: { flexDirection: "row" as const, alignItems: "center" as const, gap: 8, marginBottom: 14 },
-  autoTitle: { fontSize: 14, fontWeight: "800" as const, color: Colors.text, flex: 1 },
-  autoCountBadge: { backgroundColor: Colors.accentDim, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
-  autoCountText: { fontSize: 10, fontWeight: "700" as const, color: Colors.accent },
+  autoTitle: { fontSize: 14, fontWeight: "800" as const, color: colors.text, flex: 1 },
+  autoCountBadge: { backgroundColor: colors.accentDim, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
+  autoCountText: { fontSize: 10, fontWeight: "700" as const, color: colors.accent },
   autoRule: {
     flexDirection: "row" as const, alignItems: "center" as const, gap: 12, paddingVertical: 12,
     borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.03)",
   },
   autoIconWrap: { width: 34, height: 34, borderRadius: 10, alignItems: "center" as const, justifyContent: "center" as const },
-  autoRuleLabel: { fontSize: 13, fontWeight: "700" as const, color: Colors.text },
-  autoRuleDesc: { fontSize: 10, color: Colors.textMuted, marginTop: 2 },
+  autoRuleLabel: { fontSize: 13, fontWeight: "700" as const, color: colors.text },
+  autoRuleDesc: { fontSize: 10, color: colors.textMuted, marginTop: 2 },
 
   insightCard: {
     flexDirection: "row" as const, alignItems: "center" as const,
     backgroundColor: "rgba(220,38,38,0.06)", borderRadius: 16,
     borderWidth: 1, borderColor: "rgba(220,38,38,0.12)", padding: 16, marginBottom: 12,
   },
-  insightTitle: { fontSize: 10, fontWeight: "700" as const, color: Colors.textMuted, textTransform: "uppercase" as const, letterSpacing: 0.5 },
-  insightVal: { fontSize: 15, fontWeight: "800" as const, color: Colors.text, marginTop: 2 },
+  insightTitle: { fontSize: 10, fontWeight: "700" as const, color: colors.textMuted, textTransform: "uppercase" as const, letterSpacing: 0.5 },
+  insightVal: { fontSize: 15, fontWeight: "800" as const, color: colors.text, marginTop: 2 },
 });

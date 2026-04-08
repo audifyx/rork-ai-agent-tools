@@ -10,7 +10,7 @@ import {
 } from "lucide-react-native";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/authStore";
-import Colors from "@/constants/colors";
+import { useTheme } from "@/providers/ThemeProvider";
 import { LobsterWatermark } from "@/components/tweeter/LobsterWatermark";
 
 const SCREEN_W = Dimensions.get("window").width;
@@ -26,7 +26,7 @@ interface SliderConfig {
 }
 
 const SLIDERS: SliderConfig[] = [
-  { id: "aggression", label: "Aggression", icon: Flame, color: "#EF4444", min: "Gentle", max: "Savage", defaultValue: 0.3 },
+  { id: "aggression", label: "Aggression", icon: Flame, color: colors.accentBright, min: "Gentle", max: "Savage", defaultValue: 0.3 },
   { id: "humor", label: "Humor", icon: Smile, color: "#FBBF24", min: "Serious", max: "Hilarious", defaultValue: 0.6 },
   { id: "formality", label: "Formality", icon: Briefcase, color: "#38BDF8", min: "Casual", max: "Corporate", defaultValue: 0.2 },
   { id: "emoji_usage", label: "Emoji Usage", icon: Sparkles, color: "#A78BFA", min: "None", max: "Maximum", defaultValue: 0.4 },
@@ -148,6 +148,9 @@ function TunerSlider({ config, value, onChange }: { config: SliderConfig; value:
 }
 
 export default function ToneTuner() {
+  const { colors, theme } = useTheme();
+  const isDark = theme.dark;
+  const st = createStStyles(colors);
   const insets = useSafeAreaInsets();
   const { user } = useAuthStore();
   const [values, setValues] = useState<Record<string, number>>(() => {
@@ -236,12 +239,12 @@ export default function ToneTuner() {
     const agg = values.aggression ?? 0.3;
     const humor = values.humor ?? 0.6;
     const formal = values.formality ?? 0.2;
-    if (agg > 0.7) return { label: "Firebrand", emoji: "🔥", color: "#EF4444" };
+    if (agg > 0.7) return { label: "Firebrand", emoji: "🔥", color: colors.accentBright };
     if (humor > 0.7) return { label: "Comedian", emoji: "😂", color: "#FBBF24" };
     if (formal > 0.7) return { label: "Executive", emoji: "👔", color: "#38BDF8" };
     if (values.sarcasm > 0.7) return { label: "Snark Lord", emoji: "😏", color: "#F472B6" };
     if (agg < 0.3 && formal < 0.3) return { label: "Chill Vibes", emoji: "😎", color: "#34D399" };
-    return { label: "Balanced", emoji: "⚖️", color: Colors.accent };
+    return { label: "Balanced", emoji: "⚖️", color: colors.accent };
   }, [values]);
 
   const cycleTopic = useCallback(() => {
@@ -255,14 +258,14 @@ export default function ToneTuner() {
     <ScrollView
       style={st.container}
       contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: 120 }}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.accent} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
       showsVerticalScrollIndicator={false}
     >
       <View style={st.redGlow} />
       <LobsterWatermark style={st.watermark} />
 
       <View style={st.header}>
-        <Text style={st.title}>🎛️ Tone <Text style={{ color: Colors.accent }}>Tuner</Text></Text>
+        <Text style={st.title}>🎛️ Tone <Text style={{ color: colors.accent }}>Tuner</Text></Text>
         <Text style={st.subtitle}>Shape your agent's voice in real-time</Text>
       </View>
 
@@ -314,7 +317,7 @@ export default function ToneTuner() {
       {/* Actions */}
       <View style={st.actionRow}>
         <TouchableOpacity style={st.resetBtn} onPress={resetDefaults}>
-          <RotateCcw size={16} color={Colors.textMuted} />
+          <RotateCcw size={16} color={colors.textMuted} />
           <Text style={st.resetText}>Reset</Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -353,13 +356,13 @@ export default function ToneTuner() {
   );
 }
 
-const st = StyleSheet.create({
+const createStStyles = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: "#000", paddingHorizontal: 16 },
   redGlow: { position: "absolute", top: 0, left: 0, right: 0, height: 250, backgroundColor: "rgba(220,38,38,0.03)" },
   watermark: { top: 18, right: -28 },
   header: { marginBottom: 16 },
-  title: { fontSize: 26, fontWeight: "900", color: Colors.text, letterSpacing: -1 },
-  subtitle: { fontSize: 12, color: Colors.textMuted, marginTop: 3 },
+  title: { fontSize: 26, fontWeight: "900", color: colors.text, letterSpacing: -1 },
+  subtitle: { fontSize: 12, color: colors.textMuted, marginTop: 3 },
 
   vibeCard: {
     flexDirection: "row", alignItems: "center", gap: 14, padding: 16,
@@ -371,10 +374,10 @@ const st = StyleSheet.create({
     borderWidth: 1.5,
   },
   vibeEmoji: { fontSize: 24 },
-  vibeLabel: { fontSize: 9, fontWeight: "700", color: Colors.textMuted, letterSpacing: 1, textTransform: "uppercase" },
+  vibeLabel: { fontSize: 9, fontWeight: "700", color: colors.textMuted, letterSpacing: 1, textTransform: "uppercase" },
   vibeName: { fontSize: 20, fontWeight: "900", marginTop: 2 },
 
-  secLabel: { fontSize: 10, fontWeight: "800", color: Colors.textMuted, letterSpacing: 1.5, marginTop: 16, marginBottom: 10 },
+  secLabel: { fontSize: 10, fontWeight: "800", color: colors.textMuted, letterSpacing: 1.5, marginTop: 16, marginBottom: 10 },
 
   slidersCard: {
     backgroundColor: "rgba(220,38,38,0.03)", borderRadius: 18,
@@ -384,10 +387,10 @@ const st = StyleSheet.create({
   sliderContainer: { marginBottom: 18 },
   sliderHeader: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 },
   sliderIconWrap: { width: 28, height: 28, borderRadius: 8, alignItems: "center", justifyContent: "center" },
-  sliderLabel: { fontSize: 13, fontWeight: "700", color: Colors.text, flex: 1 },
+  sliderLabel: { fontSize: 13, fontWeight: "700", color: colors.text, flex: 1 },
   sliderPct: { fontSize: 13, fontWeight: "900", fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace" },
   sliderTrack: {
-    height: 8, backgroundColor: "rgba(255,255,255,0.06)", borderRadius: 4,
+    height: 8, backgroundColor: colors.surfaceLight, borderRadius: 4,
     overflow: "visible", justifyContent: "center",
   },
   sliderFill: { position: "absolute", left: 0, top: 0, height: 8, borderRadius: 4 },
@@ -398,7 +401,7 @@ const st = StyleSheet.create({
     elevation: 4,
   },
   sliderLabels: { flexDirection: "row", justifyContent: "space-between", marginTop: 6 },
-  sliderMinMax: { fontSize: 9, color: Colors.textMuted, fontWeight: "600" },
+  sliderMinMax: { fontSize: 9, color: colors.textMuted, fontWeight: "600" },
 
   previewCard: {
     backgroundColor: "rgba(220,38,38,0.05)", borderRadius: 18,
@@ -410,26 +413,26 @@ const st = StyleSheet.create({
     backgroundColor: "rgba(220,38,38,0.12)", borderWidth: 1.5, borderColor: "rgba(220,38,38,0.2)",
     alignItems: "center", justifyContent: "center",
   },
-  previewName: { fontSize: 14, fontWeight: "800", color: Colors.text },
-  previewTopic: { fontSize: 10, color: Colors.textMuted, marginTop: 1 },
+  previewName: { fontSize: 14, fontWeight: "800", color: colors.text },
+  previewTopic: { fontSize: 10, color: colors.textMuted, marginTop: 1 },
   previewLiveBadge: {
     flexDirection: "row", alignItems: "center", gap: 4,
     backgroundColor: "rgba(220,38,38,0.12)", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8,
   },
-  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: Colors.accent },
-  liveText: { fontSize: 9, fontWeight: "800", color: Colors.accent, letterSpacing: 0.5 },
-  previewText: { fontSize: 15, color: Colors.text, lineHeight: 22 },
-  previewHint: { fontSize: 9, color: Colors.textMuted, marginTop: 10, textAlign: "center" },
+  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.accent },
+  liveText: { fontSize: 9, fontWeight: "800", color: colors.accent, letterSpacing: 0.5 },
+  previewText: { fontSize: 15, color: colors.text, lineHeight: 22 },
+  previewHint: { fontSize: 9, color: colors.textMuted, marginTop: 10, textAlign: "center" },
 
   actionRow: { flexDirection: "row", gap: 10, marginBottom: 12 },
   resetBtn: {
     flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 16, paddingVertical: 12,
-    borderRadius: 12, backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(255,255,255,0.06)",
+    borderRadius: 12, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.surfaceLight,
   },
-  resetText: { fontSize: 13, fontWeight: "700", color: Colors.textMuted },
+  resetText: { fontSize: 13, fontWeight: "700", color: colors.textMuted },
   saveBtn: {
     flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
-    paddingVertical: 12, borderRadius: 12, backgroundColor: Colors.accent,
+    paddingVertical: 12, borderRadius: 12, backgroundColor: colors.accent,
   },
   saveBtnSaved: { backgroundColor: "rgba(52,211,153,0.12)", borderWidth: 1, borderColor: "rgba(52,211,153,0.2)" },
   saveText: { fontSize: 14, fontWeight: "800", color: "#000" },
@@ -440,5 +443,5 @@ const st = StyleSheet.create({
     borderWidth: 1, borderColor: "rgba(220,38,38,0.08)",
   },
   presetEmoji: { fontSize: 24 },
-  presetName: { fontSize: 11, fontWeight: "700", color: Colors.textSecondary },
+  presetName: { fontSize: 11, fontWeight: "700", color: colors.textSecondary },
 });

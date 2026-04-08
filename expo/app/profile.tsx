@@ -9,19 +9,25 @@ import {
 } from "lucide-react-native";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/authStore";
-import Colors from "@/constants/colors";
+import { useTheme } from "@/providers/ThemeProvider";
 import ColorfulBackground from "@/components/ColorfulBackground";
 import GlassCard from "@/components/GlassCard";
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const { user, signOut } = useAuthStore();
+  const { colors, theme } = useTheme();
+  const isDark = theme.dark;
   const [profile, setProfile] = useState<any>(null);
   const [form, setForm] = useState({ display_name: "", bio: "", timezone: "UTC" });
   const [prefs, setPrefs] = useState({
     notifications_enabled: true, dark_mode: true, auto_refresh: true, default_tool: "openclaw",
   });
   const [saving, setSaving] = useState(false);
+
+  const mono = Platform.OS === "ios" ? "Menlo" : "monospace";
+  const subtleBg = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)";
+  const subtleBorder = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)";
 
   const fetchProfile = useCallback(async () => {
     if (!user) return;
@@ -55,7 +61,7 @@ export default function ProfileScreen() {
   const initial = (form.display_name || user?.email || "?")[0].toUpperCase();
 
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, { backgroundColor: colors.background }]}>
       <ColorfulBackground variant="detail" />
       <ScrollView
         style={styles.container}
@@ -63,102 +69,100 @@ export default function ProfileScreen() {
         showsVerticalScrollIndicator={false}
       >
         <GlassCard style={styles.avatarCard}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{initial}</Text>
+          <View style={[styles.avatar, { backgroundColor: colors.accentDim, borderColor: colors.accentGlow }]}>
+            <Text style={[styles.avatarText, { color: colors.accent }]}>{initial}</Text>
           </View>
-          <Text style={styles.displayName}>{form.display_name || "Set your name"}</Text>
-          <Text style={styles.email}>{user?.email}</Text>
-          <Text style={styles.joined}>Joined {user?.created_at ? new Date(user.created_at).toLocaleDateString() : "—"}</Text>
+          <Text style={[styles.displayName, { color: colors.text }]}>{form.display_name || "Set your name"}</Text>
+          <Text style={[styles.email, { color: colors.textMuted }]}>{user?.email}</Text>
+          <Text style={[styles.joined, { color: colors.textMuted }]}>Joined {user?.created_at ? new Date(user.created_at).toLocaleDateString() : "—"}</Text>
         </GlassCard>
 
-        <Text style={styles.secLabel}>DETAILS</Text>
+        <Text style={[styles.secLabel, { color: colors.textMuted }]}>DETAILS</Text>
         <GlassCard style={styles.card}>
-          <Text style={styles.inputLabel}>Display Name</Text>
+          <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Display Name</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: subtleBg, borderColor: subtleBorder, color: colors.text }]}
             value={form.display_name}
             onChangeText={v => setForm(p => ({ ...p, display_name: v }))}
             placeholder="Your name"
-            placeholderTextColor={Colors.textMuted}
+            placeholderTextColor={colors.textMuted}
           />
-          <Text style={styles.inputLabel}>Bio</Text>
+          <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Bio</Text>
           <TextInput
-            style={[styles.input, { height: 80, textAlignVertical: "top" }]}
+            style={[styles.input, { height: 80, textAlignVertical: "top", backgroundColor: subtleBg, borderColor: subtleBorder, color: colors.text }]}
             value={form.bio}
             onChangeText={v => setForm(p => ({ ...p, bio: v }))}
             placeholder="Tell us about yourself"
-            placeholderTextColor={Colors.textMuted}
+            placeholderTextColor={colors.textMuted}
             multiline
           />
-          <Text style={styles.inputLabel}>Timezone</Text>
+          <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Timezone</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: subtleBg, borderColor: subtleBorder, color: colors.text }]}
             value={form.timezone}
             onChangeText={v => setForm(p => ({ ...p, timezone: v }))}
             placeholder="e.g. America/New_York"
-            placeholderTextColor={Colors.textMuted}
+            placeholderTextColor={colors.textMuted}
             autoCapitalize="none"
           />
         </GlassCard>
 
-        <Text style={styles.secLabel}>PREFERENCES</Text>
+        <Text style={[styles.secLabel, { color: colors.textMuted }]}>PREFERENCES</Text>
         <GlassCard style={styles.card}>
           {[
             { key: "notifications_enabled", label: "Notifications", icon: Bell, desc: "Receive agent notifications" },
             { key: "dark_mode", label: "Dark Mode", icon: Moon, desc: "Toggle dark appearance" },
             { key: "auto_refresh", label: "Auto Refresh", icon: RefreshCw, desc: "Realtime data updates" },
           ].map((item, i, arr) => (
-            <View key={item.key} style={[styles.prefRow, i < arr.length - 1 && styles.prefBorder]}>
-              <item.icon size={16} color={Colors.textMuted} />
+            <View key={item.key} style={[styles.prefRow, i < arr.length - 1 && { borderBottomWidth: 1, borderBottomColor: subtleBorder }]}>
+              <item.icon size={16} color={colors.textMuted} />
               <View style={{ flex: 1 }}>
-                <Text style={styles.prefLabel}>{item.label}</Text>
-                <Text style={styles.prefDesc}>{item.desc}</Text>
+                <Text style={[styles.prefLabel, { color: colors.text }]}>{item.label}</Text>
+                <Text style={[styles.prefDesc, { color: colors.textMuted }]}>{item.desc}</Text>
               </View>
               <Switch
                 value={(prefs as any)[item.key]}
                 onValueChange={v => setPrefs(p => ({ ...p, [item.key]: v }))}
-                trackColor={{ false: "rgba(0,0,0,0.08)", true: "rgba(220,38,38,0.25)" }}
-                thumbColor={(prefs as any)[item.key] ? Colors.accent : "#ccc"}
+                trackColor={{ false: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)", true: colors.accentGlow }}
+                thumbColor={(prefs as any)[item.key] ? colors.accent : isDark ? "#666" : "#ccc"}
               />
             </View>
           ))}
         </GlassCard>
 
-        <TouchableOpacity style={styles.saveBtn} onPress={handleSave} activeOpacity={0.7} disabled={saving}>
+        <TouchableOpacity style={[styles.saveBtn, { backgroundColor: colors.accent, shadowColor: colors.accent }]} onPress={handleSave} activeOpacity={0.7} disabled={saving}>
           <Save size={16} color="#fff" />
           <Text style={styles.saveBtnText}>{saving ? "Saving..." : "Save Profile"}</Text>
         </TouchableOpacity>
 
-        <Text style={styles.secLabel}>ACCOUNT</Text>
+        <Text style={[styles.secLabel, { color: colors.textMuted }]}>ACCOUNT</Text>
         <GlassCard style={styles.card}>
-          <View style={[styles.infoRow, styles.prefBorder]}>
-            <Text style={styles.infoLabel}>User ID</Text>
-            <Text style={styles.infoVal} numberOfLines={1}>{user?.id?.slice(0, 16)}...</Text>
+          <View style={[styles.infoRow, { borderBottomWidth: 1, borderBottomColor: subtleBorder }]}>
+            <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>User ID</Text>
+            <Text style={[styles.infoVal, { fontFamily: mono, color: colors.textMuted }]} numberOfLines={1}>{user?.id?.slice(0, 16)}...</Text>
           </View>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Email</Text>
-            <Text style={styles.infoVal}>{user?.email}</Text>
+            <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Email</Text>
+            <Text style={[styles.infoVal, { fontFamily: mono, color: colors.textMuted }]}>{user?.email}</Text>
           </View>
         </GlassCard>
 
-        <TouchableOpacity style={styles.signOutBtn} onPress={() => {
+        <TouchableOpacity style={[styles.signOutBtn, { backgroundColor: "rgba(239,68,68,0.08)", borderColor: "rgba(239,68,68,0.15)" }]} onPress={() => {
           Alert.alert("Sign Out", "Are you sure?", [
             { text: "Cancel", style: "cancel" },
             { text: "Sign Out", style: "destructive", onPress: signOut },
           ]);
         }} activeOpacity={0.7}>
-          <LogOut size={16} color={Colors.danger} />
-          <Text style={styles.signOutText}>Sign Out</Text>
+          <LogOut size={16} color={colors.danger} />
+          <Text style={[styles.signOutText, { color: colors.danger }]}>Sign Out</Text>
         </TouchableOpacity>
       </ScrollView>
     </View>
   );
 }
 
-const mono = Platform.OS === "ios" ? "Menlo" : "monospace";
-
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.background },
+  root: { flex: 1 },
   container: { flex: 1 },
 
   avatarCard: {
@@ -166,46 +170,45 @@ const styles = StyleSheet.create({
   },
   avatar: {
     width: 72, height: 72, borderRadius: 36,
-    backgroundColor: "rgba(99,102,241,0.12)", borderWidth: 2, borderColor: "rgba(99,102,241,0.2)",
+    borderWidth: 2,
     alignItems: "center", justifyContent: "center", marginBottom: 12,
   },
-  avatarText: { fontSize: 28, fontWeight: "800", color: "#6366F1" },
-  displayName: { fontSize: 20, fontWeight: "700", color: Colors.text },
-  email: { fontSize: 13, color: Colors.textMuted, marginTop: 4 },
-  joined: { fontSize: 11, color: Colors.textMuted, marginTop: 2 },
+  avatarText: { fontSize: 28, fontWeight: "800" as const },
+  displayName: { fontSize: 20, fontWeight: "700" as const },
+  email: { fontSize: 13, marginTop: 4 },
+  joined: { fontSize: 11, marginTop: 2 },
 
-  secLabel: { fontSize: 11, fontWeight: "700", color: Colors.textMuted, letterSpacing: 1.5, marginTop: 24, marginBottom: 10 },
+  secLabel: { fontSize: 11, fontWeight: "700" as const, letterSpacing: 1.5, marginTop: 24, marginBottom: 10 },
 
   card: {
     padding: 16,
   },
-  inputLabel: { fontSize: 12, fontWeight: "600", color: Colors.textSecondary, marginBottom: 6, marginTop: 8 },
+  inputLabel: { fontSize: 12, fontWeight: "600" as const, marginBottom: 6, marginTop: 8 },
   input: {
-    backgroundColor: "rgba(0,0,0,0.04)", borderRadius: 14,
-    paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: Colors.text,
-    borderWidth: 1, borderColor: "rgba(0,0,0,0.05)",
+    borderRadius: 14,
+    paddingHorizontal: 14, paddingVertical: 12, fontSize: 15,
+    borderWidth: 1,
   },
 
   prefRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 14 },
-  prefBorder: { borderBottomWidth: 1, borderBottomColor: "rgba(0,0,0,0.04)" },
-  prefLabel: { fontSize: 14, fontWeight: "600", color: Colors.text },
-  prefDesc: { fontSize: 11, color: Colors.textMuted, marginTop: 1 },
+  prefLabel: { fontSize: 14, fontWeight: "600" as const },
+  prefDesc: { fontSize: 11, marginTop: 1 },
 
   saveBtn: {
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
-    backgroundColor: Colors.accent, borderRadius: 16, paddingVertical: 16, marginTop: 20,
-    shadowColor: Colors.accent, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 6,
+    borderRadius: 16, paddingVertical: 16, marginTop: 20,
+    shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 6,
   },
-  saveBtnText: { fontSize: 16, fontWeight: "700", color: "#fff" },
+  saveBtnText: { fontSize: 16, fontWeight: "700" as const, color: "#fff" },
 
   infoRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 12 },
-  infoLabel: { fontSize: 14, color: Colors.textSecondary },
-  infoVal: { fontSize: 13, color: Colors.textMuted, fontFamily: mono, maxWidth: 180, textAlign: "right" as const },
+  infoLabel: { fontSize: 14 },
+  infoVal: { fontSize: 13, maxWidth: 180, textAlign: "right" as const },
 
   signOutBtn: {
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
-    backgroundColor: "rgba(239,68,68,0.08)", borderRadius: 16, paddingVertical: 16,
-    borderWidth: 1, borderColor: "rgba(239,68,68,0.15)", marginTop: 16, marginBottom: 20,
+    borderRadius: 16, paddingVertical: 16,
+    borderWidth: 1, marginTop: 16, marginBottom: 20,
   },
-  signOutText: { fontSize: 15, fontWeight: "600", color: Colors.danger },
+  signOutText: { fontSize: 15, fontWeight: "600" as const },
 });

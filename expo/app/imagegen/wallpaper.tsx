@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Sparkles, Check, Trash2, ChevronDown, ChevronUp } from "lucide-react-native";
 import { supabase, SUPABASE_URL } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/authStore";
-import Colors from "@/constants/colors";
+import { useTheme } from "@/providers/ThemeProvider";
 
 const { width: W } = Dimensions.get("window");
 const CARD_W = (W - 48) / 2;
@@ -49,6 +49,9 @@ function timeAgo(d: string) {
 }
 
 export default function WallpaperScreen() {
+  const { colors, theme } = useTheme();
+  const isDark = theme.dark;
+  const st = createStStyles(colors);
   const _insets = useSafeAreaInsets();
   const { user } = useAuthStore();
 
@@ -220,7 +223,7 @@ export default function WallpaperScreen() {
           <TextInput
             style={st.promptIn}
             placeholder="Describe your perfect wallpaper..."
-            placeholderTextColor={Colors.textMuted}
+            placeholderTextColor={colors.textMuted}
             value={prompt}
             onChangeText={setPrompt}
             multiline
@@ -244,7 +247,7 @@ export default function WallpaperScreen() {
           <TouchableOpacity style={st.modelRow} onPress={() => setShowModelPicker(!showModelPicker)}>
             <Text style={{ fontSize: 18 }}>{currentModel.emoji}</Text>
             <Text style={st.modelName}>{currentModel.label}</Text>
-            {showModelPicker ? <ChevronUp size={15} color={Colors.textMuted} /> : <ChevronDown size={15} color={Colors.textMuted} />}
+            {showModelPicker ? <ChevronUp size={15} color={colors.textMuted} /> : <ChevronDown size={15} color={colors.textMuted} />}
           </TouchableOpacity>
           {showModelPicker && (
             <View style={st.modelDrop}>
@@ -267,7 +270,7 @@ export default function WallpaperScreen() {
         {/* Wallpaper gallery */}
         {wallpapers.length > 0 && (
           <View style={st.gallerySection}>
-            <Text style={st.galleryTitle}>🎨 Your Wallpapers <Text style={{ color: Colors.textMuted, fontSize: 13 }}>({wallpapers.length})</Text></Text>
+            <Text style={st.galleryTitle}>🎨 Your Wallpapers <Text style={{ color: colors.textMuted, fontSize: 13 }}>({wallpapers.length})</Text></Text>
             <View style={st.galleryGrid}>
               {wallpapers.map(wp => {
                 const isDone = wp.status === "done" || wp.status === "saved";
@@ -299,7 +302,7 @@ export default function WallpaperScreen() {
                           </TouchableOpacity>
                         )}
                         <TouchableOpacity style={[st.wpBtn, st.wpBtnDel]} onPress={() => deleteWallpaper(wp)}>
-                          <Trash2 size={13} color={Colors.danger} />
+                          <Trash2 size={13} color={colors.danger} />
                         </TouchableOpacity>
                       </View>
                     )}
@@ -314,45 +317,45 @@ export default function WallpaperScreen() {
   );
 }
 
-const st = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.background },
+const createStStyles = (colors: any) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.background },
   glow: { position: "absolute", top: 0, left: 0, right: 0, height: 300, backgroundColor: "rgba(147,51,234,0.03)" },
   header: { paddingHorizontal: 16, paddingBottom: 14 },
-  title: { fontSize: 24, fontWeight: "900", color: Colors.text, letterSpacing: -0.8 },
-  subtitle: { fontSize: 12, color: Colors.textMuted, marginTop: 3 },
+  title: { fontSize: 24, fontWeight: "900", color: colors.text, letterSpacing: -0.8 },
+  subtitle: { fontSize: 12, color: colors.textMuted, marginTop: 3 },
   activeCard: { marginHorizontal: 16, marginBottom: 14, padding: 14, backgroundColor: "rgba(147,51,234,0.07)", borderRadius: 20, borderWidth: 1, borderColor: "rgba(147,51,234,0.2)", overflow: "hidden" },
   activeGlow: { position: "absolute", top: -30, right: -30, width: 120, height: 120, borderRadius: 60, backgroundColor: "rgba(147,51,234,0.1)" },
   activeLabel: { fontSize: 9, fontWeight: "800", color: "#C084FC", letterSpacing: 1.5, marginBottom: 10 },
   activeImg: { width: "100%", height: 180, borderRadius: 12, marginBottom: 10 },
-  activePrompt: { fontSize: 13, color: Colors.textSecondary, lineHeight: 18 },
+  activePrompt: { fontSize: 13, color: colors.textSecondary, lineHeight: 18 },
   activeChips: { flexDirection: "row", gap: 6, marginTop: 8 },
-  chip: { backgroundColor: "rgba(255,255,255,0.06)", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 7 },
-  chipTxt: { fontSize: 11, color: Colors.textMuted, fontWeight: "600" },
+  chip: { backgroundColor: colors.surfaceLight, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 7 },
+  chipTxt: { fontSize: 11, color: colors.textMuted, fontWeight: "600" },
   genCard: { marginHorizontal: 16, marginBottom: 20, padding: 16, backgroundColor: "rgba(147,51,234,0.05)", borderRadius: 20, borderWidth: 1, borderColor: "rgba(147,51,234,0.12)", overflow: "hidden" },
   genGlow: { position: "absolute", bottom: -40, right: -40, width: 140, height: 140, borderRadius: 70, backgroundColor: "rgba(147,51,234,0.06)" },
-  genTitle: { fontSize: 18, fontWeight: "900", color: Colors.text, marginBottom: 14 },
-  secLabel: { fontSize: 10, fontWeight: "700", color: Colors.textMuted, letterSpacing: 1.2, marginBottom: 8, textTransform: "uppercase" },
+  genTitle: { fontSize: 18, fontWeight: "900", color: colors.text, marginBottom: 14 },
+  secLabel: { fontSize: 10, fontWeight: "700", color: colors.textMuted, letterSpacing: 1.2, marginBottom: 8, textTransform: "uppercase" },
   quickChip: { backgroundColor: "rgba(255,255,255,0.05)", paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: "rgba(255,255,255,0.08)", maxWidth: 200 },
-  quickChipTxt: { fontSize: 12, color: Colors.textSecondary },
-  promptIn: { backgroundColor: "rgba(255,255,255,0.04)", borderRadius: 14, padding: 14, color: Colors.text, fontSize: 15, lineHeight: 22, minHeight: 88, textAlignVertical: "top", borderWidth: 1, borderColor: "rgba(255,255,255,0.07)", marginBottom: 6 },
-  charCount: { fontSize: 10, color: Colors.textMuted, alignSelf: "flex-end", marginBottom: 12 },
+  quickChipTxt: { fontSize: 12, color: colors.textSecondary },
+  promptIn: { backgroundColor: colors.surface, borderRadius: 14, padding: 14, color: colors.text, fontSize: 15, lineHeight: 22, minHeight: 88, textAlignVertical: "top", borderWidth: 1, borderColor: "rgba(255,255,255,0.07)", marginBottom: 6 },
+  charCount: { fontSize: 10, color: colors.textMuted, alignSelf: "flex-end", marginBottom: 12 },
   styleGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 4 },
-  styleChip: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(255,255,255,0.07)" },
+  styleChip: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, backgroundColor: colors.surface, borderWidth: 1, borderColor: "rgba(255,255,255,0.07)" },
   styleChipOn: { backgroundColor: "rgba(147,51,234,0.15)", borderColor: "rgba(147,51,234,0.4)" },
-  styleChipTxt: { fontSize: 12, fontWeight: "600", color: Colors.textMuted },
+  styleChipTxt: { fontSize: 12, fontWeight: "600", color: colors.textMuted },
   modelRow: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "rgba(255,255,255,0.05)", borderRadius: 14, padding: 12, marginBottom: 4, borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
-  modelName: { flex: 1, fontSize: 14, fontWeight: "700", color: Colors.text },
+  modelName: { flex: 1, fontSize: 14, fontWeight: "700", color: colors.text },
   modelDrop: { backgroundColor: "rgba(10,10,10,0.97)", borderRadius: 14, marginBottom: 4, borderWidth: 1, borderColor: "rgba(255,255,255,0.08)", overflow: "hidden" },
-  modelOpt: { flexDirection: "row", alignItems: "center", gap: 10, padding: 12, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.04)" },
+  modelOpt: { flexDirection: "row", alignItems: "center", gap: 10, padding: 12, borderBottomWidth: 1, borderBottomColor: colors.surface },
   modelOptOn: { backgroundColor: "rgba(147,51,234,0.1)" },
-  modelOptTxt: { flex: 1, fontSize: 14, fontWeight: "600", color: Colors.text },
+  modelOptTxt: { flex: 1, fontSize: 14, fontWeight: "600", color: colors.text },
   genBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, backgroundColor: "#7C3AED", borderRadius: 16, paddingVertical: 16, marginTop: 14, shadowColor: "#7C3AED", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 12, elevation: 8 },
   genBtnOff: { backgroundColor: "rgba(124,58,237,0.3)", shadowOpacity: 0 },
   genBtnTxt: { fontSize: 15, fontWeight: "800", color: "#fff" },
   gallerySection: { marginHorizontal: 16 },
-  galleryTitle: { fontSize: 17, fontWeight: "800", color: Colors.text, marginBottom: 14 },
+  galleryTitle: { fontSize: 17, fontWeight: "800", color: colors.text, marginBottom: 14 },
   galleryGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
-  wpCard: { width: CARD_W, backgroundColor: "rgba(255,255,255,0.04)", borderRadius: 16, overflow: "hidden", borderWidth: 1, borderColor: "rgba(255,255,255,0.07)" },
+  wpCard: { width: CARD_W, backgroundColor: colors.surface, borderRadius: 16, overflow: "hidden", borderWidth: 1, borderColor: "rgba(255,255,255,0.07)" },
   wpCardActive: { borderColor: "#C084FC", backgroundColor: "rgba(147,51,234,0.08)" },
   wpImgBox: { width: "100%", height: CARD_W * 1.6, backgroundColor: "rgba(255,255,255,0.03)", alignItems: "center", justifyContent: "center" },
   wpImg: { width: "100%", height: "100%" },
@@ -360,8 +363,8 @@ const st = StyleSheet.create({
   wpGenTxt: { fontSize: 11, color: "#C084FC", fontWeight: "600" },
   wpActiveBadge: { position: "absolute", top: 6, left: 6, backgroundColor: "#7C3AED", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
   wpActiveBadgeTxt: { fontSize: 8, fontWeight: "900", color: "#fff", letterSpacing: 0.5 },
-  wpPrompt: { fontSize: 12, color: Colors.textSecondary, padding: 8, lineHeight: 16 },
-  wpMeta: { fontSize: 10, color: Colors.textMuted, paddingHorizontal: 8, paddingBottom: 8 },
+  wpPrompt: { fontSize: 12, color: colors.textSecondary, padding: 8, lineHeight: 16 },
+  wpMeta: { fontSize: 10, color: colors.textMuted, paddingHorizontal: 8, paddingBottom: 8 },
   wpActions: { flexDirection: "row", gap: 6, padding: 8, paddingTop: 0 },
   wpBtn: { flex: 1, paddingVertical: 8, borderRadius: 9, alignItems: "center", justifyContent: "center", borderWidth: 1 },
   wpBtnApply: { backgroundColor: "rgba(147,51,234,0.15)", borderColor: "rgba(147,51,234,0.3)" },

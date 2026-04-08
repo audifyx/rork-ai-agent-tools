@@ -6,9 +6,12 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Webhook, Circle } from "lucide-react-native";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/authStore";
-import Colors from "@/constants/colors";
+import { useTheme } from "@/providers/ThemeProvider";
 
 export default function LogsTab() {
+  const { colors, theme } = useTheme();
+  const isDark = theme.dark;
+  const styles = createStylesStyles(colors);
   const insets = useSafeAreaInsets();
   const { user } = useAuthStore();
   const [logs, setLogs] = useState<any[]>([]);
@@ -47,7 +50,7 @@ export default function LogsTab() {
   };
 
   const statusColor = (code: number | null) => {
-    if (!code) return Colors.textMuted;
+    if (!code) return colors.textMuted;
     if (code < 300) return "#34D399";
     if (code < 500) return "#FBBF24";
     return "#F87171";
@@ -57,11 +60,11 @@ export default function LogsTab() {
     <ScrollView
       style={styles.container}
       contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: 120 }}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.accent} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
     >
       <View style={styles.headerRow}>
         <View>
-          <Text style={styles.title}>Webhook <Text style={{ color: Colors.accent }}>Logs</Text></Text>
+          <Text style={styles.title}>Webhook <Text style={{ color: colors.accent }}>Logs</Text></Text>
           <Text style={styles.subtitle}>Live feed of API calls</Text>
         </View>
         <TouchableOpacity
@@ -69,7 +72,7 @@ export default function LogsTab() {
           onPress={() => setLive(!live)}
           activeOpacity={0.7}
         >
-          <Circle size={8} color={live ? "#34D399" : Colors.textMuted} fill={live ? "#34D399" : "transparent"} />
+          <Circle size={8} color={live ? "#34D399" : colors.textMuted} fill={live ? "#34D399" : colors.background} />
           <Text style={[styles.liveBtnText, live && styles.liveBtnTextActive]}>
             {live ? "Live" : "Paused"}
           </Text>
@@ -78,7 +81,7 @@ export default function LogsTab() {
 
       {logs.length === 0 ? (
         <View style={styles.empty}>
-          <Webhook size={48} color={Colors.textMuted} />
+          <Webhook size={48} color={colors.textMuted} />
           <Text style={styles.emptyText}>No webhook calls yet</Text>
           <Text style={styles.emptySubtext}>They'll appear here live when your agent starts making requests</Text>
         </View>
@@ -102,36 +105,36 @@ export default function LogsTab() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background, paddingHorizontal: 16 },
+const createStylesStyles = (colors: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background, paddingHorizontal: 16 },
   headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 },
-  title: { fontSize: 28, fontWeight: "700", color: Colors.text, letterSpacing: -0.5 },
-  subtitle: { fontSize: 13, color: Colors.textMuted, marginTop: 4 },
+  title: { fontSize: 28, fontWeight: "700", color: colors.text, letterSpacing: -0.5 },
+  subtitle: { fontSize: 13, color: colors.textMuted, marginTop: 4 },
   liveBtn: {
     flexDirection: "row", alignItems: "center", gap: 6,
     paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12,
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
+    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.surfaceLight,
   },
   liveBtnActive: { backgroundColor: "rgba(52,211,153,0.1)", borderColor: "rgba(52,211,153,0.25)" },
-  liveBtnText: { fontSize: 12, fontWeight: "600", color: Colors.textMuted },
+  liveBtnText: { fontSize: 12, fontWeight: "600", color: colors.textMuted },
   liveBtnTextActive: { color: "#34D399" },
   empty: {
-    backgroundColor: Colors.surface, borderRadius: 20, padding: 48,
-    alignItems: "center", borderWidth: 1, borderColor: Colors.border,
+    backgroundColor: colors.surface, borderRadius: 20, padding: 48,
+    alignItems: "center", borderWidth: 1, borderColor: colors.surfaceLight,
   },
-  emptyText: { fontSize: 16, fontWeight: "600", color: Colors.textSecondary, marginTop: 16 },
-  emptySubtext: { fontSize: 13, color: Colors.textMuted, marginTop: 4, textAlign: "center" },
+  emptyText: { fontSize: 16, fontWeight: "600", color: colors.textSecondary, marginTop: 16 },
+  emptySubtext: { fontSize: 13, color: colors.textMuted, marginTop: 4, textAlign: "center" },
   list: { gap: 6 },
   logRow: {
     flexDirection: "row", alignItems: "center", gap: 10,
-    backgroundColor: Colors.surface, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12,
-    borderWidth: 1, borderColor: Colors.border,
+    backgroundColor: colors.surface, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12,
+    borderWidth: 1, borderColor: colors.surfaceLight,
   },
   dot: { width: 8, height: 8, borderRadius: 4 },
   methodBadge: {
-    backgroundColor: Colors.surfaceLight, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6,
+    backgroundColor: colors.surfaceLight, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6,
   },
-  methodText: { fontSize: 10, fontWeight: "700", color: Colors.textSecondary, fontFamily: "monospace" },
-  endpoint: { flex: 1, fontSize: 12, color: Colors.textMuted, fontFamily: "monospace" },
+  methodText: { fontSize: 10, fontWeight: "700", color: colors.textSecondary, fontFamily: "monospace" },
+  endpoint: { flex: 1, fontSize: 12, color: colors.textMuted, fontFamily: "monospace" },
   statusCode: { fontSize: 14, fontWeight: "700", fontFamily: "monospace" },
 });

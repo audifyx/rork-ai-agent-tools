@@ -1,9 +1,12 @@
 import { View, Text, StyleSheet } from "react-native";
-import Colors from "@/constants/colors";
+import { useTheme } from "@/providers/ThemeProvider";
 import ColorfulBackground from "@/components/ColorfulBackground";
 import GlassCard from "@/components/GlassCard";
 
 export default function ClawBGScreen() {
+  const { colors, theme } = useTheme();
+  const isDark = theme.dark;
+  const styles = createStylesStyles(colors);
   return (
     <View style={styles.root}>
       <ColorfulBackground variant="detail" />
@@ -33,10 +36,10 @@ export default function ClawBGScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStylesStyles = (colors: any) => StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
   },
   content: {
     flex: 1,
@@ -48,27 +51,27 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 36,
     fontWeight: "800",
-    color: Colors.text,
+    color: colors.text,
     marginBottom: 12,
     letterSpacing: -0.5,
   },
   badge: {
     backgroundColor: "rgba(239,68,68,0.10)",
     borderWidth: 1,
-    borderColor: Colors.accent,
+    borderColor: colors.accent,
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 6,
     marginBottom: 28,
   },
   badgeText: {
-    color: Colors.accent,
+    color: colors.accent,
     fontSize: 12,
     fontWeight: "800",
     letterSpacing: 2,
   },
   desc: {
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
     fontSize: 15,
     textAlign: "center",
     lineHeight: 24,
@@ -80,7 +83,7 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   feature: {
-    color: Colors.text,
+    color: colors.text,
     fontSize: 14,
     lineHeight: 20,
   },

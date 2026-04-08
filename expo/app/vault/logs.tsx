@@ -6,16 +6,19 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Shield, Eye, RotateCw, Trash2 } from "lucide-react-native";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/authStore";
-import Colors from "@/constants/colors";
+import { useTheme } from "@/providers/ThemeProvider";
 
 const ACTION_CONFIG: Record<string, { icon: any; color: string; label: string }> = {
-  read: { icon: Eye, color: Colors.accent, label: "Read" },
+  read: { icon: Eye, color: colors.accent, label: "Read" },
   rotate: { icon: RotateCw, color: "#FBBF24", label: "Rotated" },
-  delete: { icon: Trash2, color: Colors.danger, label: "Deleted" },
-  list: { icon: Shield, color: Colors.info, label: "Listed" },
+  delete: { icon: Trash2, color: colors.danger, label: "Deleted" },
+  list: { icon: Shield, color: colors.info, label: "Listed" },
 };
 
 export default function VaultLogs() {
+  const { colors, theme } = useTheme();
+  const isDark = theme.dark;
+  const styles = createStylesStyles(colors);
   const insets = useSafeAreaInsets();
   const { user } = useAuthStore();
   const [logs, setLogs] = useState<any[]>([]);
@@ -49,14 +52,14 @@ export default function VaultLogs() {
     <ScrollView
       style={styles.container}
       contentContainerStyle={{ paddingTop: 16, paddingBottom: 120 }}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="Colors.accent" />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="colors.accent" />}
     >
       <Text style={styles.title}>📋 Access Log</Text>
       <Text style={styles.subtitle}>Every time your agent touches a secret</Text>
 
       {logs.length === 0 ? (
         <View style={styles.empty}>
-          <Shield size={48} color={Colors.textMuted} />
+          <Shield size={48} color={colors.textMuted} />
           <Text style={styles.emptyText}>No access yet</Text>
           <Text style={styles.emptySub}>When your agent reads a secret, it shows here in realtime</Text>
         </View>
@@ -84,25 +87,25 @@ export default function VaultLogs() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStylesStyles = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: "#000", paddingHorizontal: 16 },
-  title: { fontSize: 24, fontWeight: "800", color: Colors.text, letterSpacing: -0.8 },
-  subtitle: { fontSize: 12, color: Colors.textMuted, marginTop: 3, marginBottom: 20 },
+  title: { fontSize: 24, fontWeight: "800", color: colors.text, letterSpacing: -0.8 },
+  subtitle: { fontSize: 12, color: colors.textMuted, marginTop: 3, marginBottom: 20 },
   empty: {
     padding: 48, alignItems: "center",
     backgroundColor: "rgba(255,255,255,0.02)", borderRadius: 20,
-    borderWidth: 1, borderColor: Colors.border,
+    borderWidth: 1, borderColor: colors.surfaceLight,
   },
-  emptyText: { fontSize: 16, fontWeight: "600", color: Colors.textSecondary, marginTop: 16 },
-  emptySub: { fontSize: 13, color: Colors.textMuted, marginTop: 4, textAlign: "center" },
+  emptyText: { fontSize: 16, fontWeight: "600", color: colors.textSecondary, marginTop: 16 },
+  emptySub: { fontSize: 13, color: colors.textMuted, marginTop: 4, textAlign: "center" },
   logRow: {
     flexDirection: "row", alignItems: "center", gap: 12,
     backgroundColor: "rgba(255,255,255,0.02)", borderRadius: 14, padding: 14,
-    borderWidth: 1, borderColor: "rgba(255,255,255,0.04)", marginBottom: 6,
+    borderWidth: 1, borderColor: colors.surface, marginBottom: 6,
   },
   logIcon: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
   logContent: { flex: 1 },
-  logName: { fontSize: 14, fontWeight: "600", color: Colors.text },
-  logAction: { fontSize: 11, color: Colors.textMuted, marginTop: 1 },
-  logTime: { fontSize: 11, color: Colors.textMuted, fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace" },
+  logName: { fontSize: 14, fontWeight: "600", color: colors.text },
+  logAction: { fontSize: 11, color: colors.textMuted, marginTop: 1 },
+  logTime: { fontSize: 11, color: colors.textMuted, fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace" },
 });
