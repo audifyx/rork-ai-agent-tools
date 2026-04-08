@@ -1,7 +1,10 @@
 import React from "react";
-import { View, StyleSheet, Dimensions } from "react-native";
+import { View, StyleSheet, Dimensions, Image } from "react-native";
+import { useTheme } from "@/providers/ThemeProvider";
 
 const { width: W, height: H } = Dimensions.get("window");
+
+const BLOOD_GLASS_BG = "https://r2-pub.rork.com/projects/h7ed0qpftp3eanen3adn7/assets/43a3092b-154f-4181-9c8b-18ab30426943.png";
 
 interface BlobProps {
   color: string;
@@ -35,36 +38,30 @@ interface ColorfulBackgroundProps {
 }
 
 export default function ColorfulBackground({ variant = "home" }: ColorfulBackgroundProps) {
-  if (variant === "login") {
-    return (
-      <View style={styles.container} pointerEvents="none">
-        <Blob color="rgba(99, 102, 241, 0.25)" size={W * 0.9} top={-H * 0.08} left={-W * 0.2} />
-        <Blob color="rgba(255, 107, 157, 0.22)" size={W * 0.7} top={H * 0.15} right={-W * 0.25} />
-        <Blob color="rgba(249, 115, 22, 0.18)" size={W * 0.6} bottom={H * 0.05} left={-W * 0.15} />
-        <Blob color="rgba(20, 184, 166, 0.15)" size={W * 0.5} bottom={-H * 0.05} right={-W * 0.1} />
-        <Blob color="rgba(251, 191, 36, 0.12)" size={W * 0.4} top={H * 0.45} left={W * 0.3} />
-      </View>
-    );
-  }
-
-  if (variant === "detail") {
-    return (
-      <View style={styles.container} pointerEvents="none">
-        <Blob color="rgba(99, 102, 241, 0.14)" size={W * 0.7} top={-H * 0.06} right={-W * 0.2} />
-        <Blob color="rgba(255, 107, 157, 0.12)" size={W * 0.5} top={H * 0.3} left={-W * 0.2} />
-        <Blob color="rgba(14, 165, 233, 0.10)" size={W * 0.45} bottom={H * 0.1} right={-W * 0.1} />
-      </View>
-    );
-  }
+  const { theme } = useTheme();
+  const blobs = theme.blobs;
+  const showBgImage = theme.id === "blood_gold" && variant === "home";
 
   return (
     <View style={styles.container} pointerEvents="none">
-      <Blob color="rgba(255, 107, 157, 0.28)" size={W * 0.85} top={-H * 0.1} left={-W * 0.15} />
-      <Blob color="rgba(99, 102, 241, 0.22)" size={W * 0.75} top={H * 0.08} right={-W * 0.3} />
-      <Blob color="rgba(249, 115, 22, 0.20)" size={W * 0.6} top={H * 0.35} left={-W * 0.1} />
-      <Blob color="rgba(20, 184, 166, 0.16)" size={W * 0.55} bottom={H * 0.12} right={-W * 0.15} />
-      <Blob color="rgba(168, 85, 247, 0.14)" size={W * 0.5} bottom={-H * 0.04} left={W * 0.15} />
-      <Blob color="rgba(251, 191, 36, 0.12)" size={W * 0.35} top={H * 0.55} right={W * 0.05} />
+      {showBgImage && (
+        <Image
+          source={{ uri: BLOOD_GLASS_BG }}
+          style={[StyleSheet.absoluteFillObject, { opacity: 0.35 }]}
+          resizeMode="cover"
+        />
+      )}
+      {blobs.map((blob, i) => (
+        <Blob
+          key={`${theme.id}-${i}`}
+          color={variant === "detail" ? blob.color.replace(/[\d.]+\)$/, (m) => `${parseFloat(m) * 0.6})`) : blob.color}
+          size={W * blob.size}
+          top={blob.top != null ? H * blob.top : undefined}
+          left={blob.left != null ? W * blob.left : undefined}
+          right={blob.right != null ? W * blob.right : undefined}
+          bottom={blob.bottom != null ? H * blob.bottom : undefined}
+        />
+      ))}
     </View>
   );
 }

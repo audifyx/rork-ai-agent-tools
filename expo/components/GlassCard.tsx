@@ -1,7 +1,7 @@
 import React from "react";
 import { View, StyleSheet, Platform, ViewStyle, StyleProp } from "react-native";
 import { BlurView } from "expo-blur";
-import Colors from "@/constants/colors";
+import { useTheme } from "@/providers/ThemeProvider";
 
 interface GlassCardProps {
   children: React.ReactNode;
@@ -11,40 +11,38 @@ interface GlassCardProps {
 }
 
 export default function GlassCard({ children, style, intensity = 40, strong = false }: GlassCardProps) {
-  const bg = strong ? Colors.glassBgStrong : Colors.glassBg;
+  const { colors, theme } = useTheme();
+  const bg = strong ? colors.glassBgStrong : colors.glassBg;
+  const tint = theme.dark ? "dark" : "light";
 
   if (Platform.OS === "web") {
     return (
-      <View style={[styles.webGlass, strong && styles.webGlassStrong, style]}>
+      <View style={[
+        webStyles.glass,
+        {
+          borderRadius: 20,
+          borderWidth: 1,
+          borderColor: colors.glassBorder,
+          backgroundColor: bg,
+          overflow: "hidden" as const,
+        },
+        strong && { backgroundColor: colors.glassBgStrong },
+        style,
+      ]}>
         {children}
       </View>
     );
   }
 
   return (
-    <View style={[styles.container, style]}>
-      <BlurView intensity={intensity} tint="light" style={StyleSheet.absoluteFill} />
+    <View style={[{ overflow: "hidden" as const, borderRadius: 20, borderWidth: 1, borderColor: colors.glassBorder }, style]}>
+      <BlurView intensity={intensity} tint={tint} style={StyleSheet.absoluteFill} />
       <View style={[StyleSheet.absoluteFill, { backgroundColor: bg }]} />
       {children}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    overflow: "hidden",
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: Colors.glassBorder,
-  },
-  webGlass: {
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: Colors.glassBorder,
-    backgroundColor: Colors.glassBg,
-    overflow: "hidden",
-  },
-  webGlassStrong: {
-    backgroundColor: Colors.glassBgStrong,
-  },
+const webStyles = StyleSheet.create({
+  glass: {},
 });

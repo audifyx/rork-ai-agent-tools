@@ -20,10 +20,10 @@ import { BlurView } from "expo-blur";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Search, X, LogOut } from "lucide-react-native";
+import { Search, X, LogOut, Palette } from "lucide-react-native";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/authStore";
-import Colors from "@/constants/colors";
+import { useTheme } from "@/providers/ThemeProvider";
 import ColorfulBackground from "@/components/ColorfulBackground";
 
 const { width: W, height: H } = Dimensions.get("window");
@@ -69,6 +69,7 @@ const DEFAULT_APPS: AppItem[] = [
   { id: "activity",  name: "Activity",  emoji: "⚡", color: "#F97316", dark: "#EA580C", route: "/activity",           badge: null,   page: 0, pos: 7 },
   { id: "notifs",    name: "Alerts",    emoji: "🔔", color: "#EF4444", dark: "#DC2626", route: "/notifications",      badge: null,   page: 0, pos: 8 },
   { id: "settings",  name: "Settings",  emoji: "⚙️", color: "#6B7280", dark: "#4B5563", route: "/settings",           badge: null,   page: 0, pos: 9 },
+  { id: "themes",    name: "Themes",    emoji: "🎨", color: "#D4A017", dark: "#B8860B", route: "/theme-settings",     badge: "NEW",  page: 0, pos: 10 },
   { id: "notebook",  name: "Notebook",  emoji: "📓", color: "#EF4444", dark: "#DC2626", route: null,                  badge: "SOON", page: 1, pos: 0 },
   { id: "scheduler", name: "Scheduler", emoji: "⏰", color: "#14B8A6", dark: "#0D9488", route: null,                  badge: "SOON", page: 1, pos: 1 },
   { id: "mailer",    name: "Mailer",    emoji: "📧", color: "#F97316", dark: "#EA580C", route: null,                  badge: "SOON", page: 1, pos: 2 },
@@ -84,14 +85,22 @@ const DOCK_ITEMS = [
   { id: "settings", emoji: "⚙️", label: "Settings", route: "/settings",      color: "#6B7280" },
 ];
 
-function GlassView({ children, style }: { children?: React.ReactNode; style?: any }) {
+function GlassView({ children, style, dark }: { children?: React.ReactNode; style?: any; dark?: boolean }) {
   if (Platform.OS === "web") {
-    return <View style={[glassStyles.webGlass, style]}>{children}</View>;
+    return (
+      <View style={[
+        glassStyles.webGlass,
+        dark && glassStyles.webGlassDark,
+        style,
+      ]}>
+        {children}
+      </View>
+    );
   }
   return (
-    <View style={[glassStyles.container, style]}>
-      <BlurView intensity={50} tint="light" style={StyleSheet.absoluteFill} />
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(255,255,255,0.35)" }]} />
+    <View style={[glassStyles.container, dark && glassStyles.containerDark, style]}>
+      <BlurView intensity={50} tint={dark ? "dark" : "light"} style={StyleSheet.absoluteFill} />
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: dark ? "rgba(0,0,0,0.45)" : "rgba(255,255,255,0.35)" }]} />
       {children}
     </View>
   );
@@ -99,12 +108,15 @@ function GlassView({ children, style }: { children?: React.ReactNode; style?: an
 
 const glassStyles = StyleSheet.create({
   container: { overflow: "hidden", borderRadius: 24, borderWidth: 1, borderColor: "rgba(255,255,255,0.5)" },
+  containerDark: { borderColor: "rgba(255,255,255,0.12)" },
   webGlass: { borderRadius: 24, borderWidth: 1, borderColor: "rgba(255,255,255,0.5)", backgroundColor: "rgba(255,255,255,0.45)", overflow: "hidden" },
+  webGlassDark: { borderColor: "rgba(255,255,255,0.12)", backgroundColor: "rgba(0,0,0,0.45)" },
 });
 
-function AppIcon({ app, wiggling, selected, onPress, onLongPress, badge }: {
+function AppIcon({ app, wiggling, selected, onPress, onLongPress, badge, isDark, accentColor, textColor, textMutedColor }: {
   app: AppItem; wiggling: boolean; selected: boolean;
   onPress: () => void; onLongPress: () => void; badge?: number;
+  isDark: boolean; accentColor: string; textColor: string; textMutedColor: string;
 }) {
   const scale = useRef(new Animated.Value(1)).current;
   const rot = useRef(new Animated.Value(0)).current;
@@ -138,13 +150,13 @@ function AppIcon({ app, wiggling, selected, onPress, onLongPress, badge }: {
       <TouchableOpacity onPress={onPress} onLongPress={onLongPress} onPressIn={pressIn} onPressOut={pressOut} activeOpacity={1} delayLongPress={420}>
         <Animated.View style={{ alignItems: "center", transform: [{ scale }, { rotate: spin }] }}>
           {wiggling && <View style={st.delDot}><Text style={st.delDotTxt}>✕</Text></View>}
-          {selected && <View style={[st.selRing, { width: ICON_SIZE + 6, height: ICON_SIZE + 6, borderRadius: ICON_R + 3 }]} />}
+          {selected && <View style={[st.selRing, { width: ICON_SIZE + 6, height: ICON_SIZE + 6, borderRadius: ICON_R + 3, borderColor: accentColor }]} />}
           <View style={[st.iconBox, { width: ICON_SIZE, height: ICON_SIZE, borderRadius: ICON_R, backgroundColor: app.color }]}>
             <Text style={{ fontSize: ICON_SIZE * 0.44, zIndex: 1 }}>{app.emoji}</Text>
             {isSoon && <View style={st.soonLay}><Text style={st.soonTxt}>SOON</Text></View>}
           </View>
           {app.badge && app.badge !== "SOON" && !wiggling && (
-            <View style={[st.badgePill, { backgroundColor: app.badge === "NEW" ? Colors.accent : Colors.warning }]}>
+            <View style={[st.badgePill, { backgroundColor: app.badge === "NEW" ? accentColor : "#F59E0B" }]}>
               <Text style={st.badgeTxt}>{app.badge}</Text>
             </View>
           )}
@@ -153,16 +165,17 @@ function AppIcon({ app, wiggling, selected, onPress, onLongPress, badge }: {
               <Text style={st.notifBubbleTxt}>{(badge ?? 0) > 99 ? "99+" : badge}</Text>
             </View>
           )}
-          <Text style={[st.appLbl, isSoon && { opacity: 0.4 }]} numberOfLines={1}>{app.name}</Text>
+          <Text style={[st.appLbl, { color: textColor }, isSoon && { opacity: 0.4 }]} numberOfLines={1}>{app.name}</Text>
         </Animated.View>
       </TouchableOpacity>
     </View>
   );
 }
 
-function FolderIcon({ folder, apps, wiggling, onPress, onLongPress }: {
+function FolderIcon({ folder, apps, wiggling, onPress, onLongPress, isDark, textColor }: {
   folder: Folder; apps: AppItem[]; wiggling: boolean;
   onPress: () => void; onLongPress: () => void;
+  isDark: boolean; textColor: string;
 }) {
   const inside = apps.filter(a => folder.appIds.includes(a.id)).slice(0, 9);
   const rot = useRef(new Animated.Value(0)).current;
@@ -191,7 +204,7 @@ function FolderIcon({ folder, apps, wiggling, onPress, onLongPress }: {
       <TouchableOpacity onPress={onPress} onLongPress={onLongPress} activeOpacity={0.85} delayLongPress={420}>
         <Animated.View style={{ alignItems: "center", transform: [{ rotate: spin }] }}>
           {wiggling && <View style={st.delDot}><Text style={st.delDotTxt}>✕</Text></View>}
-          <View style={[st.folderBox, { width: ICON_SIZE, height: ICON_SIZE, borderRadius: ICON_R }]}>
+          <View style={[st.folderBox, { width: ICON_SIZE, height: ICON_SIZE, borderRadius: ICON_R, backgroundColor: isDark ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.45)", borderColor: isDark ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.5)" }]}>
             <View style={st.folderInner}>
               {Array.from({ length: 9 }, (_, i) => {
                 const a = inside[i];
@@ -203,16 +216,17 @@ function FolderIcon({ folder, apps, wiggling, onPress, onLongPress }: {
               })}
             </View>
           </View>
-          <Text style={st.appLbl} numberOfLines={1}>{folder.name}</Text>
+          <Text style={[st.appLbl, { color: textColor }]} numberOfLines={1}>{folder.name}</Text>
         </Animated.View>
       </TouchableOpacity>
     </View>
   );
 }
 
-function FolderModal({ folder, apps, visible, onClose, onOpen }: {
+function FolderModal({ folder, apps, visible, onClose, onOpen, isDark, textColor }: {
   folder: Folder | null; apps: AppItem[]; visible: boolean;
   onClose: () => void; onOpen: (app: AppItem) => void;
+  isDark: boolean; textColor: string;
 }) {
   const bg = useRef(new Animated.Value(0)).current;
   const sc = useRef(new Animated.Value(0.78)).current;
@@ -236,8 +250,8 @@ function FolderModal({ folder, apps, visible, onClose, onOpen }: {
       <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose}>
         <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(0,0,0,0.35)", opacity: bg }]} />
       </TouchableOpacity>
-      <Animated.View style={[st.folderModal, { opacity: bg, transform: [{ scale: sc }] }]}>
-        <Text style={st.folderModalTitle}>{folder.name}</Text>
+      <Animated.View style={[st.folderModal, isDark && st.folderModalDark, { opacity: bg, transform: [{ scale: sc }] }]}>
+        <Text style={[st.folderModalTitle, { color: textColor }]}>{folder.name}</Text>
         <View style={st.folderModalGrid}>
           {inside.map(app => (
             <TouchableOpacity key={app.id} style={st.folderModalItem}
@@ -245,7 +259,7 @@ function FolderModal({ folder, apps, visible, onClose, onOpen }: {
               <View style={[st.folderModalIcon, { backgroundColor: app.color, borderRadius: 16 }]}>
                 <Text style={{ fontSize: 26 }}>{app.emoji}</Text>
               </View>
-              <Text style={st.folderModalLbl} numberOfLines={1}>{app.name}</Text>
+              <Text style={[st.folderModalLbl, { color: textColor }]} numberOfLines={1}>{app.name}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -258,6 +272,8 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user, signOut } = useAuthStore();
+  const { colors, theme } = useTheme();
+  const isDark = theme.dark;
 
   const [apps,    setApps]    = useState<AppItem[]>(DEFAULT_APPS);
   const [folders, setFolders] = useState<Folder[]>([]);
@@ -377,13 +393,13 @@ export default function HomeScreen() {
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
   return (
-    <View style={st.root}>
-      <StatusBar barStyle="dark-content" />
+    <View style={[st.root, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={theme.statusBar} />
 
       {wallpaper ? (
         <>
           <Image source={{ uri: wallpaper }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
-          <View style={[StyleSheet.absoluteFillObject, { backgroundColor: "rgba(242,240,245,0.55)" }]} />
+          <View style={[StyleSheet.absoluteFillObject, { backgroundColor: isDark ? "rgba(0,0,0,0.55)" : "rgba(242,240,245,0.55)" }]} />
         </>
       ) : (
         <ColorfulBackground variant="home" />
@@ -391,37 +407,49 @@ export default function HomeScreen() {
 
       <View style={[st.top, { paddingTop: insets.top + 6 }]}>
         {showSearch ? (
-          <GlassView style={st.searchBox}>
-            <Search size={15} color={Colors.textMuted} />
+          <GlassView style={st.searchBox} dark={isDark}>
+            <Search size={15} color={colors.textMuted} />
             <TextInput
-              style={st.searchIn}
+              style={[st.searchIn, { color: colors.text }]}
               placeholder="Search apps..."
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={colors.textMuted}
               value={search}
               onChangeText={setSearch}
               autoFocus
             />
             <TouchableOpacity onPress={() => { setShowSearch(false); setSearch(""); }}>
-              <X size={15} color={Colors.textMuted} />
+              <X size={15} color={colors.textMuted} />
             </TouchableOpacity>
           </GlassView>
         ) : (
           <>
             <View>
-              <Text style={st.greet}>{greeting}</Text>
-              <Text style={st.uname}>{user?.email?.split("@")[0] ?? "agent"} 🦞</Text>
+              <Text style={[st.greet, { color: colors.textMuted }]}>{greeting}</Text>
+              <Text style={[st.uname, { color: colors.text }]}>{user?.email?.split("@")[0] ?? "agent"} 🦞</Text>
             </View>
             <View style={{ flexDirection: "row", gap: 8 }}>
-              <TouchableOpacity style={st.topBtn} onPress={() => setShowSearch(true)}>
-                <Search size={16} color={Colors.text} />
+              <TouchableOpacity
+                style={[st.topBtn, { backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.5)", borderColor: isDark ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.6)" }]}
+                onPress={() => router.push("/theme-settings" as any)}
+              >
+                <Palette size={16} color={colors.accent} />
               </TouchableOpacity>
-              <TouchableOpacity style={st.topBtn} onPress={() =>
-                Alert.alert("Sign Out?", "", [
-                  { text: "Cancel", style: "cancel" },
-                  { text: "Sign Out", style: "destructive", onPress: signOut },
-                ])
-              }>
-                <LogOut size={16} color={Colors.textMuted} />
+              <TouchableOpacity
+                style={[st.topBtn, { backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.5)", borderColor: isDark ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.6)" }]}
+                onPress={() => setShowSearch(true)}
+              >
+                <Search size={16} color={colors.text} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[st.topBtn, { backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.5)", borderColor: isDark ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.6)" }]}
+                onPress={() =>
+                  Alert.alert("Sign Out?", "", [
+                    { text: "Cancel", style: "cancel" },
+                    { text: "Sign Out", style: "destructive", onPress: signOut },
+                  ])
+                }
+              >
+                <LogOut size={16} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
           </>
@@ -429,17 +457,17 @@ export default function HomeScreen() {
       </View>
 
       {showSearch && search.trim() !== "" && (
-        <GlassView style={[st.searchDrop, { top: insets.top + 68 }]}>
+        <GlassView style={[st.searchDrop, { top: insets.top + 68 }]} dark={isDark}>
           {searchResults.length === 0
-            ? <Text style={st.searchNone}>No apps found</Text>
+            ? <Text style={[st.searchNone, { color: colors.textMuted }]}>No apps found</Text>
             : searchResults.map(app => (
-              <TouchableOpacity key={app.id} style={st.searchRow}
+              <TouchableOpacity key={app.id} style={[st.searchRow, { borderBottomColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)" }]}
                 onPress={() => { setShowSearch(false); setSearch(""); handleApp(app); }}>
                 <View style={[st.searchIco, { backgroundColor: app.color, borderRadius: 12 }]}>
                   <Text style={{ fontSize: 18 }}>{app.emoji}</Text>
                 </View>
-                <Text style={st.searchName}>{app.name}</Text>
-                <Text style={st.searchSub}>{app.badge === "SOON" ? "Coming Soon" : "Tap to open"}</Text>
+                <Text style={[st.searchName, { color: colors.text }]}>{app.name}</Text>
+                <Text style={[st.searchSub, { color: colors.textMuted }]}>{app.badge === "SOON" ? "Coming Soon" : "Tap to open"}</Text>
               </TouchableOpacity>
             ))
           }
@@ -448,19 +476,19 @@ export default function HomeScreen() {
 
       {wiggling && (
         <View style={[st.wiggleBar, { top: insets.top + 68 }]}>
-          <TouchableOpacity style={st.wBtn} onPress={exitWiggle}>
-            <Text style={st.wBtnTxt}>Done</Text>
+          <TouchableOpacity style={[st.wBtn, { backgroundColor: isDark ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.6)", borderColor: isDark ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.7)" }]} onPress={exitWiggle}>
+            <Text style={[st.wBtnTxt, { color: colors.text }]}>Done</Text>
           </TouchableOpacity>
           {selected.length >= 2 && (
             <TouchableOpacity
-              style={[st.wBtn, { backgroundColor: Colors.accent, borderColor: Colors.accent }]}
+              style={[st.wBtn, { backgroundColor: colors.accent, borderColor: colors.accent }]}
               onPress={() => setShowNewFolder(true)}
             >
               <Text style={[st.wBtnTxt, { color: "#fff" }]}>📁 Folder ({selected.length})</Text>
             </TouchableOpacity>
           )}
           {selected.length < 2 && (
-            <Text style={st.wTip}>
+            <Text style={[st.wTip, { color: colors.textMuted }]}>
               {selected.length === 0 ? "Tap apps to select · Long press to remove" : "Select 1 more to create a folder"}
             </Text>
           )}
@@ -481,6 +509,7 @@ export default function HomeScreen() {
               {pageFolders(pi).map(folder => (
                 <FolderIcon
                   key={folder.id} folder={folder} apps={apps} wiggling={wiggling}
+                  isDark={isDark} textColor={colors.text}
                   onPress={() => { if (!wiggling) { setActiveFolder(folder); setFolderVisible(true); } }}
                   onLongPress={() => wiggling ? deleteFolder(folder.id) : enterWiggle()}
                 />
@@ -488,6 +517,7 @@ export default function HomeScreen() {
               {pageApps(pi).map(app => (
                 <AppIcon
                   key={app.id} app={app} wiggling={wiggling} selected={selected.includes(app.id)}
+                  isDark={isDark} accentColor={colors.accent} textColor={colors.text} textMutedColor={colors.textMuted}
                   onPress={() => handleApp(app)}
                   onLongPress={() => {
                     if (!wiggling) {
@@ -510,13 +540,13 @@ export default function HomeScreen() {
       <View style={[st.dots, { bottom: insets.bottom + 98 }]}>
         {Array.from({ length: NUM_PAGES }, (_, i) => (
           <TouchableOpacity key={i} onPress={() => scrollRef.current?.scrollTo({ x: W * i, animated: true })}>
-            <View style={[st.dot, page === i && st.dotOn]} />
+            <View style={[st.dot, { backgroundColor: isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.15)" }, page === i && [st.dotOn, { backgroundColor: colors.text }]]} />
           </TouchableOpacity>
         ))}
       </View>
 
       {!wiggling && (
-        <GlassView style={[st.dock, { bottom: insets.bottom + 12, borderRadius: 28 }]}>
+        <GlassView style={[st.dock, { bottom: insets.bottom + 12, borderRadius: 28 }]} dark={isDark}>
           <View style={st.dockInner}>
             {DOCK_ITEMS.map(d => (
               <TouchableOpacity key={d.id} style={st.dockItem}
@@ -531,7 +561,7 @@ export default function HomeScreen() {
                     </View>
                   )}
                 </View>
-                <Text style={st.dockLbl}>{d.label}</Text>
+                <Text style={[st.dockLbl, { color: colors.textMuted }]}>{d.label}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -540,13 +570,14 @@ export default function HomeScreen() {
 
       <FolderModal
         visible={folderVisible} folder={activeFolder} apps={apps}
+        isDark={isDark} textColor={colors.text}
         onClose={() => setFolderVisible(false)} onOpen={handleApp}
       />
 
       <Modal visible={showNewFolder} transparent animationType="fade" onRequestClose={() => setShowNewFolder(false)}>
         <View style={st.mBg}>
-          <View style={st.mBox}>
-            <Text style={st.mTitle}>New Folder</Text>
+          <View style={[st.mBox, isDark && st.mBoxDark]}>
+            <Text style={[st.mTitle, { color: colors.text }]}>New Folder</Text>
             <View style={st.mPreview}>
               {apps.filter(a => selected.includes(a.id)).slice(0, 4).map(a => (
                 <View key={a.id} style={[st.mPreviewIco, { backgroundColor: a.color, borderRadius: 14 }]}>
@@ -555,15 +586,16 @@ export default function HomeScreen() {
               ))}
             </View>
             <TextInput
-              style={st.mInput} value={folderName} onChangeText={setFolderName}
-              placeholder="Folder name" placeholderTextColor={Colors.textMuted}
+              style={[st.mInput, { color: colors.text, backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.04)", borderColor: isDark ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.06)" }]}
+              value={folderName} onChangeText={setFolderName}
+              placeholder="Folder name" placeholderTextColor={colors.textMuted}
               selectTextOnFocus autoFocus
             />
             <View style={st.mActions}>
-              <TouchableOpacity style={st.mCancel} onPress={() => setShowNewFolder(false)}>
-                <Text style={[st.mBtnTxt, { color: Colors.textSecondary }]}>Cancel</Text>
+              <TouchableOpacity style={[st.mCancel, { backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.04)", borderColor: isDark ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.06)" }]} onPress={() => setShowNewFolder(false)}>
+                <Text style={[st.mBtnTxt, { color: colors.textSecondary }]}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={st.mConfirm} onPress={createFolder}>
+              <TouchableOpacity style={[st.mConfirm, { backgroundColor: colors.accent }]} onPress={createFolder}>
                 <Text style={[st.mBtnTxt, { color: "#fff" }]}>Create</Text>
               </TouchableOpacity>
             </View>
@@ -575,73 +607,75 @@ export default function HomeScreen() {
 }
 
 const st = StyleSheet.create({
-  root:  { flex: 1, backgroundColor: Colors.background },
+  root: { flex: 1 },
 
   top: { paddingHorizontal: 20, paddingBottom: 10, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  greet: { fontSize: 13, color: Colors.textMuted, fontWeight: "500" },
-  uname: { fontSize: 22, fontWeight: "800", color: Colors.text, letterSpacing: -0.5 },
-  topBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: "rgba(255,255,255,0.5)", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.6)" },
+  greet: { fontSize: 13, fontWeight: "500" as const },
+  uname: { fontSize: 22, fontWeight: "800" as const, letterSpacing: -0.5 },
+  topBtn: { width: 38, height: 38, borderRadius: 19, alignItems: "center", justifyContent: "center", borderWidth: 1 },
 
   searchBox: { flex: 1, flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 16 },
-  searchIn:  { flex: 1, fontSize: 15, color: Colors.text },
+  searchIn: { flex: 1, fontSize: 15 },
   searchDrop: { position: "absolute", left: 16, right: 16, zIndex: 200, maxHeight: 300, borderRadius: 20, padding: 4 },
-  searchRow:  { flexDirection: "row", alignItems: "center", gap: 12, padding: 12, borderBottomWidth: 1, borderBottomColor: "rgba(0,0,0,0.04)" },
-  searchIco:  { width: 38, height: 38, alignItems: "center", justifyContent: "center" },
-  searchName: { flex: 1, fontSize: 15, fontWeight: "600", color: Colors.text },
-  searchSub:  { fontSize: 11, color: Colors.textMuted },
-  searchNone: { padding: 20, textAlign: "center", color: Colors.textMuted, fontSize: 14 },
+  searchRow: { flexDirection: "row", alignItems: "center", gap: 12, padding: 12, borderBottomWidth: 1 },
+  searchIco: { width: 38, height: 38, alignItems: "center", justifyContent: "center" },
+  searchName: { flex: 1, fontSize: 15, fontWeight: "600" as const },
+  searchSub: { fontSize: 11 },
+  searchNone: { padding: 20, textAlign: "center", fontSize: 14 },
 
   wiggleBar: { position: "absolute", left: 16, right: 16, zIndex: 100, flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 8 },
-  wBtn:      { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.6)", borderWidth: 1, borderColor: "rgba(255,255,255,0.7)" },
-  wBtnTxt:   { fontSize: 13, fontWeight: "700", color: Colors.text },
-  wTip:      { fontSize: 12, color: Colors.textMuted, fontStyle: "italic" },
+  wBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1 },
+  wBtnTxt: { fontSize: 13, fontWeight: "700" as const },
+  wTip: { fontSize: 12, fontStyle: "italic" as const },
 
   pages: { flex: 1 },
-  pg:    { paddingHorizontal: PAD, paddingTop: 4 },
-  grid:  { flexDirection: "row", flexWrap: "wrap" },
+  pg: { paddingHorizontal: PAD, paddingTop: 4 },
+  grid: { flexDirection: "row", flexWrap: "wrap" },
 
-  iconBox:   { alignItems: "center", justifyContent: "center", overflow: "hidden", shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 12, elevation: 6 },
-  appLbl:    { fontSize: 11, fontWeight: "600", color: Colors.text, textAlign: "center", marginTop: 6, paddingHorizontal: 2 },
+  iconBox: { alignItems: "center", justifyContent: "center", overflow: "hidden", shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 12, elevation: 6 },
+  appLbl: { fontSize: 11, fontWeight: "600" as const, textAlign: "center", marginTop: 6, paddingHorizontal: 2 },
   badgePill: { position: "absolute", top: 6, right: (CELL_W - ICON_SIZE) / 2 - 8, paddingHorizontal: 5, paddingVertical: 2, borderRadius: 6 },
-  badgeTxt:  { fontSize: 7, fontWeight: "900", color: "#fff" },
-  notifBubble:    { position: "absolute", top: 4, right: (CELL_W - ICON_SIZE) / 2 - 10, backgroundColor: "#EF4444", borderRadius: 10, minWidth: 18, height: 18, alignItems: "center", justifyContent: "center", paddingHorizontal: 4, borderWidth: 2, borderColor: "#fff" },
-  notifBubbleTxt: { fontSize: 9, fontWeight: "800", color: "#fff" },
-  delDot:    { position: "absolute", top: 4, left: (CELL_W - ICON_SIZE) / 2 - 12, width: 20, height: 20, borderRadius: 10, backgroundColor: "rgba(0,0,0,0.6)", alignItems: "center", justifyContent: "center", zIndex: 20 },
-  delDotTxt: { fontSize: 11, fontWeight: "900", color: "#fff" },
-  selRing:   { position: "absolute", top: -3, borderWidth: 2.5, borderColor: Colors.accent },
-  soonLay:   { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: "rgba(0,0,0,0.4)", paddingVertical: 3, alignItems: "center" },
-  soonTxt:   { fontSize: 7, fontWeight: "900", color: "rgba(255,255,255,0.6)", letterSpacing: 0.5 },
+  badgeTxt: { fontSize: 7, fontWeight: "900" as const, color: "#fff" },
+  notifBubble: { position: "absolute", top: 4, right: (CELL_W - ICON_SIZE) / 2 - 10, backgroundColor: "#EF4444", borderRadius: 10, minWidth: 18, height: 18, alignItems: "center", justifyContent: "center", paddingHorizontal: 4, borderWidth: 2, borderColor: "#fff" },
+  notifBubbleTxt: { fontSize: 9, fontWeight: "800" as const, color: "#fff" },
+  delDot: { position: "absolute", top: 4, left: (CELL_W - ICON_SIZE) / 2 - 12, width: 20, height: 20, borderRadius: 10, backgroundColor: "rgba(0,0,0,0.6)", alignItems: "center", justifyContent: "center", zIndex: 20 },
+  delDotTxt: { fontSize: 11, fontWeight: "900" as const, color: "#fff" },
+  selRing: { position: "absolute", top: -3, borderWidth: 2.5 },
+  soonLay: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: "rgba(0,0,0,0.4)", paddingVertical: 3, alignItems: "center" },
+  soonTxt: { fontSize: 7, fontWeight: "900" as const, color: "rgba(255,255,255,0.6)", letterSpacing: 0.5 },
 
-  folderBox:   { backgroundColor: "rgba(255,255,255,0.45)", alignItems: "center", justifyContent: "center", overflow: "hidden", shadowColor: "#000", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 4, borderWidth: 1, borderColor: "rgba(255,255,255,0.5)" },
+  folderBox: { alignItems: "center", justifyContent: "center", overflow: "hidden", shadowColor: "#000", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 4, borderWidth: 1 },
   folderInner: { flexDirection: "row", flexWrap: "wrap", width: ICON_SIZE * 0.76, height: ICON_SIZE * 0.76 },
 
-  folderModal:      { position: "absolute", left: 20, right: 20, top: H * 0.28, backgroundColor: "rgba(255,255,255,0.88)", borderRadius: 28, borderWidth: 1, borderColor: "rgba(255,255,255,0.6)", padding: 24, shadowColor: "#000", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.12, shadowRadius: 24, elevation: 12 },
-  folderModalTitle: { fontSize: 18, fontWeight: "800", color: Colors.text, textAlign: "center", marginBottom: 18 },
-  folderModalGrid:  { flexDirection: "row", flexWrap: "wrap", gap: 14, justifyContent: "center" },
-  folderModalItem:  { alignItems: "center", gap: 6, width: 70 },
-  folderModalIcon:  { width: 54, height: 54, alignItems: "center", justifyContent: "center" },
-  folderModalLbl:   { fontSize: 11, color: Colors.text, textAlign: "center" },
+  folderModal: { position: "absolute", left: 20, right: 20, top: H * 0.28, backgroundColor: "rgba(255,255,255,0.88)", borderRadius: 28, borderWidth: 1, borderColor: "rgba(255,255,255,0.6)", padding: 24, shadowColor: "#000", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.12, shadowRadius: 24, elevation: 12 },
+  folderModalDark: { backgroundColor: "rgba(20,20,20,0.92)", borderColor: "rgba(255,255,255,0.12)" },
+  folderModalTitle: { fontSize: 18, fontWeight: "800" as const, textAlign: "center", marginBottom: 18 },
+  folderModalGrid: { flexDirection: "row", flexWrap: "wrap", gap: 14, justifyContent: "center" },
+  folderModalItem: { alignItems: "center", gap: 6, width: 70 },
+  folderModalIcon: { width: 54, height: 54, alignItems: "center", justifyContent: "center" },
+  folderModalLbl: { fontSize: 11, textAlign: "center" },
 
-  dots:  { position: "absolute", left: 0, right: 0, flexDirection: "row", justifyContent: "center", gap: 7 },
-  dot:   { width: 7, height: 7, borderRadius: 4, backgroundColor: "rgba(0,0,0,0.15)" },
-  dotOn: { backgroundColor: Colors.text, width: 20 },
+  dots: { position: "absolute", left: 0, right: 0, flexDirection: "row", justifyContent: "center", gap: 7 },
+  dot: { width: 7, height: 7, borderRadius: 4 },
+  dotOn: { width: 20 },
 
-  dock:     { position: "absolute", left: 14, right: 14, paddingVertical: 10, borderRadius: 28 },
+  dock: { position: "absolute", left: 14, right: 14, paddingVertical: 10 },
   dockInner: { flexDirection: "row", justifyContent: "space-around" },
   dockItem: { alignItems: "center", gap: 4 },
-  dockIco:  { width: 50, height: 50, borderRadius: 16, alignItems: "center", justifyContent: "center", position: "relative", shadowColor: "#000", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.15, shadowRadius: 8, elevation: 4 },
-  dockLbl:  { fontSize: 10, fontWeight: "600", color: Colors.textMuted },
-  dockBadge:    { position: "absolute", top: -4, right: -4, backgroundColor: "#EF4444", borderRadius: 8, minWidth: 16, height: 16, alignItems: "center", justifyContent: "center", paddingHorizontal: 3, borderWidth: 2, borderColor: "#fff" },
-  dockBadgeTxt: { fontSize: 8, fontWeight: "800", color: "#fff" },
+  dockIco: { width: 50, height: 50, borderRadius: 16, alignItems: "center", justifyContent: "center", position: "relative", shadowColor: "#000", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.15, shadowRadius: 8, elevation: 4 },
+  dockLbl: { fontSize: 10, fontWeight: "600" as const },
+  dockBadge: { position: "absolute", top: -4, right: -4, backgroundColor: "#EF4444", borderRadius: 8, minWidth: 16, height: 16, alignItems: "center", justifyContent: "center", paddingHorizontal: 3, borderWidth: 2, borderColor: "#fff" },
+  dockBadgeTxt: { fontSize: 8, fontWeight: "800" as const, color: "#fff" },
 
-  mBg:         { flex: 1, backgroundColor: "rgba(0,0,0,0.3)", justifyContent: "center", alignItems: "center" },
-  mBox:        { width: W - 56, backgroundColor: "rgba(255,255,255,0.92)", borderRadius: 28, padding: 24, borderWidth: 1, borderColor: "rgba(255,255,255,0.6)", shadowColor: "#000", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.12, shadowRadius: 24, elevation: 12 },
-  mTitle:      { fontSize: 20, fontWeight: "800", color: Colors.text, textAlign: "center", marginBottom: 16 },
-  mPreview:    { flexDirection: "row", justifyContent: "center", gap: 8, marginBottom: 18 },
+  mBg: { flex: 1, backgroundColor: "rgba(0,0,0,0.3)", justifyContent: "center", alignItems: "center" },
+  mBox: { width: W - 56, backgroundColor: "rgba(255,255,255,0.92)", borderRadius: 28, padding: 24, borderWidth: 1, borderColor: "rgba(255,255,255,0.6)", shadowColor: "#000", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.12, shadowRadius: 24, elevation: 12 },
+  mBoxDark: { backgroundColor: "rgba(20,20,20,0.95)", borderColor: "rgba(255,255,255,0.12)" },
+  mTitle: { fontSize: 20, fontWeight: "800" as const, textAlign: "center", marginBottom: 16 },
+  mPreview: { flexDirection: "row", justifyContent: "center", gap: 8, marginBottom: 18 },
   mPreviewIco: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
-  mInput:      { backgroundColor: "rgba(0,0,0,0.04)", borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, fontSize: 16, color: Colors.text, borderWidth: 1, borderColor: "rgba(0,0,0,0.06)", marginBottom: 16, textAlign: "center" },
-  mActions:    { flexDirection: "row", gap: 10 },
-  mCancel:     { flex: 1, paddingVertical: 14, borderRadius: 14, backgroundColor: "rgba(0,0,0,0.04)", alignItems: "center", borderWidth: 1, borderColor: "rgba(0,0,0,0.06)" },
-  mConfirm:    { flex: 1, paddingVertical: 14, borderRadius: 14, backgroundColor: Colors.accent, alignItems: "center" },
-  mBtnTxt:     { fontSize: 15, fontWeight: "700" },
+  mInput: { borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, fontSize: 16, borderWidth: 1, marginBottom: 16, textAlign: "center" },
+  mActions: { flexDirection: "row", gap: 10 },
+  mCancel: { flex: 1, paddingVertical: 14, borderRadius: 14, alignItems: "center", borderWidth: 1 },
+  mConfirm: { flex: 1, paddingVertical: 14, borderRadius: 14, alignItems: "center" },
+  mBtnTxt: { fontSize: 15, fontWeight: "700" as const },
 });

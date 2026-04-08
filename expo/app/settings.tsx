@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert, Platform, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Key, Eye, EyeOff, Copy, RefreshCw, Check, LogOut, User, Shield } from "lucide-react-native";
+import { Key, Eye, EyeOff, Copy, RefreshCw, Check, LogOut, User, Shield, Palette } from "lucide-react-native";
 import * as Clipboard from "expo-clipboard";
+import { useRouter } from "expo-router";
 import { supabase, SUPABASE_URL } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/authStore";
-import Colors from "@/constants/colors";
+import { useTheme } from "@/providers/ThemeProvider";
 import ColorfulBackground from "@/components/ColorfulBackground";
 import GlassCard from "@/components/GlassCard";
 
@@ -149,7 +150,10 @@ read_inbox — { "action": "read_inbox", "params": { "agent_id": "uuid" } } → 
 
 export default function UnifiedSettings() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { user, signOut } = useAuthStore();
+  const { colors, theme } = useTheme();
+  const isDark = theme.dark;
   const [apiKey, setApiKey] = useState<MasterApiKey | null>(null);
   const [showKey, setShowKey] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -217,20 +221,40 @@ export default function UnifiedSettings() {
   const masked = apiKey ? apiKey.key_value.slice(0, 6) + "••••••••••••" + apiKey.key_value.slice(-4) : "";
   const mono = Platform.OS === "ios" ? "Menlo" : "monospace";
 
+  const subtleBg = isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)";
+  const subtleBorder = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)";
+
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, { backgroundColor: colors.background }]}>
       <ColorfulBackground variant="detail" />
       <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 120, paddingHorizontal: 20 }} showsVerticalScrollIndicator={false}>
 
-        <Text style={styles.subtitle}>One key. Full platform access.</Text>
+        <Text style={[styles.subtitle, { color: colors.textMuted }]}>One key. Full platform access.</Text>
 
-        <Text style={styles.secLabel}>MASTER API KEY</Text>
-        {loading ? <ActivityIndicator color={Colors.accent} style={{ marginTop: 20 }} /> : !apiKey ? (
+        <TouchableOpacity
+          style={[styles.themeBtn, { backgroundColor: colors.accentDim, borderColor: colors.accentGlow }]}
+          onPress={() => router.push("/theme-settings" as any)}
+          activeOpacity={0.7}
+        >
+          <Palette size={20} color={colors.accent} />
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.themeBtnTitle, { color: colors.text }]}>UI Themes</Text>
+            <Text style={[styles.themeBtnSub, { color: colors.textMuted }]}>Current: {theme.emoji} {theme.name}</Text>
+          </View>
+          <View style={styles.themePreviewRow}>
+            {theme.preview.map((c, i) => (
+              <View key={i} style={[styles.themePreviewDot, { backgroundColor: c }]} />
+            ))}
+          </View>
+        </TouchableOpacity>
+
+        <Text style={[styles.secLabel, { color: colors.textMuted }]}>MASTER API KEY</Text>
+        {loading ? <ActivityIndicator color={colors.accent} style={{ marginTop: 20 }} /> : !apiKey ? (
           <GlassCard style={styles.emptyCard}>
-            <Key size={36} color={Colors.accent} />
-            <Text style={styles.emptyTitle}>No master key yet</Text>
-            <Text style={styles.emptyDesc}>Generate one key that gives your agent access to all tools — OpenClaw, Tweeter, ImageGen, Vault, Analytics, Pages, Swarm.</Text>
-            <TouchableOpacity style={styles.genBtn} onPress={generateKey} activeOpacity={0.7}>
+            <Key size={36} color={colors.accent} />
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>No master key yet</Text>
+            <Text style={[styles.emptyDesc, { color: colors.textMuted }]}>Generate one key that gives your agent access to all tools — OpenClaw, Tweeter, ImageGen, Vault, Analytics, Pages, Swarm.</Text>
+            <TouchableOpacity style={[styles.genBtn, { backgroundColor: colors.accent, shadowColor: colors.accent }]} onPress={generateKey} activeOpacity={0.7}>
               <Key size={16} color="#fff" />
               <Text style={styles.genBtnText}>Generate Master Key</Text>
             </TouchableOpacity>
@@ -238,77 +262,77 @@ export default function UnifiedSettings() {
         ) : (
           <GlassCard style={styles.keyCard}>
             <View style={styles.keyHeader}>
-              <Key size={18} color={Colors.accent} />
-              <Text style={styles.keyLabel}>ok_ Master Key</Text>
-              <View style={[styles.activeBadge, apiKey.is_active && styles.activeBadgeOn]}>
-                <Text style={[styles.activeBadgeText, apiKey.is_active && { color: Colors.success }]}>{apiKey.is_active ? "Active" : "Inactive"}</Text>
+              <Key size={18} color={colors.accent} />
+              <Text style={[styles.keyLabel, { color: colors.text }]}>ok_ Master Key</Text>
+              <View style={[styles.activeBadge, apiKey.is_active && { backgroundColor: "rgba(16,185,129,0.12)" }]}>
+                <Text style={[styles.activeBadgeText, { color: colors.textMuted }, apiKey.is_active && { color: colors.success }]}>{apiKey.is_active ? "Active" : "Inactive"}</Text>
               </View>
             </View>
             <TouchableOpacity onPress={copyKey} activeOpacity={0.7}>
-              <View style={styles.keyValueBox}>
-                <Text style={[styles.keyValue, { fontFamily: mono }]}>{showKey ? apiKey.key_value : masked}</Text>
-                {copied ? <Check size={16} color={Colors.success} /> : <Copy size={16} color={Colors.textMuted} />}
+              <View style={[styles.keyValueBox, { backgroundColor: subtleBg }]}>
+                <Text style={[styles.keyValue, { fontFamily: mono, color: colors.text }]}>{showKey ? apiKey.key_value : masked}</Text>
+                {copied ? <Check size={16} color={colors.success} /> : <Copy size={16} color={colors.textMuted} />}
               </View>
             </TouchableOpacity>
-            <Text style={styles.keyHint}>{copied ? "Copied to clipboard!" : "Tap to copy"}</Text>
+            <Text style={[styles.keyHint, { color: colors.textMuted }]}>{copied ? "Copied to clipboard!" : "Tap to copy"}</Text>
             <View style={styles.keyActions}>
-              <TouchableOpacity style={styles.keyBtn} onPress={() => setShowKey(!showKey)}>
-                {showKey ? <EyeOff size={14} color={Colors.textSecondary} /> : <Eye size={14} color={Colors.textSecondary} />}
-                <Text style={styles.keyBtnText}>{showKey ? "Hide" : "Reveal"}</Text>
+              <TouchableOpacity style={[styles.keyBtn, { backgroundColor: subtleBg }]} onPress={() => setShowKey(!showKey)}>
+                {showKey ? <EyeOff size={14} color={colors.textSecondary} /> : <Eye size={14} color={colors.textSecondary} />}
+                <Text style={[styles.keyBtnText, { color: colors.textSecondary }]}>{showKey ? "Hide" : "Reveal"}</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.keyBtn} onPress={regenerateKey}>
-                <RefreshCw size={14} color={Colors.textSecondary} />
-                <Text style={styles.keyBtnText}>Regenerate</Text>
+              <TouchableOpacity style={[styles.keyBtn, { backgroundColor: subtleBg }]} onPress={regenerateKey}>
+                <RefreshCw size={14} color={colors.textSecondary} />
+                <Text style={[styles.keyBtnText, { color: colors.textSecondary }]}>Regenerate</Text>
               </TouchableOpacity>
             </View>
-            <View style={styles.permRow}>
-              <Shield size={14} color={Colors.textMuted} />
-              <Text style={styles.permText}>Full access: OpenClaw · Tweeter · ImageGen · Vault · Analytics · Pages · Swarm</Text>
+            <View style={[styles.permRow, { borderTopColor: subtleBorder }]}>
+              <Shield size={14} color={colors.textMuted} />
+              <Text style={[styles.permText, { color: colors.textMuted }]}>Full access: OpenClaw · Tweeter · ImageGen · Vault · Analytics · Pages · Swarm</Text>
             </View>
           </GlassCard>
         )}
 
         <GlassCard style={styles.endpointCard}>
-          <Text style={styles.endpointLabel}>ENDPOINT</Text>
+          <Text style={[styles.endpointLabel, { color: colors.textMuted }]}>ENDPOINT</Text>
           <TouchableOpacity onPress={async () => { await Clipboard.setStringAsync(API_URL); Alert.alert("Copied", "Endpoint copied"); }} activeOpacity={0.7}>
-            <Text style={[styles.endpointUrl, { fontFamily: mono }]}>POST {API_URL}</Text>
+            <Text style={[styles.endpointUrl, { fontFamily: mono, color: colors.accent }]}>POST {API_URL}</Text>
           </TouchableOpacity>
         </GlassCard>
 
-        <Text style={styles.secLabel}>AGENT DOCS</Text>
+        <Text style={[styles.secLabel, { color: colors.textMuted }]}>AGENT DOCS</Text>
         <GlassCard style={styles.docsCard}>
           <View style={styles.docsHeader}>
-            <Text style={styles.docsTitle}>📋 Agent Instructions</Text>
-            <TouchableOpacity style={styles.copyAllBtn} onPress={copyDocs} activeOpacity={0.7}>
+            <Text style={[styles.docsTitle, { color: colors.text }]}>📋 Agent Instructions</Text>
+            <TouchableOpacity style={[styles.copyAllBtn, { backgroundColor: colors.accent, shadowColor: colors.accent }]} onPress={copyDocs} activeOpacity={0.7}>
               {copiedDocs ? <Check size={14} color="#fff" /> : <Copy size={14} color="#fff" />}
               <Text style={styles.copyAllText}>{copiedDocs ? "Copied!" : "Copy All"}</Text>
             </TouchableOpacity>
           </View>
-          <Text style={styles.docsHint}>One tap — paste into your agent. Covers every action across all tools.</Text>
-          <View style={styles.codeBox}>
-            <Text style={[styles.codeText, { fontFamily: mono }]}>{AGENT_DOCS}</Text>
+          <Text style={[styles.docsHint, { color: colors.textMuted }]}>One tap — paste into your agent. Covers every action across all tools.</Text>
+          <View style={[styles.codeBox, { backgroundColor: subtleBg }]}>
+            <Text style={[styles.codeText, { fontFamily: mono, color: colors.textSecondary }]}>{AGENT_DOCS}</Text>
           </View>
         </GlassCard>
 
-        <Text style={styles.secLabel}>ACCOUNT</Text>
+        <Text style={[styles.secLabel, { color: colors.textMuted }]}>ACCOUNT</Text>
         <GlassCard style={styles.accountCard}>
-          <View style={[styles.accountRow, styles.accountBorder]}>
-            <User size={14} color={Colors.textMuted} />
-            <Text style={styles.accountLabel}>Email</Text>
-            <Text style={[styles.accountValue, { fontFamily: mono }]}>{user?.email}</Text>
+          <View style={[styles.accountRow, { borderBottomWidth: 1, borderBottomColor: subtleBorder }]}>
+            <User size={14} color={colors.textMuted} />
+            <Text style={[styles.accountLabel, { color: colors.text }]}>Email</Text>
+            <Text style={[styles.accountValue, { fontFamily: mono, color: colors.textMuted }]}>{user?.email}</Text>
           </View>
           <View style={styles.accountRow}>
-            <Shield size={14} color={Colors.textMuted} />
-            <Text style={styles.accountLabel}>User ID</Text>
+            <Shield size={14} color={colors.textMuted} />
+            <Text style={[styles.accountLabel, { color: colors.text }]}>User ID</Text>
             <TouchableOpacity onPress={async () => { if (user?.id) { await Clipboard.setStringAsync(user.id); Alert.alert("Copied"); } }}>
-              <Text style={[styles.accountValue, { fontFamily: mono, color: Colors.accent }]}>{user?.id?.slice(0, 12)}...</Text>
+              <Text style={[styles.accountValue, { fontFamily: mono, color: colors.accent }]}>{user?.id?.slice(0, 12)}...</Text>
             </TouchableOpacity>
           </View>
         </GlassCard>
 
-        <TouchableOpacity style={styles.signOutBtn} onPress={() => Alert.alert("Sign Out", "Sure?", [{ text: "Cancel", style: "cancel" }, { text: "Sign Out", style: "destructive", onPress: signOut }])} activeOpacity={0.7}>
-          <LogOut size={16} color={Colors.danger} />
-          <Text style={styles.signOutText}>Sign Out</Text>
+        <TouchableOpacity style={[styles.signOutBtn, { backgroundColor: "rgba(239,68,68,0.08)", borderColor: "rgba(239,68,68,0.15)" }]} onPress={() => Alert.alert("Sign Out", "Sure?", [{ text: "Cancel", style: "cancel" }, { text: "Sign Out", style: "destructive", onPress: signOut }])} activeOpacity={0.7}>
+          <LogOut size={16} color={colors.danger} />
+          <Text style={[styles.signOutText, { color: colors.danger }]}>Sign Out</Text>
         </TouchableOpacity>
       </ScrollView>
     </View>
@@ -316,51 +340,63 @@ export default function UnifiedSettings() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.background },
+  root: { flex: 1 },
   container: { flex: 1 },
-  subtitle: { fontSize: 13, color: Colors.textMuted, marginTop: 8, paddingHorizontal: 0 },
-  secLabel: { fontSize: 11, fontWeight: "700", color: Colors.textMuted, letterSpacing: 1.5, marginTop: 28, marginBottom: 10 },
+  subtitle: { fontSize: 13, marginTop: 8, paddingHorizontal: 0 },
+  secLabel: { fontSize: 11, fontWeight: "700" as const, letterSpacing: 1.5, marginTop: 28, marginBottom: 10 },
+
+  themeBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    padding: 16,
+    borderRadius: 18,
+    borderWidth: 1,
+    marginTop: 16,
+  },
+  themeBtnTitle: { fontSize: 16, fontWeight: "700" as const },
+  themeBtnSub: { fontSize: 12, marginTop: 2 },
+  themePreviewRow: { flexDirection: "row", gap: 4 },
+  themePreviewDot: { width: 18, height: 18, borderRadius: 6 },
 
   emptyCard: { alignItems: "center", padding: 32, gap: 12 },
-  emptyTitle: { fontSize: 18, fontWeight: "700", color: Colors.text },
-  emptyDesc: { fontSize: 13, color: Colors.textMuted, textAlign: "center", lineHeight: 20 },
-  genBtn: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: Colors.accent, paddingVertical: 16, paddingHorizontal: 28, borderRadius: 16, marginTop: 4, shadowColor: Colors.accent, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 6 },
-  genBtnText: { fontSize: 16, fontWeight: "700", color: "#fff" },
+  emptyTitle: { fontSize: 18, fontWeight: "700" as const },
+  emptyDesc: { fontSize: 13, textAlign: "center", lineHeight: 20 },
+  genBtn: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 16, paddingHorizontal: 28, borderRadius: 16, marginTop: 4, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 6 },
+  genBtnText: { fontSize: 16, fontWeight: "700" as const, color: "#fff" },
 
   keyCard: { padding: 20 },
   keyHeader: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 16 },
-  keyLabel: { fontSize: 16, fontWeight: "700", color: Colors.text, flex: 1 },
+  keyLabel: { fontSize: 16, fontWeight: "700" as const, flex: 1 },
   activeBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 8, backgroundColor: "rgba(0,0,0,0.04)" },
-  activeBadgeOn: { backgroundColor: "rgba(16,185,129,0.12)" },
-  activeBadgeText: { fontSize: 10, fontWeight: "700", color: Colors.textMuted },
-  keyValueBox: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "rgba(0,0,0,0.04)", borderRadius: 14, padding: 14, marginBottom: 6 },
-  keyValue: { fontSize: 12, color: Colors.text, flex: 1, marginRight: 8 },
-  keyHint: { fontSize: 11, color: Colors.textMuted, textAlign: "center", marginBottom: 12 },
+  activeBadgeText: { fontSize: 10, fontWeight: "700" as const },
+  keyValueBox: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderRadius: 14, padding: 14, marginBottom: 6 },
+  keyValue: { fontSize: 12, flex: 1, marginRight: 8 },
+  keyHint: { fontSize: 11, textAlign: "center", marginBottom: 12 },
   keyActions: { flexDirection: "row", gap: 10 },
-  keyBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, backgroundColor: "rgba(0,0,0,0.04)", paddingVertical: 10, borderRadius: 12 },
-  keyBtnText: { fontSize: 12, fontWeight: "600", color: Colors.textSecondary },
-  permRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 14, paddingTop: 14, borderTopWidth: 1, borderTopColor: "rgba(0,0,0,0.04)" },
-  permText: { fontSize: 12, color: Colors.textMuted },
+  keyBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 10, borderRadius: 12 },
+  keyBtnText: { fontSize: 12, fontWeight: "600" as const },
+  permRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 14, paddingTop: 14, borderTopWidth: 1 },
+  permText: { fontSize: 12 },
 
   endpointCard: { padding: 14, marginTop: 12 },
-  endpointLabel: { fontSize: 10, fontWeight: "700", color: Colors.textMuted, letterSpacing: 1, marginBottom: 6 },
-  endpointUrl: { fontSize: 11, color: Colors.accent },
+  endpointLabel: { fontSize: 10, fontWeight: "700" as const, letterSpacing: 1, marginBottom: 6 },
+  endpointUrl: { fontSize: 11 },
 
   docsCard: { padding: 20 },
   docsHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
-  docsTitle: { fontSize: 16, fontWeight: "800", color: Colors.text },
-  copyAllBtn: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: Colors.accent, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, shadowColor: Colors.accent, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 4 },
-  copyAllText: { fontSize: 13, fontWeight: "700", color: "#fff" },
-  docsHint: { fontSize: 12, color: Colors.textMuted, marginBottom: 14 },
-  codeBox: { backgroundColor: "rgba(0,0,0,0.04)", borderRadius: 14, padding: 14 },
-  codeText: { fontSize: 10, color: Colors.textSecondary, lineHeight: 17 },
+  docsTitle: { fontSize: 16, fontWeight: "800" as const },
+  copyAllBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 4 },
+  copyAllText: { fontSize: 13, fontWeight: "700" as const, color: "#fff" },
+  docsHint: { fontSize: 12, marginBottom: 14 },
+  codeBox: { borderRadius: 14, padding: 14 },
+  codeText: { fontSize: 10, lineHeight: 17 },
 
   accountCard: { padding: 0, overflow: "hidden" },
   accountRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 14, paddingHorizontal: 16 },
-  accountBorder: { borderBottomWidth: 1, borderBottomColor: "rgba(0,0,0,0.04)" },
-  accountLabel: { fontSize: 14, color: Colors.text, flex: 1 },
-  accountValue: { fontSize: 12, color: Colors.textMuted },
+  accountLabel: { fontSize: 14, flex: 1 },
+  accountValue: { fontSize: 12 },
 
-  signOutBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: "rgba(239,68,68,0.08)", borderRadius: 16, paddingVertical: 16, borderWidth: 1, borderColor: "rgba(239,68,68,0.15)", marginTop: 20, marginBottom: 20 },
-  signOutText: { fontSize: 15, fontWeight: "600", color: Colors.danger },
+  signOutBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 16, paddingVertical: 16, borderWidth: 1, marginTop: 20, marginBottom: 20 },
+  signOutText: { fontSize: 15, fontWeight: "600" as const },
 });
