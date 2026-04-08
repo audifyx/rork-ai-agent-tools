@@ -10,7 +10,6 @@ void SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
 
-// All top-level routes that are valid destinations for logged-in users
 const AUTHENTICATED_ROUTES = new Set([
   "hub",
   "openclaw",
@@ -47,13 +46,10 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     const _inAppRoute = topSegment ? AUTHENTICATED_ROUTES.has(topSegment) : false;
 
     if (session) {
-      // Logged in: only redirect if on the welcome screen or auth screens
       if (onIndex || inAuthGroup) {
         router.replace("/hub");
       }
-      // If already on a valid app route — leave them there
     } else {
-      // Not logged in: send to login unless on welcome or already in auth
       if (!inAuthGroup && !onIndex) {
         router.replace("/(auth)/login");
       }
@@ -63,14 +59,17 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-const screenHeader = (title: string, tintColor: string) => ({
+const glassHeader = (title: string, tintColor: string) => ({
   headerShown: true,
   headerTitle: title,
   headerBackTitle: "Home",
-  headerStyle: { backgroundColor: "#000" },
+  headerStyle: {
+    backgroundColor: "rgba(242, 240, 245, 0.85)",
+  },
   headerTintColor: tintColor,
-  headerTitleStyle: { fontSize: 16, fontWeight: "700" as const },
+  headerTitleStyle: { fontSize: 16, fontWeight: "700" as const, color: Colors.text },
   headerShadowVisible: false,
+  headerBlurEffect: "light" as const,
 });
 
 export default function RootLayout() {
@@ -90,19 +89,18 @@ export default function RootLayout() {
             <Stack.Screen name="index" />
             <Stack.Screen name="(auth)" />
             <Stack.Screen name="hub" />
-            <Stack.Screen name="activity"      options={screenHeader("\u26a1 Activity",      Colors.accent)} />
-            <Stack.Screen name="notifications" options={screenHeader("\ud83d\udd14 Alerts",       Colors.warning)} />
-            <Stack.Screen name="settings"      options={screenHeader("\u2699\ufe0f Settings",     Colors.textSecondary)} />
-            <Stack.Screen name="profile"       options={screenHeader("\ud83d\udc64 Profile",      Colors.text)} />
-            <Stack.Screen name="openclaw"  options={screenHeader("🦞 OpenClaw",      Colors.accent)} />
-            <Stack.Screen name="tweeter"   options={screenHeader("🐦 Agent Tweeter", "#3B82F6")} />
-            <Stack.Screen name="vault"     options={screenHeader("🔐 ClawVault",     "#8B5CF6")} />
-            <Stack.Screen name="analytics" options={screenHeader("📊 ClawAnalytics", Colors.success)} />
-            <Stack.Screen name="pages"     options={screenHeader("🌐 ClawPages",     Colors.info)} />
-            <Stack.Screen name="swarm"     options={screenHeader("🐝 ClawSwarm",     "#F59E0B")} />
-            <Stack.Screen name="imagegen"  options={screenHeader("🎨 ClawImageGen",  "#A855F7")} />
-            <Stack.Screen name="clawbg"    options={screenHeader("🎨 ClawBG",         Colors.accent)} />
-
+            <Stack.Screen name="activity"      options={glassHeader("⚡ Activity",      Colors.text)} />
+            <Stack.Screen name="notifications" options={glassHeader("🔔 Alerts",       Colors.text)} />
+            <Stack.Screen name="settings"      options={glassHeader("⚙️ Settings",     Colors.text)} />
+            <Stack.Screen name="profile"       options={glassHeader("👤 Profile",      Colors.text)} />
+            <Stack.Screen name="openclaw"  options={glassHeader("🦞 OpenClaw",      Colors.accent)} />
+            <Stack.Screen name="tweeter"   options={glassHeader("🐦 Agent Tweeter", "#6366F1")} />
+            <Stack.Screen name="vault"     options={glassHeader("🔐 ClawVault",     "#A855F7")} />
+            <Stack.Screen name="analytics" options={glassHeader("📊 ClawAnalytics", Colors.success)} />
+            <Stack.Screen name="pages"     options={glassHeader("🌐 ClawPages",     Colors.info)} />
+            <Stack.Screen name="swarm"     options={glassHeader("🐝 ClawSwarm",     "#F59E0B")} />
+            <Stack.Screen name="imagegen"  options={glassHeader("🎨 ClawImageGen",  "#EC4899")} />
+            <Stack.Screen name="clawbg"    options={glassHeader("🎨 ClawBG",         Colors.accent)} />
           </Stack>
         </AuthGate>
       </GestureHandlerRootView>

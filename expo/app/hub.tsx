@@ -6,6 +6,7 @@ import {
   Image,
   Linking,
   Modal,
+  Platform,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -15,6 +16,7 @@ import {
   Vibration,
   View,
 } from "react-native";
+import { BlurView } from "expo-blur";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -22,14 +24,15 @@ import { Search, X, LogOut } from "lucide-react-native";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/authStore";
 import Colors from "@/constants/colors";
+import ColorfulBackground from "@/components/ColorfulBackground";
 
 const { width: W, height: H } = Dimensions.get("window");
 const COLS = 4;
 const PAD = 16;
 const CELL_W = (W - PAD * 2) / COLS;
 const CELL_H = CELL_W * 1.22;
-const ICON_SIZE = CELL_W * 0.68;
-const ICON_R = ICON_SIZE * 0.225;
+const ICON_SIZE = CELL_W * 0.62;
+const ICON_R = ICON_SIZE * 0.26;
 const NUM_PAGES = 2;
 const STORAGE_KEY = "@openclaw_home_v5";
 
@@ -56,30 +59,48 @@ interface Folder {
 }
 
 const DEFAULT_APPS: AppItem[] = [
-  { id: "openclaw",  name: "OpenClaw",  emoji: "🦞", color: "#DC2626", dark: "#7F1D1D", route: "/openclaw",           badge: "CORE", page: 0, pos: 0 },
-  { id: "tweeter",   name: "Tweeter",   emoji: "🐦", color: "#2563EB", dark: "#1E3A8A", route: "/tweeter",            badge: "NEW",  page: 0, pos: 1 },
-  { id: "vault",     name: "Vault",     emoji: "🔐", color: "#7C3AED", dark: "#4C1D95", route: "/vault",              badge: null,   page: 0, pos: 2 },
-  { id: "analytics", name: "Analytics", emoji: "📊", color: "#059669", dark: "#064E3B", route: "/analytics",          badge: null,   page: 0, pos: 3 },
-  { id: "swarm",     name: "Swarm",     emoji: "🐝", color: "#D97706", dark: "#78350F", route: "/swarm",              badge: "NEW",  page: 0, pos: 4 },
-  { id: "pages",     name: "Pages",     emoji: "🌐", color: "#0284C7", dark: "#075985", route: "/pages",              badge: null,   page: 0, pos: 5 },
-  { id: "imagegen",  name: "ImageGen",  emoji: "🎨", color: "#9333EA", dark: "#581C87", route: "/imagegen",           badge: "NEW",  page: 0, pos: 6 },
-  { id: "activity",  name: "Activity",  emoji: "⚡", color: "#DC2626", dark: "#7F1D1D", route: "/activity",    badge: null,   page: 0, pos: 7 },
-  { id: "notifs",    name: "Alerts",    emoji: "🔔", color: "#EA580C", dark: "#7C2D12", route: "/notifications", badge: null, page: 0, pos: 8 },
-  { id: "settings",  name: "Settings",  emoji: "⚙️", color: "#374151", dark: "#111827", route: "/settings",   badge: null,   page: 0, pos: 9 },
-  { id: "notebook",  name: "Notebook",  emoji: "📓", color: "#DC2626", dark: "#7F1D1D", route: null,                  badge: "SOON", page: 1, pos: 0 },
-  { id: "scheduler", name: "Scheduler", emoji: "⏰", color: "#0891B2", dark: "#164E63", route: null,                  badge: "SOON", page: 1, pos: 1 },
-  { id: "mailer",    name: "Mailer",    emoji: "📧", color: "#EA580C", dark: "#9A3412", route: null,                  badge: "SOON", page: 1, pos: 2 },
-  { id: "scraper",   name: "Scraper",   emoji: "🕷️", color: "#4F46E5", dark: "#312E81", route: null,                  badge: "SOON", page: 1, pos: 3 },
-  { id: "agentcode", name: "AgentCode", emoji: "💻", color: "#0E7490", dark: "#164E63", route: "https://agentcode.lovable.app/",      external: true, badge: null,  page: 1, pos: 4 },
-  { id: "nexus",     name: "Nexus",     emoji: "🔮", color: "#7C3AED", dark: "#4C1D95", route: "https://nexus-skillhub.lovable.app/", external: true, badge: "NEW", page: 1, pos: 5 },
+  { id: "openclaw",  name: "OpenClaw",  emoji: "🦞", color: "#EF4444", dark: "#DC2626", route: "/openclaw",           badge: "CORE", page: 0, pos: 0 },
+  { id: "tweeter",   name: "Tweeter",   emoji: "🐦", color: "#6366F1", dark: "#4F46E5", route: "/tweeter",            badge: "NEW",  page: 0, pos: 1 },
+  { id: "vault",     name: "Vault",     emoji: "🔐", color: "#A855F7", dark: "#9333EA", route: "/vault",              badge: null,   page: 0, pos: 2 },
+  { id: "analytics", name: "Analytics", emoji: "📊", color: "#10B981", dark: "#059669", route: "/analytics",          badge: null,   page: 0, pos: 3 },
+  { id: "swarm",     name: "Swarm",     emoji: "🐝", color: "#F59E0B", dark: "#D97706", route: "/swarm",              badge: "NEW",  page: 0, pos: 4 },
+  { id: "pages",     name: "Pages",     emoji: "🌐", color: "#3B82F6", dark: "#2563EB", route: "/pages",              badge: null,   page: 0, pos: 5 },
+  { id: "imagegen",  name: "ImageGen",  emoji: "🎨", color: "#EC4899", dark: "#DB2777", route: "/imagegen",           badge: "NEW",  page: 0, pos: 6 },
+  { id: "activity",  name: "Activity",  emoji: "⚡", color: "#F97316", dark: "#EA580C", route: "/activity",           badge: null,   page: 0, pos: 7 },
+  { id: "notifs",    name: "Alerts",    emoji: "🔔", color: "#EF4444", dark: "#DC2626", route: "/notifications",      badge: null,   page: 0, pos: 8 },
+  { id: "settings",  name: "Settings",  emoji: "⚙️", color: "#6B7280", dark: "#4B5563", route: "/settings",           badge: null,   page: 0, pos: 9 },
+  { id: "notebook",  name: "Notebook",  emoji: "📓", color: "#EF4444", dark: "#DC2626", route: null,                  badge: "SOON", page: 1, pos: 0 },
+  { id: "scheduler", name: "Scheduler", emoji: "⏰", color: "#14B8A6", dark: "#0D9488", route: null,                  badge: "SOON", page: 1, pos: 1 },
+  { id: "mailer",    name: "Mailer",    emoji: "📧", color: "#F97316", dark: "#EA580C", route: null,                  badge: "SOON", page: 1, pos: 2 },
+  { id: "scraper",   name: "Scraper",   emoji: "🕷️", color: "#6366F1", dark: "#4F46E5", route: null,                  badge: "SOON", page: 1, pos: 3 },
+  { id: "agentcode", name: "AgentCode", emoji: "💻", color: "#06B6D4", dark: "#0891B2", route: "https://agentcode.lovable.app/",      external: true, badge: null,  page: 1, pos: 4 },
+  { id: "nexus",     name: "Nexus",     emoji: "🔮", color: "#A855F7", dark: "#9333EA", route: "https://nexus-skillhub.lovable.app/", external: true, badge: "NEW", page: 1, pos: 5 },
 ];
 
 const DOCK_ITEMS = [
-  { id: "activity", emoji: "⚡", label: "Activity", route: "/activity",      color: "#DC2626" },
-  { id: "notifs",   emoji: "🔔", label: "Alerts",   route: "/notifications", color: "#EA580C" },
-  { id: "swarm",    emoji: "🐝", label: "Swarm",    route: "/swarm",         color: "#D97706" },
-  { id: "settings", emoji: "⚙️", label: "Settings", route: "/settings",      color: "#374151" },
+  { id: "activity", emoji: "⚡", label: "Activity", route: "/activity",      color: "#F97316" },
+  { id: "notifs",   emoji: "🔔", label: "Alerts",   route: "/notifications", color: "#EF4444" },
+  { id: "swarm",    emoji: "🐝", label: "Swarm",    route: "/swarm",         color: "#F59E0B" },
+  { id: "settings", emoji: "⚙️", label: "Settings", route: "/settings",      color: "#6B7280" },
 ];
+
+function GlassView({ children, style }: { children?: React.ReactNode; style?: any }) {
+  if (Platform.OS === "web") {
+    return <View style={[glassStyles.webGlass, style]}>{children}</View>;
+  }
+  return (
+    <View style={[glassStyles.container, style]}>
+      <BlurView intensity={50} tint="light" style={StyleSheet.absoluteFill} />
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(255,255,255,0.35)" }]} />
+      {children}
+    </View>
+  );
+}
+
+const glassStyles = StyleSheet.create({
+  container: { overflow: "hidden", borderRadius: 24, borderWidth: 1, borderColor: "rgba(255,255,255,0.5)" },
+  webGlass: { borderRadius: 24, borderWidth: 1, borderColor: "rgba(255,255,255,0.5)", backgroundColor: "rgba(255,255,255,0.45)", overflow: "hidden" },
+});
 
 function AppIcon({ app, wiggling, selected, onPress, onLongPress, badge }: {
   app: AppItem; wiggling: boolean; selected: boolean;
@@ -108,7 +129,7 @@ function AppIcon({ app, wiggling, selected, onPress, onLongPress, badge }: {
   }, [wiggling, rot]);
 
   const spin = rot.interpolate({ inputRange: [-1, 1], outputRange: ["-2.8deg", "2.8deg"] });
-  const pressIn  = () => !wiggling && Animated.spring(scale, { toValue: 0.85, tension: 300, friction: 10, useNativeDriver: true }).start();
+  const pressIn  = () => !wiggling && Animated.spring(scale, { toValue: 0.88, tension: 300, friction: 10, useNativeDriver: true }).start();
   const pressOut = () => !wiggling && Animated.spring(scale, { toValue: 1,    tension: 200, friction: 8,  useNativeDriver: true }).start();
   const isSoon = app.badge === "SOON";
 
@@ -119,8 +140,6 @@ function AppIcon({ app, wiggling, selected, onPress, onLongPress, badge }: {
           {wiggling && <View style={st.delDot}><Text style={st.delDotTxt}>✕</Text></View>}
           {selected && <View style={[st.selRing, { width: ICON_SIZE + 6, height: ICON_SIZE + 6, borderRadius: ICON_R + 3 }]} />}
           <View style={[st.iconBox, { width: ICON_SIZE, height: ICON_SIZE, borderRadius: ICON_R, backgroundColor: app.color }]}>
-            <View style={[st.iconShine, { borderRadius: ICON_R }]} />
-            <View style={[StyleSheet.absoluteFill, { borderRadius: ICON_R, backgroundColor: app.dark + "55" }]} />
             <Text style={{ fontSize: ICON_SIZE * 0.44, zIndex: 1 }}>{app.emoji}</Text>
             {isSoon && <View style={st.soonLay}><Text style={st.soonTxt}>SOON</Text></View>}
           </View>
@@ -134,7 +153,7 @@ function AppIcon({ app, wiggling, selected, onPress, onLongPress, badge }: {
               <Text style={st.notifBubbleTxt}>{(badge ?? 0) > 99 ? "99+" : badge}</Text>
             </View>
           )}
-          <Text style={[st.appLbl, isSoon && { opacity: 0.35 }]} numberOfLines={1}>{app.name}</Text>
+          <Text style={[st.appLbl, isSoon && { opacity: 0.4 }]} numberOfLines={1}>{app.name}</Text>
         </Animated.View>
       </TouchableOpacity>
     </View>
@@ -215,7 +234,7 @@ function FolderModal({ folder, apps, visible, onClose, onOpen }: {
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
       <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose}>
-        <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(0,0,0,0.72)", opacity: bg }]} />
+        <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(0,0,0,0.35)", opacity: bg }]} />
       </TouchableOpacity>
       <Animated.View style={[st.folderModal, { opacity: bg, transform: [{ scale: sc }] }]}>
         <Text style={st.folderModalTitle}>{folder.name}</Text>
@@ -223,7 +242,7 @@ function FolderModal({ folder, apps, visible, onClose, onOpen }: {
           {inside.map(app => (
             <TouchableOpacity key={app.id} style={st.folderModalItem}
               onPress={() => { onClose(); setTimeout(() => onOpen(app), 280); }}>
-              <View style={[st.folderModalIcon, { backgroundColor: app.color, borderRadius: 14 }]}>
+              <View style={[st.folderModalIcon, { backgroundColor: app.color, borderRadius: 16 }]}>
                 <Text style={{ fontSize: 26 }}>{app.emoji}</Text>
               </View>
               <Text style={st.folderModalLbl} numberOfLines={1}>{app.name}</Text>
@@ -255,7 +274,6 @@ export default function HomeScreen() {
   const [wallpaper, setWallpaper] = useState<string | null>(null);
   const scrollRef = useRef<ScrollView>(null);
 
-  // Load saved layout
   useEffect(() => {
     void AsyncStorage.getItem(STORAGE_KEY).then(raw => {
       if (!raw) return;
@@ -271,7 +289,6 @@ export default function HomeScreen() {
     void AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ apps: a, folders: f }));
   }, []);
 
-  // Load badges + wallpaper
   useEffect(() => {
     if (!user) return;
     void (async () => {
@@ -361,24 +378,20 @@ export default function HomeScreen() {
 
   return (
     <View style={st.root}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="dark-content" />
 
       {wallpaper ? (
         <>
           <Image source={{ uri: wallpaper }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
-          <View style={[StyleSheet.absoluteFillObject, { backgroundColor: "rgba(0,0,0,0.52)" }]} />
+          <View style={[StyleSheet.absoluteFillObject, { backgroundColor: "rgba(242,240,245,0.55)" }]} />
         </>
       ) : (
-        <>
-          <View style={st.glow1} />
-          <View style={st.glow2} />
-        </>
+        <ColorfulBackground variant="home" />
       )}
 
-      {/* Top bar */}
       <View style={[st.top, { paddingTop: insets.top + 6 }]}>
         {showSearch ? (
-          <View style={st.searchBox}>
+          <GlassView style={st.searchBox}>
             <Search size={15} color={Colors.textMuted} />
             <TextInput
               style={st.searchIn}
@@ -391,7 +404,7 @@ export default function HomeScreen() {
             <TouchableOpacity onPress={() => { setShowSearch(false); setSearch(""); }}>
               <X size={15} color={Colors.textMuted} />
             </TouchableOpacity>
-          </View>
+          </GlassView>
         ) : (
           <>
             <View>
@@ -415,15 +428,14 @@ export default function HomeScreen() {
         )}
       </View>
 
-      {/* Search results */}
       {showSearch && search.trim() !== "" && (
-        <View style={[st.searchDrop, { top: insets.top + 68 }]}>
+        <GlassView style={[st.searchDrop, { top: insets.top + 68 }]}>
           {searchResults.length === 0
             ? <Text style={st.searchNone}>No apps found</Text>
             : searchResults.map(app => (
               <TouchableOpacity key={app.id} style={st.searchRow}
                 onPress={() => { setShowSearch(false); setSearch(""); handleApp(app); }}>
-                <View style={[st.searchIco, { backgroundColor: app.color, borderRadius: 10 }]}>
+                <View style={[st.searchIco, { backgroundColor: app.color, borderRadius: 12 }]}>
                   <Text style={{ fontSize: 18 }}>{app.emoji}</Text>
                 </View>
                 <Text style={st.searchName}>{app.name}</Text>
@@ -431,10 +443,9 @@ export default function HomeScreen() {
               </TouchableOpacity>
             ))
           }
-        </View>
+        </GlassView>
       )}
 
-      {/* Wiggle toolbar */}
       {wiggling && (
         <View style={[st.wiggleBar, { top: insets.top + 68 }]}>
           <TouchableOpacity style={st.wBtn} onPress={exitWiggle}>
@@ -456,7 +467,6 @@ export default function HomeScreen() {
         </View>
       )}
 
-      {/* Pages */}
       <ScrollView
         ref={scrollRef}
         horizontal pagingEnabled
@@ -497,7 +507,6 @@ export default function HomeScreen() {
         ))}
       </ScrollView>
 
-      {/* Page dots */}
       <View style={[st.dots, { bottom: insets.bottom + 98 }]}>
         {Array.from({ length: NUM_PAGES }, (_, i) => (
           <TouchableOpacity key={i} onPress={() => scrollRef.current?.scrollTo({ x: W * i, animated: true })}>
@@ -506,42 +515,41 @@ export default function HomeScreen() {
         ))}
       </View>
 
-      {/* Dock */}
       {!wiggling && (
-        <View style={[st.dock, { bottom: insets.bottom + 12 }]}>
-          {DOCK_ITEMS.map(d => (
-            <TouchableOpacity key={d.id} style={st.dockItem}
-              onPress={() => router.push(d.route as any)}
-              onLongPress={enterWiggle}
-            >
-              <View style={[st.dockIco, { backgroundColor: d.color }]}>
-                <Text style={{ fontSize: 22 }}>{d.emoji}</Text>
-                {d.id === "notifs" && (badges.notifs ?? 0) > 0 && (
-                  <View style={st.dockBadge}>
-                    <Text style={st.dockBadgeTxt}>{badges.notifs}</Text>
-                  </View>
-                )}
-              </View>
-              <Text style={st.dockLbl}>{d.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        <GlassView style={[st.dock, { bottom: insets.bottom + 12, borderRadius: 28 }]}>
+          <View style={st.dockInner}>
+            {DOCK_ITEMS.map(d => (
+              <TouchableOpacity key={d.id} style={st.dockItem}
+                onPress={() => router.push(d.route as any)}
+                onLongPress={enterWiggle}
+              >
+                <View style={[st.dockIco, { backgroundColor: d.color }]}>
+                  <Text style={{ fontSize: 22 }}>{d.emoji}</Text>
+                  {d.id === "notifs" && (badges.notifs ?? 0) > 0 && (
+                    <View style={st.dockBadge}>
+                      <Text style={st.dockBadgeTxt}>{badges.notifs}</Text>
+                    </View>
+                  )}
+                </View>
+                <Text style={st.dockLbl}>{d.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </GlassView>
       )}
 
-      {/* Folder modal */}
       <FolderModal
         visible={folderVisible} folder={activeFolder} apps={apps}
         onClose={() => setFolderVisible(false)} onOpen={handleApp}
       />
 
-      {/* Create folder modal */}
       <Modal visible={showNewFolder} transparent animationType="fade" onRequestClose={() => setShowNewFolder(false)}>
         <View style={st.mBg}>
           <View style={st.mBox}>
             <Text style={st.mTitle}>New Folder</Text>
             <View style={st.mPreview}>
               {apps.filter(a => selected.includes(a.id)).slice(0, 4).map(a => (
-                <View key={a.id} style={[st.mPreviewIco, { backgroundColor: a.color, borderRadius: 10 }]}>
+                <View key={a.id} style={[st.mPreviewIco, { backgroundColor: a.color, borderRadius: 14 }]}>
                   <Text style={{ fontSize: 18 }}>{a.emoji}</Text>
                 </View>
               ))}
@@ -567,26 +575,24 @@ export default function HomeScreen() {
 }
 
 const st = StyleSheet.create({
-  root:  { flex: 1, backgroundColor: "#000" },
-  glow1: { position: "absolute", top: -60, left: -40, width: 260, height: 260, borderRadius: 130, backgroundColor: "rgba(220,38,38,0.07)" },
-  glow2: { position: "absolute", bottom: 180, right: -50, width: 200, height: 200, borderRadius: 100, backgroundColor: "rgba(220,38,38,0.04)" },
+  root:  { flex: 1, backgroundColor: Colors.background },
 
   top: { paddingHorizontal: 20, paddingBottom: 10, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  greet: { fontSize: 12, color: Colors.textMuted, fontWeight: "500" },
-  uname: { fontSize: 20, fontWeight: "800", color: Colors.text, letterSpacing: -0.4 },
-  topBtn: { width: 36, height: 36, borderRadius: 11, backgroundColor: "rgba(255,255,255,0.06)", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
+  greet: { fontSize: 13, color: Colors.textMuted, fontWeight: "500" },
+  uname: { fontSize: 22, fontWeight: "800", color: Colors.text, letterSpacing: -0.5 },
+  topBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: "rgba(255,255,255,0.5)", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.6)" },
 
-  searchBox: { flex: 1, flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "rgba(255,255,255,0.08)", borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10 },
+  searchBox: { flex: 1, flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 16 },
   searchIn:  { flex: 1, fontSize: 15, color: Colors.text },
-  searchDrop: { position: "absolute", left: 16, right: 16, zIndex: 200, backgroundColor: "rgba(12,12,12,0.97)", borderRadius: 18, borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", overflow: "hidden", maxHeight: 300 },
-  searchRow:  { flexDirection: "row", alignItems: "center", gap: 12, padding: 14, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.05)" },
+  searchDrop: { position: "absolute", left: 16, right: 16, zIndex: 200, maxHeight: 300, borderRadius: 20, padding: 4 },
+  searchRow:  { flexDirection: "row", alignItems: "center", gap: 12, padding: 12, borderBottomWidth: 1, borderBottomColor: "rgba(0,0,0,0.04)" },
   searchIco:  { width: 38, height: 38, alignItems: "center", justifyContent: "center" },
   searchName: { flex: 1, fontSize: 15, fontWeight: "600", color: Colors.text },
   searchSub:  { fontSize: 11, color: Colors.textMuted },
   searchNone: { padding: 20, textAlign: "center", color: Colors.textMuted, fontSize: 14 },
 
   wiggleBar: { position: "absolute", left: 16, right: 16, zIndex: 100, flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 8 },
-  wBtn:      { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.12)", borderWidth: 1, borderColor: "rgba(255,255,255,0.15)" },
+  wBtn:      { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.6)", borderWidth: 1, borderColor: "rgba(255,255,255,0.7)" },
   wBtnTxt:   { fontSize: 13, fontWeight: "700", color: Colors.text },
   wTip:      { fontSize: 12, color: Colors.textMuted, fontStyle: "italic" },
 
@@ -594,23 +600,22 @@ const st = StyleSheet.create({
   pg:    { paddingHorizontal: PAD, paddingTop: 4 },
   grid:  { flexDirection: "row", flexWrap: "wrap" },
 
-  iconBox:   { alignItems: "center", justifyContent: "center", overflow: "hidden", shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.5, shadowRadius: 8, elevation: 8 },
-  iconShine: { position: "absolute", top: 0, left: 0, right: 0, height: "42%", backgroundColor: "rgba(255,255,255,0.18)" },
-  soonLay:   { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: "rgba(0,0,0,0.5)", paddingVertical: 3, alignItems: "center" },
-  soonTxt:   { fontSize: 7, fontWeight: "900", color: "rgba(255,255,255,0.5)", letterSpacing: 0.5 },
-  appLbl:    { fontSize: 11, fontWeight: "500", color: "rgba(255,255,255,0.88)", textAlign: "center", marginTop: 5, paddingHorizontal: 2 },
+  iconBox:   { alignItems: "center", justifyContent: "center", overflow: "hidden", shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 12, elevation: 6 },
+  appLbl:    { fontSize: 11, fontWeight: "600", color: Colors.text, textAlign: "center", marginTop: 6, paddingHorizontal: 2 },
   badgePill: { position: "absolute", top: 6, right: (CELL_W - ICON_SIZE) / 2 - 8, paddingHorizontal: 5, paddingVertical: 2, borderRadius: 6 },
   badgeTxt:  { fontSize: 7, fontWeight: "900", color: "#fff" },
-  notifBubble:    { position: "absolute", top: 4, right: (CELL_W - ICON_SIZE) / 2 - 10, backgroundColor: "#EF4444", borderRadius: 10, minWidth: 18, height: 18, alignItems: "center", justifyContent: "center", paddingHorizontal: 4, borderWidth: 2, borderColor: "#000" },
+  notifBubble:    { position: "absolute", top: 4, right: (CELL_W - ICON_SIZE) / 2 - 10, backgroundColor: "#EF4444", borderRadius: 10, minWidth: 18, height: 18, alignItems: "center", justifyContent: "center", paddingHorizontal: 4, borderWidth: 2, borderColor: "#fff" },
   notifBubbleTxt: { fontSize: 9, fontWeight: "800", color: "#fff" },
-  delDot:    { position: "absolute", top: 4, left: (CELL_W - ICON_SIZE) / 2 - 12, width: 20, height: 20, borderRadius: 10, backgroundColor: "#fff", alignItems: "center", justifyContent: "center", zIndex: 20 },
-  delDotTxt: { fontSize: 11, fontWeight: "900", color: "#000" },
+  delDot:    { position: "absolute", top: 4, left: (CELL_W - ICON_SIZE) / 2 - 12, width: 20, height: 20, borderRadius: 10, backgroundColor: "rgba(0,0,0,0.6)", alignItems: "center", justifyContent: "center", zIndex: 20 },
+  delDotTxt: { fontSize: 11, fontWeight: "900", color: "#fff" },
   selRing:   { position: "absolute", top: -3, borderWidth: 2.5, borderColor: Colors.accent },
+  soonLay:   { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: "rgba(0,0,0,0.4)", paddingVertical: 3, alignItems: "center" },
+  soonTxt:   { fontSize: 7, fontWeight: "900", color: "rgba(255,255,255,0.6)", letterSpacing: 0.5 },
 
-  folderBox:   { backgroundColor: "rgba(255,255,255,0.14)", alignItems: "center", justifyContent: "center", overflow: "hidden", shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8, elevation: 6 },
+  folderBox:   { backgroundColor: "rgba(255,255,255,0.45)", alignItems: "center", justifyContent: "center", overflow: "hidden", shadowColor: "#000", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 4, borderWidth: 1, borderColor: "rgba(255,255,255,0.5)" },
   folderInner: { flexDirection: "row", flexWrap: "wrap", width: ICON_SIZE * 0.76, height: ICON_SIZE * 0.76 },
 
-  folderModal:      { position: "absolute", left: 20, right: 20, top: H * 0.28, backgroundColor: "rgba(18,18,18,0.97)", borderRadius: 26, borderWidth: 1, borderColor: "rgba(255,255,255,0.12)", padding: 22 },
+  folderModal:      { position: "absolute", left: 20, right: 20, top: H * 0.28, backgroundColor: "rgba(255,255,255,0.88)", borderRadius: 28, borderWidth: 1, borderColor: "rgba(255,255,255,0.6)", padding: 24, shadowColor: "#000", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.12, shadowRadius: 24, elevation: 12 },
   folderModalTitle: { fontSize: 18, fontWeight: "800", color: Colors.text, textAlign: "center", marginBottom: 18 },
   folderModalGrid:  { flexDirection: "row", flexWrap: "wrap", gap: 14, justifyContent: "center" },
   folderModalItem:  { alignItems: "center", gap: 6, width: 70 },
@@ -618,24 +623,25 @@ const st = StyleSheet.create({
   folderModalLbl:   { fontSize: 11, color: Colors.text, textAlign: "center" },
 
   dots:  { position: "absolute", left: 0, right: 0, flexDirection: "row", justifyContent: "center", gap: 7 },
-  dot:   { width: 7, height: 7, borderRadius: 4, backgroundColor: "rgba(255,255,255,0.22)" },
-  dotOn: { backgroundColor: "#fff", width: 20 },
+  dot:   { width: 7, height: 7, borderRadius: 4, backgroundColor: "rgba(0,0,0,0.15)" },
+  dotOn: { backgroundColor: Colors.text, width: 20 },
 
-  dock:     { position: "absolute", left: 14, right: 14, flexDirection: "row", justifyContent: "space-around", backgroundColor: "rgba(255,255,255,0.08)", borderRadius: 30, borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", paddingVertical: 10 },
+  dock:     { position: "absolute", left: 14, right: 14, paddingVertical: 10, borderRadius: 28 },
+  dockInner: { flexDirection: "row", justifyContent: "space-around" },
   dockItem: { alignItems: "center", gap: 4 },
-  dockIco:  { width: 50, height: 50, borderRadius: 15, alignItems: "center", justifyContent: "center", position: "relative", shadowColor: "#000", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.4, shadowRadius: 6, elevation: 5 },
-  dockLbl:  { fontSize: 10, fontWeight: "600", color: "rgba(255,255,255,0.55)" },
-  dockBadge:    { position: "absolute", top: -4, right: -4, backgroundColor: "#EF4444", borderRadius: 8, minWidth: 16, height: 16, alignItems: "center", justifyContent: "center", paddingHorizontal: 3, borderWidth: 2, borderColor: "#000" },
+  dockIco:  { width: 50, height: 50, borderRadius: 16, alignItems: "center", justifyContent: "center", position: "relative", shadowColor: "#000", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.15, shadowRadius: 8, elevation: 4 },
+  dockLbl:  { fontSize: 10, fontWeight: "600", color: Colors.textMuted },
+  dockBadge:    { position: "absolute", top: -4, right: -4, backgroundColor: "#EF4444", borderRadius: 8, minWidth: 16, height: 16, alignItems: "center", justifyContent: "center", paddingHorizontal: 3, borderWidth: 2, borderColor: "#fff" },
   dockBadgeTxt: { fontSize: 8, fontWeight: "800", color: "#fff" },
 
-  mBg:         { flex: 1, backgroundColor: "rgba(0,0,0,0.78)", justifyContent: "center", alignItems: "center" },
-  mBox:        { width: W - 56, backgroundColor: "rgba(18,18,18,0.98)", borderRadius: 26, padding: 24, borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" },
+  mBg:         { flex: 1, backgroundColor: "rgba(0,0,0,0.3)", justifyContent: "center", alignItems: "center" },
+  mBox:        { width: W - 56, backgroundColor: "rgba(255,255,255,0.92)", borderRadius: 28, padding: 24, borderWidth: 1, borderColor: "rgba(255,255,255,0.6)", shadowColor: "#000", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.12, shadowRadius: 24, elevation: 12 },
   mTitle:      { fontSize: 20, fontWeight: "800", color: Colors.text, textAlign: "center", marginBottom: 16 },
   mPreview:    { flexDirection: "row", justifyContent: "center", gap: 8, marginBottom: 18 },
   mPreviewIco: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
-  mInput:      { backgroundColor: "rgba(255,255,255,0.07)", borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, fontSize: 16, color: Colors.text, borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", marginBottom: 16, textAlign: "center" },
+  mInput:      { backgroundColor: "rgba(0,0,0,0.04)", borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, fontSize: 16, color: Colors.text, borderWidth: 1, borderColor: "rgba(0,0,0,0.06)", marginBottom: 16, textAlign: "center" },
   mActions:    { flexDirection: "row", gap: 10 },
-  mCancel:     { flex: 1, paddingVertical: 14, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.07)", alignItems: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
+  mCancel:     { flex: 1, paddingVertical: 14, borderRadius: 14, backgroundColor: "rgba(0,0,0,0.04)", alignItems: "center", borderWidth: 1, borderColor: "rgba(0,0,0,0.06)" },
   mConfirm:    { flex: 1, paddingVertical: 14, borderRadius: 14, backgroundColor: Colors.accent, alignItems: "center" },
   mBtnTxt:     { fontSize: 15, fontWeight: "700" },
 });
