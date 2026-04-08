@@ -6,6 +6,16 @@ import type { ThemeDefinition, ThemeColors } from "@/constants/themes";
 
 const THEME_STORAGE_KEY = "@openclaw_theme_v1";
 
+const defaultTheme = getThemeById(DEFAULT_THEME_ID);
+const defaultValue = {
+  themeId: DEFAULT_THEME_ID,
+  theme: defaultTheme,
+  colors: defaultTheme.colors,
+  setTheme: (_id: string) => {},
+  loaded: false,
+  allThemes: ALL_THEMES,
+};
+
 export const [ThemeProvider, useTheme] = createContextHook(() => {
   const [themeId, setThemeId] = useState<string>(DEFAULT_THEME_ID);
   const [loaded, setLoaded] = useState(false);
@@ -30,4 +40,4 @@ export const [ThemeProvider, useTheme] = createContextHook(() => {
   const colors: ThemeColors = theme.colors;
 
   return { themeId, theme, colors, setTheme, loaded, allThemes: ALL_THEMES };
-});
+}, defaultValue);
