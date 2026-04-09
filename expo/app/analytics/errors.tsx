@@ -6,10 +6,10 @@ import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/authStore";
 import { useTheme } from "@/providers/ThemeProvider";
 
-const SEV_COLORS: Record<string, string> = { warning: colors.warning, error: colors.danger, critical: colors.accent };
-
 export default function ErrorsScreen() {
   const { colors, theme } = useTheme();
+
+  const SEV_COLORS: Record<string, string> = { warning: colors.warning, error: colors.danger, critical: colors.accent };
   const isDark = theme.dark;
   const styles = createStylesStyles(colors);
   const insets = useSafeAreaInsets();

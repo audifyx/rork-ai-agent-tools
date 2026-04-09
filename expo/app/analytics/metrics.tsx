@@ -5,14 +5,14 @@ import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/authStore";
 import { useTheme } from "@/providers/ThemeProvider";
 
-const TREND_CONFIG: Record<string, { icon: any; color: string }> = {
-  up: { icon: TrendingUp, color: colors.success },
-  down: { icon: TrendingDown, color: colors.danger },
-  stable: { icon: Minus, color: colors.textMuted },
-};
-
 export default function MetricsScreen() {
   const { colors, theme } = useTheme();
+
+  const TREND_CONFIG: Record<string, { icon: any; color: string }> = {
+    up: { icon: TrendingUp, color: colors.success },
+    down: { icon: TrendingDown, color: colors.danger },
+    stable: { icon: Minus, color: colors.textMuted },
+  };
   const isDark = theme.dark;
   const styles = createStylesStyles(colors);
   const { user } = useAuthStore();

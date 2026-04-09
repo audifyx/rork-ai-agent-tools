@@ -5,15 +5,15 @@ import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/authStore";
 import { useTheme } from "@/providers/ThemeProvider";
 
-const STATUS_CONFIG: Record<string, { icon: any; color: string }> = {
-  healthy: { icon: CheckCircle2, color: colors.success },
-  degraded: { icon: AlertTriangle, color: colors.warning },
-  down: { icon: XCircle, color: colors.danger },
-  unknown: { icon: Activity, color: colors.textMuted },
-};
-
 export default function HealthScreen() {
   const { colors, theme } = useTheme();
+
+  const STATUS_CONFIG: Record<string, { icon: any; color: string }> = {
+    healthy: { icon: CheckCircle2, color: colors.success },
+    degraded: { icon: AlertTriangle, color: colors.warning },
+    down: { icon: XCircle, color: colors.danger },
+    unknown: { icon: Activity, color: colors.textMuted },
+  };
   const isDark = theme.dark;
   const styles = createStylesStyles(colors);
   const { user } = useAuthStore();
