@@ -8,13 +8,6 @@ import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/authStore";
 import { useTheme } from "@/providers/ThemeProvider";
 
-const ACTION_CONFIG: Record<string, { icon: any; color: string; label: string }> = {
-  read: { icon: Eye, color: colors.accent, label: "Read" },
-  rotate: { icon: RotateCw, color: "#FBBF24", label: "Rotated" },
-  delete: { icon: Trash2, color: colors.danger, label: "Deleted" },
-  list: { icon: Shield, color: colors.info, label: "Listed" },
-};
-
 export default function VaultLogs() {
   const { colors, theme } = useTheme();
   const isDark = theme.dark;
@@ -23,6 +16,13 @@ export default function VaultLogs() {
   const { user } = useAuthStore();
   const [logs, setLogs] = useState<any[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+
+  const ACTION_CONFIG: Record<string, { icon: any; color: string; label: string }> = {
+    read: { icon: Eye, color: colors.accent, label: "Read" },
+    rotate: { icon: RotateCw, color: "#FBBF24", label: "Rotated" },
+    delete: { icon: Trash2, color: colors.danger, label: "Deleted" },
+    list: { icon: Shield, color: colors.info, label: "Listed" },
+  };
 
   const fetchLogs = async () => {
     if (!user) return;
