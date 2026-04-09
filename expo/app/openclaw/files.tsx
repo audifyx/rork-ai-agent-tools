@@ -28,9 +28,9 @@ const CATEGORY_ICONS: Record<string, any> = {
   code: Code, archive: FileArchive, web: Globe, general: File,
 };
 const CATEGORY_COLORS: Record<string, string> = {
-  image: colors.success, audio: "#A78BFA", video: colors.danger,
-  text: colors.info, code: colors.warning, archive: "#F472B6",
-  web: "#38BDF8", general: colors.textMuted,
+  image: "#34D399", audio: "#A78BFA", video: "#EF4444",
+  text: "#38BDF8", code: "#FBBF24", archive: "#F472B6",
+  web: "#38BDF8", general: "#94A3B8",
 };
 const CATEGORY_LABELS: Record<string, string> = {
   all: "All", image: "Images", audio: "Audio", video: "Video",
@@ -130,7 +130,7 @@ function AudioPlayer({ url, filename }: { url: string; filename: string }) {
       <Text style={pStyles.audioFilename} numberOfLines={1}>{filename}</Text>
       <View style={pStyles.audioRow}>
         <TouchableOpacity style={pStyles.playBtn} onPress={toggle}>{playing ? <Pause size={22} color="#fff" /> : <Play size={22} color="#fff" />}</TouchableOpacity>
-        <TouchableOpacity style={pStyles.stopBtn} onPress={stop}><Square size={16} color={colors.textMuted} /></TouchableOpacity>
+        <TouchableOpacity style={pStyles.stopBtn} onPress={stop}><Square size={16} color="#94A3B8" /></TouchableOpacity>
       </View>
       <View style={pStyles.progressBar}><View style={[pStyles.progressFill, { width: `${prog * 100}%` }]} /></View>
       <View style={pStyles.timeRow}><Text style={pStyles.timeText}>{fmt(position)}</Text><Text style={pStyles.timeText}>{fmt(duration)}</Text></View>
@@ -161,17 +161,17 @@ function HtmlCodePreview({ url, mime }: { url: string; mime: string }) {
     })();
   }, [url]);
 
-  if (loading) return <ActivityIndicator color={colors.accent} style={{ marginTop: 40 }} />;
+  if (loading) return <ActivityIndicator color="#D4A017" style={{ marginTop: 40 }} />;
 
   return (
     <View style={pStyles.htmlContainer}>
       {isHtml && (
         <View style={pStyles.toggleRow}>
           <TouchableOpacity style={[pStyles.toggleBtn, !showCode && pStyles.toggleActive]} onPress={() => setShowCode(false)}>
-            <Eye size={13} color={!showCode ? "#000" : colors.textMuted} /><Text style={[pStyles.toggleText, !showCode && { color: "#000" }]}>Live Preview</Text>
+            <Eye size={13} color={!showCode ? "#000" : "#94A3B8"} /><Text style={[pStyles.toggleText, !showCode && { color: "#000" }]}>Live Preview</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[pStyles.toggleBtn, showCode && pStyles.toggleActive]} onPress={() => setShowCode(true)}>
-            <Code2 size={13} color={showCode ? "#000" : colors.textMuted} /><Text style={[pStyles.toggleText, showCode && { color: "#000" }]}>Source</Text>
+            <Code2 size={13} color={showCode ? "#000" : "#94A3B8"} /><Text style={[pStyles.toggleText, showCode && { color: "#000" }]}>Source</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -202,10 +202,10 @@ function FilePreviewModal({ visible, file, onClose }: { visible: boolean; file: 
   const mime = file.mime_type || "";
   const cat = file.category || getCategory(mime, file.filename);
   const Icon = CATEGORY_ICONS[cat] || File;
-  const color = CATEGORY_COLORS[cat] || colors.textMuted;
+  const color = CATEGORY_COLORS[cat] || "#94A3B8";
 
   const renderPreview = () => {
-    if (loading || !url) return <ActivityIndicator color={colors.accent} size="large" style={{ marginTop: 60 }} />;
+    if (loading || !url) return <ActivityIndicator color="#D4A017" size="large" style={{ marginTop: 60 }} />;
     if (mime.startsWith("image/")) return <ImagePreview url={url} />;
     if (mime.startsWith("audio/")) return <AudioPlayer url={url} filename={file.filename} />;
     if (mime.startsWith("video/")) return <VideoPlayer url={url} />;
@@ -213,7 +213,7 @@ function FilePreviewModal({ visible, file, onClose }: { visible: boolean; file: 
       return <HtmlCodePreview url={url} mime={mime} />;
     return (
       <View style={pStyles.unsupported}>
-        <File size={48} color={colors.textMuted} />
+        <File size={48} color="#94A3B8" />
         <Text style={pStyles.unsupportedText}>No preview for this file type</Text>
         <Text style={pStyles.unsupportedMime}>{mime || "unknown"}</Text>
       </View>
@@ -229,7 +229,7 @@ function FilePreviewModal({ visible, file, onClose }: { visible: boolean; file: 
             <Text style={pStyles.headerTitle} numberOfLines={1}>{file.filename}</Text>
             <Text style={pStyles.headerMeta}>{formatBytes(file.file_size)} · {cat} · {mime}</Text>
           </View>
-          <TouchableOpacity style={pStyles.closeBtn} onPress={onClose}><X size={20} color={colors.text} /></TouchableOpacity>
+          <TouchableOpacity style={pStyles.closeBtn} onPress={onClose}><X size={20} color="#E8E8E8" /></TouchableOpacity>
         </View>
         <View style={{ flex: 1 }}>{renderPreview()}</View>
       </View>
@@ -241,7 +241,6 @@ function FilePreviewModal({ visible, file, onClose }: { visible: boolean; file: 
 export default function FilesTab() {
   const { colors, theme } = useTheme();
   const isDark = theme.dark;
-  const pStyles = createPstylesStyles(colors);
   const s = createSStyles(colors);
   const insets = useSafeAreaInsets();
   const { user } = useAuthStore();
@@ -490,7 +489,7 @@ export default function FilesTab() {
           currentItems.files.map(file => {
             const cat = file.category || getCategory(file.mime_type, file.filename);
             const Icon = CATEGORY_ICONS[cat] || File;
-            const color = CATEGORY_COLORS[cat] || colors.textMuted;
+            const color = CATEGORY_COLORS[cat] || "#94A3B8";
             const ext = getFileExt(file.filename);
             const canPreview = isPreviewable(file.mime_type);
 
@@ -624,41 +623,41 @@ const createSStyles = (colors: any) => StyleSheet.create({
   deleteBtn: { padding: 7 },
 });
 
-const createPstylesStyles = (colors: any) => StyleSheet.create({
+const pStyles = StyleSheet.create({
   modal: { flex: 1, backgroundColor: "#000" },
-  header: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.surfaceLight },
+  header: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.08)" },
   headerIcon: { width: 38, height: 38, borderRadius: 10, alignItems: "center", justifyContent: "center" },
-  headerTitle: { fontSize: 15, fontWeight: "700", color: colors.text },
-  headerMeta: { fontSize: 10, color: colors.textMuted, marginTop: 2 },
-  closeBtn: { width: 34, height: 34, borderRadius: 17, backgroundColor: colors.surfaceLight, alignItems: "center", justifyContent: "center" },
+  headerTitle: { fontSize: 15, fontWeight: "700", color: "#E8E8E8" },
+  headerMeta: { fontSize: 10, color: "#94A3B8", marginTop: 2 },
+  closeBtn: { width: 34, height: 34, borderRadius: 17, backgroundColor: "rgba(255,255,255,0.08)", alignItems: "center", justifyContent: "center" },
 
   imageContainer: { flex: 1, justifyContent: "center", alignItems: "center", padding: 16 },
   image: { width: SW - 32, height: SH * 0.65, borderRadius: 12 },
 
   audioContainer: { flex: 1, justifyContent: "center", alignItems: "center", padding: 32, gap: 20 },
   audioDisc: { width: 90, height: 90, borderRadius: 45, backgroundColor: "rgba(167,139,250,0.1)", borderWidth: 2, borderColor: "rgba(167,139,250,0.2)", alignItems: "center", justifyContent: "center" },
-  audioFilename: { fontSize: 14, fontWeight: "600", color: colors.text, textAlign: "center" },
+  audioFilename: { fontSize: 14, fontWeight: "600", color: "#E8E8E8", textAlign: "center" },
   audioRow: { flexDirection: "row", gap: 14, alignItems: "center" },
   playBtn: { width: 52, height: 52, borderRadius: 26, backgroundColor: "#A78BFA", alignItems: "center", justifyContent: "center" },
-  stopBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surfaceLight, alignItems: "center", justifyContent: "center" },
-  progressBar: { width: "100%", height: 4, backgroundColor: colors.surfaceLight, borderRadius: 2, overflow: "hidden" },
+  stopBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.08)", alignItems: "center", justifyContent: "center" },
+  progressBar: { width: "100%", height: 4, backgroundColor: "rgba(255,255,255,0.08)", borderRadius: 2, overflow: "hidden" },
   progressFill: { height: 4, backgroundColor: "#A78BFA", borderRadius: 2 },
   timeRow: { flexDirection: "row", justifyContent: "space-between", width: "100%" },
-  timeText: { fontSize: 11, color: colors.textMuted, fontFamily: mono },
+  timeText: { fontSize: 11, color: "#94A3B8", fontFamily: mono },
 
   videoContainer: { flex: 1, justifyContent: "center", backgroundColor: "#000" },
   video: { width: SW, height: SH * 0.5, alignSelf: "center" },
 
   htmlContainer: { flex: 1 },
-  toggleRow: { flexDirection: "row", gap: 8, paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.surfaceLight },
-  toggleBtn: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 8, backgroundColor: colors.surfaceLight },
-  toggleActive: { backgroundColor: colors.accent },
-  toggleText: { fontSize: 12, fontWeight: "600", color: colors.textMuted },
-  webviewWrap: { flex: 1, margin: 12, borderRadius: 10, overflow: "hidden", borderWidth: 1, borderColor: colors.surfaceLight },
+  toggleRow: { flexDirection: "row", gap: 8, paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.08)" },
+  toggleBtn: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 8, backgroundColor: "rgba(255,255,255,0.08)" },
+  toggleActive: { backgroundColor: "#D4A017" },
+  toggleText: { fontSize: 12, fontWeight: "600", color: "#94A3B8" },
+  webviewWrap: { flex: 1, margin: 12, borderRadius: 10, overflow: "hidden", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
   codeScroll: { flex: 1, padding: 16 },
-  codeText: { fontSize: 11, color: colors.textSecondary, fontFamily: mono, lineHeight: 18 },
+  codeText: { fontSize: 11, color: "#999999", fontFamily: mono, lineHeight: 18 },
 
   unsupported: { flex: 1, justifyContent: "center", alignItems: "center", gap: 12 },
-  unsupportedText: { fontSize: 15, color: colors.textSecondary },
-  unsupportedMime: { fontSize: 12, color: colors.textMuted, fontFamily: mono },
+  unsupportedText: { fontSize: 15, color: "#999999" },
+  unsupportedMime: { fontSize: 12, color: "#94A3B8", fontFamily: mono },
 });
