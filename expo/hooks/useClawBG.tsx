@@ -112,7 +112,6 @@ export function ClawBGWallpaper({ style, opacity = 1 }: ClawBGWallpaperProps) {
         backgroundColor="transparent"
         applicationNameForUserAgent="ClawBG/1.0"
         mixedContentMode="always"
-        allowsInlineMediaPlayback
         scrollEnabled={false}
         bounces={false}
         overScrollMode="never"
