@@ -15,7 +15,7 @@ import { LobsterWatermark } from "@/components/tweeter/LobsterWatermark";
 const ACTION_COLORS: Record<string, string> = {
   create_tweet: "#34D399", list_tweets: "#38BDF8", edit_tweet: "#FBBF24",
   delete_tweet: "#F87171", get_personality: "#A78BFA", update_personality: "#A78BFA",
-  add_memory: "#F472B6", evolve: colors.accent, whoami: "#38BDF8", get_stats: "#38BDF8",
+  add_memory: "#F472B6", evolve: "accent", whoami: "#38BDF8", get_stats: "#38BDF8",
 };
 
 export default function TweeterLogs() {
@@ -100,7 +100,8 @@ export default function TweeterLogs() {
       ) : (
         logs.map(log => {
           const expanded = expandedId === log.id;
-          const aColor = ACTION_COLORS[log.action] || colors.textMuted;
+          const aColorKey = ACTION_COLORS[log.action];
+          const aColor = aColorKey === "accent" ? colors.accent : (aColorKey || colors.textMuted);
           return (
             <TouchableOpacity
               key={log.id}
@@ -155,7 +156,7 @@ export default function TweeterLogs() {
 const mono = Platform.OS === "ios" ? "Menlo" : "monospace";
 
 const createStStyles = (colors: any) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#000", paddingHorizontal: 16 },
+  container: { flex: 1, backgroundColor: colors.background, paddingHorizontal: 16 },
   redGlow: { position: "absolute", top: 0, left: 0, right: 0, height: 200, backgroundColor: "rgba(220,38,38,0.03)" },
   watermark: { top: 14, right: -24 },
   header: { marginBottom: 16 },

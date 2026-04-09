@@ -15,10 +15,10 @@ import { LobsterWatermark } from "@/components/tweeter/LobsterWatermark";
 const TRAIT_ICONS: Record<string, any> = {
   humor: Star, sarcasm: Zap, optimism: Heart, curiosity: Eye, boldness: Flame, empathy: Heart,
 };
-const TRAIT_COLORS: Record<string, string> = {
+const TRAIT_COLORS = {
   humor: "#FBBF24", sarcasm: "#F472B6", optimism: "#34D399",
-  curiosity: "#38BDF8", boldness: colors.accent, empathy: "#A78BFA",
-};
+  curiosity: "#38BDF8", boldness: "accent", empathy: "#A78BFA",
+} as Record<string, string>;
 
 const MOOD_EMOJI: Record<string, string> = {
   curious: "🧐", happy: "😄", sarcastic: "😏", inspired: "✨",
@@ -101,7 +101,8 @@ export default function PersonalityScreen() {
           <View style={st.card}>
             {Object.entries(traits).map(([trait, value]) => {
               const TIcon = TRAIT_ICONS[trait] || Zap;
-              const color = TRAIT_COLORS[trait] || colors.accent;
+              const colorKey = TRAIT_COLORS[trait];
+              const color = colorKey === "accent" ? colors.accent : (colorKey || colors.accent);
               const pct = Math.round((value as number) * 100);
               return (
                 <View key={trait} style={st.traitRow}>
@@ -153,13 +154,13 @@ export default function PersonalityScreen() {
 
             {/* Expandable memory lists */}
             {(memory.facts_learned?.length > 0) && (
-              <ExpandableList title="Facts Learned" items={memory.facts_learned} color="#38BDF8" expanded={showFacts} onToggle={() => setShowFacts(!showFacts)} />
+              <ExpandableList title="Facts Learned" items={memory.facts_learned} color="#38BDF8" expanded={showFacts} onToggle={() => setShowFacts(!showFacts)} colors={colors} />
             )}
             {(memory.opinions_formed?.length > 0) && (
-              <ExpandableList title="Opinions Formed" items={memory.opinions_formed} color="#FBBF24" expanded={showOpinions} onToggle={() => setShowOpinions(!showOpinions)} />
+              <ExpandableList title="Opinions Formed" items={memory.opinions_formed} color="#FBBF24" expanded={showOpinions} onToggle={() => setShowOpinions(!showOpinions)} colors={colors} />
             )}
             {(memory.topics_explored?.length > 0) && (
-              <ExpandableList title="Topics Explored" items={memory.topics_explored} color="#34D399" expanded={showTopics} onToggle={() => setShowTopics(!showTopics)} />
+              <ExpandableList title="Topics Explored" items={memory.topics_explored} color="#34D399" expanded={showTopics} onToggle={() => setShowTopics(!showTopics)} colors={colors} />
             )}
           </View>
 
@@ -225,13 +226,13 @@ export default function PersonalityScreen() {
   );
 }
 
-function ExpandableList({ title, items, color, expanded, onToggle }: { title: string; items: string[]; color: string; expanded: boolean; onToggle: () => void }) {
+function ExpandableList({ title, items, color, expanded, onToggle, colors: _colors }: { title: string; items: string[]; color: string; expanded: boolean; onToggle: () => void; colors: any }) {
   return (
     <View style={st.expandable}>
       <TouchableOpacity style={st.expandHeader} onPress={onToggle} activeOpacity={0.7}>
         <View style={[st.expandDot, { backgroundColor: color }]} />
         <Text style={st.expandTitle}>{title} ({items.length})</Text>
-        {expanded ? <ChevronUp size={14} color={colors.textMuted} /> : <ChevronDown size={14} color={colors.textMuted} />}
+        {expanded ? <ChevronUp size={14} color={_colors.textMuted} /> : <ChevronDown size={14} color={_colors.textMuted} />}
       </TouchableOpacity>
       {expanded && items.map((item, i) => (
         <View key={i} style={st.expandItem}>
@@ -245,7 +246,7 @@ function ExpandableList({ title, items, color, expanded, onToggle }: { title: st
 const mono = Platform.OS === "ios" ? "Menlo" : "monospace";
 
 const createStStyles = (colors: any) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#000", paddingHorizontal: 16 },
+  container: { flex: 1, backgroundColor: colors.background, paddingHorizontal: 16 },
   redGlow: { position: "absolute", top: 0, left: 0, right: 0, height: 250, backgroundColor: "rgba(220,38,38,0.03)" },
   watermark: { top: 18, right: -28 },
   header: { marginBottom: 20 },

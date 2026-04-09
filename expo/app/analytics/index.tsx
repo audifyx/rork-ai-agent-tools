@@ -113,7 +113,7 @@ export default function AnalyticsDashboard() {
 
 const mono = Platform.OS === "ios" ? "Menlo" : "monospace";
 const createStylesStyles = (colors: any) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#000", paddingHorizontal: 16 },
+  container: { flex: 1, backgroundColor: colors.background, paddingHorizontal: 16 },
   title: { fontSize: 24, fontWeight: "800", color: colors.text, letterSpacing: -0.8 },
   subtitle: { fontSize: 12, color: colors.textMuted, marginTop: 3, marginBottom: 20 },
   secLabel: { fontSize: 11, fontWeight: "700", color: colors.textMuted, letterSpacing: 1.5, marginTop: 20, marginBottom: 10 },

@@ -110,7 +110,7 @@ export default function SecretsScreen() {
     <ScrollView
       style={styles.container}
       contentContainerStyle={{ paddingTop: 16, paddingBottom: 120 }}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="colors.accent" />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.headerRow}>
@@ -280,11 +280,11 @@ export default function SecretsScreen() {
 const mono = Platform.OS === "ios" ? "Menlo" : "monospace";
 
 const createStylesStyles = (colors: any) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#000", paddingHorizontal: 16 },
+  container: { flex: 1, backgroundColor: colors.background, paddingHorizontal: 16 },
   headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 },
   title: { fontSize: 24, fontWeight: "800", color: colors.text, letterSpacing: -0.8 },
   subtitle: { fontSize: 12, color: colors.textMuted, marginTop: 3 },
-  addBtn: { width: 44, height: 44, borderRadius: 14, backgroundColor: "colors.accent", alignItems: "center", justifyContent: "center" },
+  addBtn: { width: 44, height: 44, borderRadius: 14, backgroundColor: colors.accent, alignItems: "center", justifyContent: "center" },
 
   showOnceBanner: {
     backgroundColor: "rgba(251,191,36,0.08)", borderRadius: 16, padding: 16,
@@ -323,7 +323,7 @@ const createStylesStyles = (colors: any) => StyleSheet.create({
   serviceTextActive: { color: colors.accent },
   saveBtn: {
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
-    backgroundColor: "colors.accent", borderRadius: 14, paddingVertical: 14, marginTop: 14,
+    backgroundColor: colors.accent, borderRadius: 14, paddingVertical: 14, marginTop: 14,
   },
   saveBtnText: { fontSize: 15, fontWeight: "700", color: "#fff" },
   disclaimer: { fontSize: 11, color: colors.textMuted, textAlign: "center", marginTop: 10, lineHeight: 16 },

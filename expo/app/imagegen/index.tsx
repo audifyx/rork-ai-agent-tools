@@ -57,7 +57,7 @@ const PROMPTS = [
   "A dragon made of molten red crystals",
 ];
 
-function sc(s: string) {
+function statusColor(colors: any, s: string) {
   if (s === "done" || s === "saved") return colors.success;
   if (s === "generating") return colors.warning;
   if (s === "failed") return colors.danger;
@@ -233,8 +233,8 @@ export default function ImageGenScreen() {
           <View style={st.preview}>
             <View style={st.previewGlow} />
             <View style={st.statusRow}>
-              <View style={[st.dot, { backgroundColor: sc(active.status) }]} />
-              <Text style={[st.statusTxt, { color: sc(active.status) }]}>{active.status.toUpperCase()}</Text>
+              <View style={[st.dot, { backgroundColor: statusColor(colors, active.status) }]} />
+              <Text style={[st.statusTxt, { color: statusColor(colors, active.status) }]}>{active.status.toUpperCase()}</Text>
               <Text style={st.timeTxt}>{ago(active.created_at)} ago</Text>
               {active.openrouter_model && <Text style={st.modelTag} numberOfLines={1}>via {active.openrouter_model?.split("/").pop()?.split(":")[0] ?? "AI"}</Text>}
               <TouchableOpacity style={st.zoomBtn} onPress={() => router.push({ pathname: "/imagegen/image", params: { id: active.id } } as any)}>
@@ -379,7 +379,7 @@ export default function ImageGenScreen() {
                   <TouchableOpacity key={img.id} style={st.thumb} onPress={() => { setActive(img); setShowGallery(false); scrollRef.current?.scrollTo({ y: 0, animated: true }); }} activeOpacity={0.8}>
                     {isDone(img) && img.image_url ? <Image source={{ uri: img.image_url }} style={st.thumbImg} resizeMode="cover" /> : <View style={st.thumbPh}>{isGen(img) ? <ActivityIndicator size="small" color={colors.accent} /> : <Text>🎨</Text>}</View>}
                     {img.is_starred && <View style={st.thumbStar}><Star size={9} color={colors.warning} fill={colors.warning} /></View>}
-                    <View style={[st.thumbStatus, { backgroundColor: sc(img.status) + "33" }]}><Text style={[st.thumbStatusTxt, { color: sc(img.status) }]}>{img.status}</Text></View>
+                    <View style={[st.thumbStatus, { backgroundColor: statusColor(colors, img.status) + "33" }]}><Text style={[st.thumbStatusTxt, { color: statusColor(colors, img.status) }]}>{img.status}</Text></View>
                   </TouchableOpacity>
                 ))}
               </View>

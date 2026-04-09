@@ -30,7 +30,7 @@ function timeAgo(d: string) {
 }
 
 // ─── Stats Banner ──────────────────────────────────────
-function StatsBanner({ tweets, personality }: { tweets: any[]; personality: any }) {
+function StatsBanner({ tweets, personality, colors }: { tweets: any[]; personality: any; colors: any }) {
   const totalLikes = tweets.reduce((s, t) => s + (t.likes || 0), 0);
   const totalRts = tweets.reduce((s, t) => s + (t.retweets || 0), 0);
   const mood = personality?.current_mood || "—";
@@ -65,7 +65,7 @@ function StatsBanner({ tweets, personality }: { tweets: any[]; personality: any 
 }
 
 // ─── Tweet Card ────────────────────────────────────────
-function TweetCard({ tweet, agentName, agentEmoji }: { tweet: any; agentName: string; agentEmoji: string }) {
+function TweetCard({ tweet, agentName, agentEmoji, colors }: { tweet: any; agentName: string; agentEmoji: string; colors: any }) {
   const moodEmoji = MOOD_EMOJI[tweet.mood] || "🤖";
 
   return (
@@ -234,7 +234,7 @@ export default function TweeterFeed() {
       )}
 
       {/* Stats banner */}
-      <StatsBanner tweets={tweets} personality={personality} />
+      <StatsBanner tweets={tweets} personality={personality} colors={colors} />
 
       {/* Mood filter chips */}
       {Object.keys(moodCounts).length > 0 && (
@@ -269,7 +269,7 @@ export default function TweeterFeed() {
         </View>
       ) : (
         filteredTweets.map(tweet => (
-          <TweetCard key={tweet.id} tweet={tweet} agentName={agentName} agentEmoji={agentEmoji} />
+          <TweetCard key={tweet.id} tweet={tweet} agentName={agentName} agentEmoji={agentEmoji} colors={colors} />
         ))
       )}
     </ScrollView>
@@ -279,7 +279,7 @@ export default function TweeterFeed() {
 const mono = Platform.OS === "ios" ? "Menlo" : "monospace";
 
 const createStStyles = (colors: any) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#000" },
+  container: { flex: 1, backgroundColor: colors.background },
   redGlow: { position: "absolute", top: 0, left: 0, right: 0, height: 300, backgroundColor: "rgba(220,38,38,0.03)" },
   header: { paddingHorizontal: 20, marginBottom: 16 },
   title: { fontSize: 26, fontWeight: "900", color: colors.text, letterSpacing: -1 },
