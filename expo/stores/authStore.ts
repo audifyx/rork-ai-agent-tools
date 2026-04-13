@@ -58,6 +58,7 @@ export const useAuthStore = create<AuthState>()(
           if (!authSubscription) {
             const { data: listener } = supabase.auth.onAuthStateChange((event, nextSession) => {
               console.log("[auth] onAuthStateChange", event, nextSession?.user?.id ?? "anonymous");
+              if (initializePromise) return;
               set({
                 session: nextSession ?? null,
                 user: nextSession?.user ?? null,

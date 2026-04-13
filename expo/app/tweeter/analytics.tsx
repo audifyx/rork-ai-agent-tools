@@ -62,6 +62,7 @@ function AnimatedBar({ height, delay, color }: { height: number; delay: number; 
 
 function EngagementChart({ tweets }: { tweets: TweetData[] }) {
   const { colors } = useTheme();
+  const st = createStStyles(colors);
   const hourBuckets = useMemo(() => {
     const buckets = new Array(8).fill(0) as number[];
     tweets.forEach(t => {
@@ -101,6 +102,7 @@ function EngagementChart({ tweets }: { tweets: TweetData[] }) {
 
 function DayHeatmap({ tweets }: { tweets: TweetData[] }) {
   const { colors } = useTheme();
+  const st = createStStyles(colors);
   const dayBuckets = useMemo(() => {
     const buckets = new Array(7).fill(0) as number[];
     tweets.forEach(t => {
@@ -149,6 +151,7 @@ function DayHeatmap({ tweets }: { tweets: TweetData[] }) {
 
 function TopTweets({ tweets }: { tweets: TweetData[] }) {
   const { colors } = useTheme();
+  const st = createStStyles(colors);
   const top = useMemo(() => {
     return [...tweets]
       .sort((a, b) => ((b.likes || 0) + (b.retweets || 0)) - ((a.likes || 0) + (a.retweets || 0)))

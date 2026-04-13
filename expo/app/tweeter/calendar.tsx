@@ -44,6 +44,8 @@ function getFirstDayOfWeek(year: number, month: number): number {
 }
 
 function WeekView({ tweets, weekStart }: { tweets: TweetData[]; weekStart: Date }) {
+  const { colors } = useTheme();
+  const st = createStStyles(colors);
   const days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(weekStart);
     d.setDate(d.getDate() + i);

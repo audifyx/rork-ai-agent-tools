@@ -154,13 +154,13 @@ export default function PersonalityScreen() {
 
             {/* Expandable memory lists */}
             {(memory.facts_learned?.length > 0) && (
-              <ExpandableList title="Facts Learned" items={memory.facts_learned} color="#38BDF8" expanded={showFacts} onToggle={() => setShowFacts(!showFacts)} colors={colors} />
+              <ExpandableList title="Facts Learned" items={memory.facts_learned} color="#38BDF8" expanded={showFacts} onToggle={() => setShowFacts(!showFacts)} />
             )}
             {(memory.opinions_formed?.length > 0) && (
-              <ExpandableList title="Opinions Formed" items={memory.opinions_formed} color="#FBBF24" expanded={showOpinions} onToggle={() => setShowOpinions(!showOpinions)} colors={colors} />
+              <ExpandableList title="Opinions Formed" items={memory.opinions_formed} color="#FBBF24" expanded={showOpinions} onToggle={() => setShowOpinions(!showOpinions)} />
             )}
             {(memory.topics_explored?.length > 0) && (
-              <ExpandableList title="Topics Explored" items={memory.topics_explored} color="#34D399" expanded={showTopics} onToggle={() => setShowTopics(!showTopics)} colors={colors} />
+              <ExpandableList title="Topics Explored" items={memory.topics_explored} color="#34D399" expanded={showTopics} onToggle={() => setShowTopics(!showTopics)} />
             )}
           </View>
 
@@ -226,7 +226,9 @@ export default function PersonalityScreen() {
   );
 }
 
-function ExpandableList({ title, items, color, expanded, onToggle, colors: _colors }: { title: string; items: string[]; color: string; expanded: boolean; onToggle: () => void; colors: any }) {
+function ExpandableList({ title, items, color, expanded, onToggle }: { title: string; items: string[]; color: string; expanded: boolean; onToggle: () => void }) {
+  const { colors: _colors } = useTheme();
+  const st = createStStyles(_colors);
   return (
     <View style={st.expandable}>
       <TouchableOpacity style={st.expandHeader} onPress={onToggle} activeOpacity={0.7}>

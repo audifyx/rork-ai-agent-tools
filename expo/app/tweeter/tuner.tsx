@@ -26,7 +26,7 @@ interface SliderConfig {
 }
 
 const SLIDERS: SliderConfig[] = [
-  { id: "aggression", label: "Aggression", icon: Flame, color: colors.accentBright, min: "Gentle", max: "Savage", defaultValue: 0.3 },
+  { id: "aggression", label: "Aggression", icon: Flame, color: "#EF4444", min: "Gentle", max: "Savage", defaultValue: 0.3 },
   { id: "humor", label: "Humor", icon: Smile, color: "#FBBF24", min: "Serious", max: "Hilarious", defaultValue: 0.6 },
   { id: "formality", label: "Formality", icon: Briefcase, color: "#38BDF8", min: "Casual", max: "Corporate", defaultValue: 0.2 },
   { id: "emoji_usage", label: "Emoji Usage", icon: Sparkles, color: "#A78BFA", min: "None", max: "Maximum", defaultValue: 0.4 },
@@ -82,6 +82,8 @@ function generatePreview(values: Record<string, number>): string {
 }
 
 function TunerSlider({ config, value, onChange }: { config: SliderConfig; value: number; onChange: (v: number) => void }) {
+  const { colors } = useTheme();
+  const st = createStStyles(colors);
   const trackWidth = SCREEN_W - 32 - 32 - 16;
   const pan = useRef(new Animated.Value(value * trackWidth)).current;
   const currentVal = useRef(value);
@@ -239,7 +241,7 @@ export default function ToneTuner() {
     const agg = values.aggression ?? 0.3;
     const humor = values.humor ?? 0.6;
     const formal = values.formality ?? 0.2;
-    if (agg > 0.7) return { label: "Firebrand", emoji: "🔥", color: colors.accentBright };
+    if (agg > 0.7) return { label: "Firebrand", emoji: "🔥", color: colors.accent };
     if (humor > 0.7) return { label: "Comedian", emoji: "😂", color: "#FBBF24" };
     if (formal > 0.7) return { label: "Executive", emoji: "👔", color: "#38BDF8" };
     if (values.sarcasm > 0.7) return { label: "Snark Lord", emoji: "😏", color: "#F472B6" };

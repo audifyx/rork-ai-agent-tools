@@ -30,7 +30,9 @@ function timeAgo(d: string) {
 }
 
 // ─── Stats Banner ──────────────────────────────────────
-function StatsBanner({ tweets, personality, colors }: { tweets: any[]; personality: any; colors: any }) {
+function StatsBanner({ tweets, personality }: { tweets: any[]; personality: any }) {
+  const { colors } = useTheme();
+  const st = createStStyles(colors);
   const totalLikes = tweets.reduce((s, t) => s + (t.likes || 0), 0);
   const totalRts = tweets.reduce((s, t) => s + (t.retweets || 0), 0);
   const mood = personality?.current_mood || "—";
@@ -65,7 +67,9 @@ function StatsBanner({ tweets, personality, colors }: { tweets: any[]; personali
 }
 
 // ─── Tweet Card ────────────────────────────────────────
-function TweetCard({ tweet, agentName, agentEmoji, colors }: { tweet: any; agentName: string; agentEmoji: string; colors: any }) {
+function TweetCard({ tweet, agentName, agentEmoji }: { tweet: any; agentName: string; agentEmoji: string }) {
+  const { colors } = useTheme();
+  const st = createStStyles(colors);
   const moodEmoji = MOOD_EMOJI[tweet.mood] || "🤖";
 
   return (
@@ -234,7 +238,7 @@ export default function TweeterFeed() {
       )}
 
       {/* Stats banner */}
-      <StatsBanner tweets={tweets} personality={personality} colors={colors} />
+      <StatsBanner tweets={tweets} personality={personality} />
 
       {/* Mood filter chips */}
       {Object.keys(moodCounts).length > 0 && (
@@ -269,7 +273,7 @@ export default function TweeterFeed() {
         </View>
       ) : (
         filteredTweets.map(tweet => (
-          <TweetCard key={tweet.id} tweet={tweet} agentName={agentName} agentEmoji={agentEmoji} colors={colors} />
+          <TweetCard key={tweet.id} tweet={tweet} agentName={agentName} agentEmoji={agentEmoji} />
         ))
       )}
     </ScrollView>
