@@ -19,7 +19,14 @@ function formatBytes(b: number) {
   return `${(b / 1073741824).toFixed(2)} GB`;
 }
 
-function GlassCard({ children, style, isDark, colors }: { children: React.ReactNode; style?: any; isDark: boolean; colors: any }) {
+function GlassCard({ children, style, isDark, isWin11, colors }: { children: React.ReactNode; style?: any; isDark: boolean; isWin11: boolean; colors: any }) {
+  if (isWin11) {
+    return (
+      <View style={[{ borderRadius: 8, borderWidth: 1, borderColor: colors.border, backgroundColor: isDark ? "rgba(45,45,45,0.60)" : "rgba(255,255,255,0.70)", overflow: "hidden" as const }, style]}>
+        {children}
+      </View>
+    );
+  }
   if (Platform.OS === "ios") {
     return (
       <BlurView intensity={20} tint={isDark ? "dark" : "light"} style={[{ borderRadius: 20, overflow: "hidden" as const, borderWidth: 1, borderColor: isDark ? "rgba(255,255,255,0.06)" : colors.glassBorder }, style]}>
@@ -44,6 +51,7 @@ export default function OpenClawDashboard() {
   const { user } = useAuthStore();
   const { colors, theme } = useTheme();
   const isDark = theme.dark;
+  const isWin11 = theme.id === "win11_dark" || theme.id === "win11_light";
   const [refreshing, setRefreshing] = useState(false);
   const [stats, setStats] = useState({
     files: 0, leads: 0, webhooks: 0, agents: 0,
@@ -83,6 +91,12 @@ export default function OpenClawDashboard() {
   useEffect(() => { void loadStats(); }, [user, loadStats]);
   const onRefresh = async () => { setRefreshing(true); await loadStats(); setRefreshing(false); };
 
+  const subtleBg = isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)";
+  const subtleBorder = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)";
+  const cardBg = isWin11
+    ? (isDark ? "rgba(45,45,45,0.60)" : "rgba(255,255,255,0.70)")
+    : undefined;
+
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: colors.background }]}
@@ -92,7 +106,7 @@ export default function OpenClawDashboard() {
     >
       <View style={styles.header}>
         <Text style={[styles.title, { color: colors.text }]}>Command <Text style={{ color: colors.accent }}>Center</Text></Text>
-        <View style={[styles.liveBadge, { backgroundColor: "rgba(52,211,153,0.1)", borderColor: "rgba(52,211,153,0.15)" }]}>
+        <View style={[styles.liveBadge, { backgroundColor: isWin11 ? subtleBg : "rgba(52,211,153,0.1)", borderColor: isWin11 ? subtleBorder : "rgba(52,211,153,0.15)" }, isWin11 && styles.win11Badge]}>
           <View style={styles.liveDot} />
           <Text style={styles.liveText}>Live</Text>
         </View>
@@ -100,9 +114,9 @@ export default function OpenClawDashboard() {
 
       <SectionHeader title="OVERVIEW" icon={Activity} colors={colors} />
       <View style={styles.widgetGrid}>
-        <GlassCard style={styles.widgetLg} isDark={isDark} colors={colors}>
+        <GlassCard style={[styles.widgetLg, isWin11 && styles.win11Card]} isDark={isDark} isWin11={isWin11} colors={colors}>
           <View style={styles.wRow}>
-            <View style={[styles.wIcon, { backgroundColor: "rgba(56,189,248,0.12)" }]}>
+            <View style={[styles.wIcon, { backgroundColor: isWin11 ? subtleBg : "rgba(56,189,248,0.12)" }]}>
               <FolderOpen size={20} color="#38BDF8" />
             </View>
             <View style={styles.wTrend}>
@@ -112,38 +126,38 @@ export default function OpenClawDashboard() {
           </View>
           <Text style={[styles.wVal, { color: "#38BDF8" }]}>{stats.files}</Text>
           <Text style={[styles.wLabel, { color: colors.textSecondary }]}>Files</Text>
-          <View style={[styles.meter, { backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)" }]}><View style={[styles.meterFill, { width: `${Math.min((stats.totalSize / 104857600) * 100, 100)}%`, backgroundColor: "#38BDF8" }]} /></View>
+          <View style={[styles.meter, { backgroundColor: subtleBg }]}><View style={[styles.meterFill, { width: `${Math.min((stats.totalSize / 104857600) * 100, 100)}%`, backgroundColor: "#38BDF8" }]} /></View>
           <Text style={[styles.wMeta, { color: colors.textMuted }]}>{formatBytes(stats.totalSize)} used</Text>
         </GlassCard>
         <View style={styles.widgetStack}>
-          <GlassCard style={styles.widgetSm} isDark={isDark} colors={colors}>
-            <View style={[styles.wIconSm, { backgroundColor: "rgba(52,211,153,0.12)" }]}><Users size={16} color="#34D399" /></View>
+          <GlassCard style={[styles.widgetSm, isWin11 && styles.win11Card]} isDark={isDark} isWin11={isWin11} colors={colors}>
+            <View style={[styles.wIconSm, { backgroundColor: isWin11 ? subtleBg : "rgba(52,211,153,0.12)" }]}><Users size={16} color="#34D399" /></View>
             <Text style={[styles.wValSm, { color: "#34D399" }]}>{stats.leads}</Text>
             <Text style={[styles.wLabelSm, { color: colors.textMuted }]}>Leads</Text>
           </GlassCard>
-          <GlassCard style={styles.widgetSm} isDark={isDark} colors={colors}>
-            <View style={[styles.wIconSm, { backgroundColor: "rgba(251,191,36,0.12)" }]}><Webhook size={16} color="#FBBF24" /></View>
+          <GlassCard style={[styles.widgetSm, isWin11 && styles.win11Card]} isDark={isDark} isWin11={isWin11} colors={colors}>
+            <View style={[styles.wIconSm, { backgroundColor: isWin11 ? subtleBg : "rgba(251,191,36,0.12)" }]}><Webhook size={16} color="#FBBF24" /></View>
             <Text style={[styles.wValSm, { color: "#FBBF24" }]}>{stats.webhooks}</Text>
             <Text style={[styles.wLabelSm, { color: colors.textMuted }]}>API Calls</Text>
           </GlassCard>
         </View>
       </View>
 
-      <GlassCard style={styles.agentCard} isDark={isDark} colors={colors}>
+      <GlassCard style={[styles.agentCard, isWin11 && styles.win11Card]} isDark={isDark} isWin11={isWin11} colors={colors}>
         <View style={styles.agentRow}>
           <View style={[styles.wIcon, { backgroundColor: colors.accentDim }]}><Bot size={20} color={colors.accent} /></View>
           <View style={{ flex: 1 }}>
             <Text style={[styles.agentTitle, { color: colors.text }]}>Agent Status</Text>
             <Text style={[styles.agentSub, { color: colors.textMuted }]}>{stats.agents} configured · Key {stats.apiKeyActive ? "active" : "inactive"}</Text>
           </View>
-          <View style={[styles.agentBadge, { backgroundColor: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)", borderColor: colors.border }, stats.apiKeyActive && { backgroundColor: colors.accentDim, borderColor: colors.accentGlow }]}>
+          <View style={[styles.agentBadge, { backgroundColor: subtleBg, borderColor: subtleBorder }, stats.apiKeyActive && { backgroundColor: colors.accentDim, borderColor: colors.accentGlow }]}>
             <Text style={[styles.agentBadgeText, { color: colors.textMuted }, stats.apiKeyActive && { color: colors.accent }]}>{stats.apiKeyActive ? "Ready" : "Setup"}</Text>
           </View>
         </View>
       </GlassCard>
 
       <SectionHeader title="METRICS" icon={Zap} colors={colors} />
-      <GlassCard style={{ padding: 0 }} isDark={isDark} colors={colors}>
+      <GlassCard style={[{ padding: 0 }, isWin11 && styles.win11Card]} isDark={isDark} isWin11={isWin11} colors={colors}>
         <View style={styles.metricsGrid}>
           {[
             { label: "Storage", value: formatBytes(stats.totalSize), icon: HardDrive },
@@ -151,7 +165,7 @@ export default function OpenClawDashboard() {
             { label: "API Key", value: stats.apiKeyActive ? "Active" : "None", icon: Shield },
             { label: "Endpoint", value: "Online", icon: Globe },
           ].map((m, i) => (
-            <View key={m.label} style={[styles.metricItem, i < 2 && { borderBottomWidth: 1, borderBottomColor: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)" }]}>
+            <View key={m.label} style={[styles.metricItem, i < 2 && { borderBottomWidth: 1, borderBottomColor: subtleBorder }]}>
               <m.icon size={14} color={colors.textMuted} />
               <Text style={[styles.metricVal, { color: colors.text }]}>{m.value}</Text>
               <Text style={[styles.metricLabel, { color: colors.textMuted }]}>{m.label}</Text>
@@ -161,12 +175,12 @@ export default function OpenClawDashboard() {
       </GlassCard>
 
       <SectionHeader title="SYSTEM" icon={CircleDot} colors={colors} />
-      <GlassCard style={{ padding: 0 }} isDark={isDark} colors={colors}>
+      <GlassCard style={[{ padding: 0 }, isWin11 && styles.win11Card]} isDark={isDark} isWin11={isWin11} colors={colors}>
         {["Database", "File Storage", "API Endpoint", "Realtime"].map((name, i, arr) => (
-          <View key={name} style={[styles.statusRow, i < arr.length - 1 && { borderBottomWidth: 1, borderBottomColor: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)" }]}>
+          <View key={name} style={[styles.statusRow, i < arr.length - 1 && { borderBottomWidth: 1, borderBottomColor: subtleBorder }]}>
             <View style={styles.dotWrap}><View style={styles.dotOuter} /><View style={styles.dotInner} /></View>
             <Text style={[styles.statusName, { color: colors.text }]}>{name}</Text>
-            <Text style={[styles.statusVal, { fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace" }]}>Online</Text>
+            <Text style={styles.statusVal}>Online</Text>
           </View>
         ))}
       </GlassCard>
@@ -179,6 +193,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
   title: { fontSize: 24, fontWeight: "800" as const, letterSpacing: -0.8 },
   liveBadge: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1 },
+  win11Badge: { borderRadius: 6 },
   liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "#34D399" },
   liveText: { fontSize: 12, fontWeight: "700" as const, color: "#34D399" },
 
@@ -189,6 +204,7 @@ const styles = StyleSheet.create({
   widgetLg: { flex: 1.2, padding: 18 },
   widgetStack: { flex: 1, gap: 10 },
   widgetSm: { flex: 1, padding: 16, alignItems: "center" },
+  win11Card: { borderRadius: 8 },
 
   wRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14 },
   wIcon: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center" },

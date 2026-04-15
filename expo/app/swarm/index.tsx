@@ -3,7 +3,6 @@ import {
   StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput,
   RefreshControl, Alert,
 } from "react-native";
-
 import {
   Bot, Plus, X, Trash2, ArrowLeft, Key, Zap,
   Pause, Play, Copy, Shield,
@@ -33,7 +32,8 @@ function timeAgo(d: string | null) {
 export default function AgentsScreen() {
   const { colors, theme } = useTheme();
   const isDark = theme.dark;
-  const styles = createStylesStyles(colors);
+  const isWin11 = theme.id === "win11_dark" || theme.id === "win11_light";
+  const styles = createStylesStyles(colors, isWin11, isDark);
   const router = useRouter();
   const { user } = useAuthStore();
   const [agents, setAgents] = useState<any[]>([]);
@@ -69,10 +69,8 @@ export default function AgentsScreen() {
 
   const saveKey = async () => {
     if (!user || !orKey.trim()) return Alert.alert("Error", "Paste your OpenRouter API key");
-    // Store in vault with special service tag
     const { data: existing } = await supabase.from("vault_entries")
       .select("id").eq("user_id", user.id).eq("service", "openrouter-swarm").maybeSingle();
-
     if (existing) {
       await supabase.from("vault_entries").update({
         key_value: orKey.trim(),
@@ -91,7 +89,6 @@ export default function AgentsScreen() {
         description: "API key for ClawSwarm sub-agents",
       });
     }
-
     setOrKey("");
     setShowSetup(false);
     setKeySet(true);
@@ -123,10 +120,7 @@ export default function AgentsScreen() {
   const deleteAgent = (id: string, name: string) => {
     Alert.alert("Delete Agent", `Remove "${name}"? This deletes all conversations.`, [
       { text: "Cancel", style: "cancel" },
-      { text: "Delete", style: "destructive", onPress: async () => {
-        await supabase.from("swarm_agents").delete().eq("id", id);
-        void fetchAgents();
-      }},
+      { text: "Delete", style: "destructive", onPress: async () => { await supabase.from("swarm_agents").delete().eq("id", id); void fetchAgents(); } },
     ]);
   };
 
@@ -152,7 +146,6 @@ export default function AgentsScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* OpenRouter Key Setup */}
       {!keySet ? (
         <TouchableOpacity style={styles.setupBanner} onPress={() => setShowSetup(true)}>
           <Key size={18} color={colors.warning} />
@@ -174,15 +167,7 @@ export default function AgentsScreen() {
       {showSetup && (
         <View style={styles.setupForm}>
           <Text style={styles.formLabel}>OpenRouter API Key</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="sk-or-v1-..."
-            placeholderTextColor={colors.textMuted}
-            value={orKey}
-            onChangeText={setOrKey}
-            autoCapitalize="none"
-            secureTextEntry
-          />
+          <TextInput style={styles.input} placeholder="sk-or-v1-..." placeholderTextColor={colors.textMuted} value={orKey} onChangeText={setOrKey} autoCapitalize="none" secureTextEntry />
           <Text style={styles.setupHint}>Get your free key at openrouter.ai/keys</Text>
           <TouchableOpacity style={styles.submitBtn} onPress={saveKey}>
             <Shield size={14} color="#fff" />
@@ -191,7 +176,6 @@ export default function AgentsScreen() {
         </View>
       )}
 
-      {/* Create agent form */}
       {showCreate && (
         <View style={styles.createForm}>
           <Text style={styles.formTitle}>Create Sub-Agent</Text>
@@ -220,7 +204,6 @@ export default function AgentsScreen() {
         </View>
       )}
 
-      {/* Agents list */}
       {agents.length === 0 ? (
         <View style={styles.empty}>
           <Bot size={40} color={colors.textMuted} />
@@ -265,34 +248,54 @@ export default function AgentsScreen() {
   );
 }
 
-const createStylesStyles = (colors: any) => StyleSheet.create({
+const createStylesStyles = (colors: any, isWin11: boolean, isDark: boolean) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background, paddingHorizontal: 20 },
   header: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 16 },
-  backBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: colors.surfaceLight },
+  backBtn: { width: 40, height: 40, borderRadius: isWin11 ? 8 : 12, backgroundColor: isWin11 ? (isDark ? "rgba(45,45,45,0.60)" : "rgba(255,255,255,0.70)") : colors.surface, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: isWin11 ? colors.border : colors.surfaceLight },
   title: { fontSize: 22, fontWeight: "800", color: colors.text, letterSpacing: -0.5 },
   subtitle: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
-  addBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: colors.accentDim, borderWidth: 1, borderColor: "rgba(220,38,38,0.2)", alignItems: "center", justifyContent: "center" },
-  setupBanner: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "rgba(251,191,36,0.08)", borderRadius: 14, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: "rgba(251,191,36,0.2)" },
+  addBtn: { width: 40, height: 40, borderRadius: isWin11 ? 8 : 12, backgroundColor: colors.accentDim, borderWidth: 1, borderColor: isWin11 ? colors.accentGlow : "rgba(220,38,38,0.2)", alignItems: "center", justifyContent: "center" },
+  setupBanner: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "rgba(251,191,36,0.08)", borderRadius: isWin11 ? 8 : 14, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: "rgba(251,191,36,0.2)" },
   setupTitle: { fontSize: 14, fontWeight: "700", color: colors.warning },
   setupDesc: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
-  keyOkBanner: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "rgba(52,211,153,0.06)", borderRadius: 10, padding: 10, marginBottom: 14, borderWidth: 1, borderColor: "rgba(52,211,153,0.15)" },
+  keyOkBanner: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "rgba(52,211,153,0.06)", borderRadius: isWin11 ? 6 : 10, padding: 10, marginBottom: 14, borderWidth: 1, borderColor: "rgba(52,211,153,0.15)" },
   keyOkText: { fontSize: 12, color: colors.success, flex: 1 },
   keyChangeText: { fontSize: 11, color: colors.textMuted, fontWeight: "600" },
-  setupForm: { backgroundColor: colors.surface, borderRadius: 16, padding: 18, marginBottom: 16, borderWidth: 1, borderColor: colors.surfaceLight },
+  setupForm: {
+    backgroundColor: isWin11 ? (isDark ? "rgba(45,45,45,0.60)" : "rgba(255,255,255,0.70)") : colors.surface,
+    borderRadius: isWin11 ? 8 : 16, padding: 18, marginBottom: 16,
+    borderWidth: 1, borderColor: isWin11 ? colors.border : colors.surfaceLight,
+  },
   formLabel: { fontSize: 11, fontWeight: "600", color: colors.textMuted, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 },
   formTitle: { fontSize: 16, fontWeight: "700", color: colors.text, marginBottom: 14 },
-  input: { backgroundColor: colors.surfaceLight, borderRadius: 10, padding: 12, color: colors.text, fontSize: 14, marginBottom: 10, borderWidth: 1, borderColor: colors.surfaceLight },
+  input: {
+    backgroundColor: isWin11 ? (isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.03)") : colors.surfaceLight,
+    borderRadius: isWin11 ? 6 : 10, padding: 12, color: colors.text, fontSize: 14, marginBottom: 10,
+    borderWidth: 1, borderColor: isWin11 ? colors.border : colors.surfaceLight,
+  },
   setupHint: { fontSize: 11, color: colors.textMuted, marginBottom: 12 },
-  submitBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: colors.accent, borderRadius: 12, paddingVertical: 14 },
+  submitBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: colors.accent, borderRadius: isWin11 ? 6 : 12, paddingVertical: 14 },
   submitText: { fontSize: 14, fontWeight: "700", color: "#fff" },
-  createForm: { backgroundColor: colors.surface, borderRadius: 16, padding: 18, marginBottom: 16, borderWidth: 1, borderColor: colors.surfaceLight },
-  roleChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: colors.surfaceLight, borderWidth: 1, borderColor: colors.surfaceLight, marginRight: 6 },
-  roleChipActive: { backgroundColor: colors.accentDim, borderColor: "rgba(220,38,38,0.3)" },
+  createForm: {
+    backgroundColor: isWin11 ? (isDark ? "rgba(45,45,45,0.60)" : "rgba(255,255,255,0.70)") : colors.surface,
+    borderRadius: isWin11 ? 8 : 16, padding: 18, marginBottom: 16,
+    borderWidth: 1, borderColor: isWin11 ? colors.border : colors.surfaceLight,
+  },
+  roleChip: {
+    paddingHorizontal: 12, paddingVertical: 6, borderRadius: isWin11 ? 6 : 16,
+    backgroundColor: isWin11 ? (isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.03)") : colors.surfaceLight,
+    borderWidth: 1, borderColor: isWin11 ? colors.border : colors.surfaceLight, marginRight: 6,
+  },
+  roleChipActive: { backgroundColor: colors.accentDim, borderColor: isWin11 ? colors.accentGlow : "rgba(220,38,38,0.3)" },
   roleChipText: { fontSize: 12, color: colors.textSecondary },
   empty: { alignItems: "center", paddingTop: 60, gap: 10 },
   emptyText: { fontSize: 16, fontWeight: "600", color: colors.textSecondary },
   emptySubtext: { fontSize: 13, color: colors.textMuted },
-  card: { backgroundColor: colors.surface, borderRadius: 14, padding: 16, marginBottom: 10, borderWidth: 1, borderColor: colors.surfaceLight },
+  card: {
+    backgroundColor: isWin11 ? (isDark ? "rgba(45,45,45,0.60)" : "rgba(255,255,255,0.70)") : colors.surface,
+    borderRadius: isWin11 ? 8 : 14, padding: 16, marginBottom: 10,
+    borderWidth: 1, borderColor: isWin11 ? colors.border : colors.surfaceLight,
+  },
   cardPaused: { opacity: 0.5 },
   cardHeader: { flexDirection: "row", alignItems: "center", gap: 12 },
   agentEmoji: { fontSize: 28 },
@@ -304,7 +307,7 @@ const createStylesStyles = (colors: any) => StyleSheet.create({
   agentRole: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
   agentDesc: { fontSize: 13, color: colors.textSecondary, marginTop: 10, lineHeight: 18 },
   agentMeta: { fontSize: 11, color: colors.textMuted, marginTop: 8 },
-  cardActions: { flexDirection: "row", gap: 6, marginTop: 10, borderTopWidth: 1, borderTopColor: colors.surfaceLight, paddingTop: 10 },
-  actionBtn: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: "rgba(255,255,255,0.03)" },
+  cardActions: { flexDirection: "row", gap: 6, marginTop: 10, borderTopWidth: 1, borderTopColor: isWin11 ? colors.border : colors.surfaceLight, paddingTop: 10 },
+  actionBtn: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: isWin11 ? 6 : 8, backgroundColor: "rgba(255,255,255,0.03)" },
   actionText: { fontSize: 11, color: colors.textSecondary, fontWeight: "600" },
 });

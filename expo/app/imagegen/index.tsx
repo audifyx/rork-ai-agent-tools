@@ -30,15 +30,15 @@ const STYLES = [
   { id: "photorealistic", label: "Photo",    emoji: "📷" },
   { id: "anime",          label: "Anime",    emoji: "🎌" },
   { id: "digital-art",    label: "Digital",  emoji: "🖥️" },
-  { id: "cinematic",      label: "Cinema",   emoji: "🎬" },
-  { id: "cyberpunk",      label: "Cyberpunk",emoji: "🤖" },
-  { id: "fantasy",        label: "Fantasy",  emoji: "✨" },
-  { id: "oil-painting",   label: "Oil",      emoji: "🖌️" },
-  { id: "sketch",         label: "Sketch",   emoji: "✏️" },
-  { id: "watercolor",     label: "Water",    emoji: "🎨" },
-  { id: "3d-render",      label: "3D",       emoji: "🧊" },
-  { id: "abstract",       label: "Abstract", emoji: "🌀" },
-  { id: "minimalist",     label: "Minimal",  emoji: "◻️" },
+  { id: "cinematic",       label: "Cinema",   emoji: "🎬" },
+  { id: "cyberpunk",       label: "Cyberpunk",emoji: "🤖" },
+  { id: "fantasy",         label: "Fantasy",  emoji: "✨" },
+  { id: "oil-painting",    label: "Oil",      emoji: "🖌️" },
+  { id: "sketch",          label: "Sketch",   emoji: "✏️" },
+  { id: "watercolor",      label: "Water",    emoji: "🎨" },
+  { id: "3d-render",       label: "3D",       emoji: "🧊" },
+  { id: "abstract",        label: "Abstract", emoji: "🌀" },
+  { id: "minimalist",      label: "Minimal",  emoji: "◻️" },
 ];
 
 const SIZES = [
@@ -71,7 +71,8 @@ function ago(d: string) {
 export default function ImageGenScreen() {
   const { colors, theme } = useTheme();
   const isDark = theme.dark;
-  const st = createStStyles(colors);
+  const isWin11 = theme.id === "win11_dark" || theme.id === "win11_light";
+  const st = createStStyles(colors, isWin11, isDark);
   const _insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuthStore();
@@ -107,7 +108,6 @@ export default function ImageGenScreen() {
       .eq("user_id", user.id).order("created_at", { ascending: false }).limit(50);
     setImages(data ?? []);
     if (active) { const u = data?.find((i: any) => i.id === active.id); if (u) setActive(u); }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, active?.id]);
 
   useEffect(() => { void fetchData(); }, [fetchData]);
@@ -158,14 +158,9 @@ export default function ImageGenScreen() {
     if (user && apiKey) {
       try {
         const saveResp = await call("save_toolkit_image", {
-          prompt: prompt.trim(),
-          style,
-          size,
-          quality,
-          model: "dalle3",
-          base64: result.image.base64Data,
-          mime_type: result.image.mimeType,
-          agent_name: "Manual",
+          prompt: prompt.trim(), style, size, quality,
+          model: "dalle3", base64: result.image.base64Data,
+          mime_type: result.image.mimeType, agent_name: "Manual",
         });
         console.log("[imagegen] saved toolkit image to gallery", saveResp?.id);
         return saveResp;
@@ -175,16 +170,10 @@ export default function ImageGenScreen() {
     }
     return {
       id: `toolkit-${Date.now()}`,
-      prompt: prompt.trim(),
-      image_url: base64Uri,
-      style,
-      width: parseInt(size.split("x")[0]),
-      height: parseInt(size.split("x")[1]),
-      status: "done",
-      is_saved: false,
-      is_starred: false,
-      openrouter_model: "dall-e-3",
-      agent_name: "Manual",
+      prompt: prompt.trim(), image_url: base64Uri, style,
+      width: parseInt(size.split("x")[0]), height: parseInt(size.split("x")[1]),
+      status: "done", is_saved: false, is_starred: false,
+      openrouter_model: "dall-e-3", agent_name: "Manual",
       created_at: new Date().toISOString(),
     };
   };
@@ -211,15 +200,14 @@ export default function ImageGenScreen() {
 
   const isDone = (img: any) => img?.status === "done" || img?.status === "saved";
   const isGen  = (img: any) => img?.status === "generating" || img?.status === "pending";
-
   const activeModel = MODELS.find(m => m.key === model) ?? MODELS[0];
 
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: colors.background }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <ScrollView ref={scrollRef} style={st.root} contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-        <View style={st.glow} /><LobsterWatermark />
+        {!isWin11 && <View style={st.glow} />}
+        {!isWin11 && <LobsterWatermark />}
 
-        {/* Wallpaper button */}
         <View style={st.topRow}>
           <Text style={st.title}>🎨 <Text style={{ color: colors.accent }}>ImageGen</Text></Text>
           <TouchableOpacity style={st.wallpaperBtn} onPress={() => router.push("/imagegen/wallpaper" as any)}>
@@ -228,10 +216,9 @@ export default function ImageGenScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Live preview */}
         {active ? (
           <View style={st.preview}>
-            <View style={st.previewGlow} />
+            {!isWin11 && <View style={st.previewGlow} />}
             <View style={st.statusRow}>
               <View style={[st.dot, { backgroundColor: statusColor(colors, active.status) }]} />
               <Text style={[st.statusTxt, { color: statusColor(colors, active.status) }]}>{active.status.toUpperCase()}</Text>
@@ -279,9 +266,8 @@ export default function ImageGenScreen() {
           </View>
         )}
 
-        {/* Keypad */}
         <View style={st.keypad}>
-          <View style={st.keypadGlow} />
+          {!isWin11 && <View style={st.keypadGlow} />}
           <View style={st.keypadHead}>
             <Text style={st.keypadTitle}>⌨️ Prompt <Text style={{ color: colors.accent }}>Keypad</Text></Text>
             <TouchableOpacity style={st.inspireBtn} onPress={() => setPrompt(PROMPTS[Math.floor(Math.random() * PROMPTS.length)])}>
@@ -293,7 +279,6 @@ export default function ImageGenScreen() {
           <TextInput style={st.promptIn} placeholder="Describe your image..." placeholderTextColor={colors.textMuted} value={prompt} onChangeText={setPrompt} multiline maxLength={2000} />
           <Text style={st.charCount}>{prompt.length}/2000</Text>
 
-          {/* Model picker */}
           <Text style={st.secLabel}>AI MODEL</Text>
           <TouchableOpacity style={st.modelRow} onPress={() => setShowModelPicker(!showModelPicker)}>
             <View style={st.modelLeft}>
@@ -320,7 +305,6 @@ export default function ImageGenScreen() {
             </View>
           )}
 
-          {/* Style */}
           <Text style={[st.secLabel, { marginTop: 14 }]}>STYLE</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }} contentContainerStyle={{ gap: 7, paddingHorizontal: 1 }}>
             {STYLES.map(s => (
@@ -331,7 +315,6 @@ export default function ImageGenScreen() {
             ))}
           </ScrollView>
 
-          {/* Size */}
           <Text style={st.secLabel}>SIZE</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }} contentContainerStyle={{ gap: 7, paddingHorizontal: 1 }}>
             {SIZES.map(s => (
@@ -341,7 +324,6 @@ export default function ImageGenScreen() {
             ))}
           </ScrollView>
 
-          {/* Quality */}
           <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
             <Text style={st.secLabel}>QUALITY</Text>
             <View style={st.qToggle}>
@@ -353,7 +335,6 @@ export default function ImageGenScreen() {
             </View>
           </View>
 
-          {/* Advanced */}
           <TouchableOpacity style={st.advToggle} onPress={() => setShowAdv(!showAdv)}>
             <Text style={st.advTxt}>Negative prompt</Text>
             {showAdv ? <ChevronUp size={13} color={colors.textMuted} /> : <ChevronDown size={13} color={colors.textMuted} />}
@@ -366,11 +347,10 @@ export default function ImageGenScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Gallery */}
         {images.length > 0 && (
           <View style={st.gallery}>
             <TouchableOpacity style={st.galleryHead} onPress={() => setShowGallery(!showGallery)}>
-              <Text style={st.galleryTitle}>🖼️ Gallery <Text style={{ color: colors.textMuted, fontSize: 13 }}>({images.length})</Text></Text>
+              <Text style={st.galleryTitle}>🖼️ Gallery <Text style={{ color: colors.textMuted, fontSize: 13 }}>({images.length})</Text>
               {showGallery ? <ChevronUp size={15} color={colors.textMuted} /> : <ChevronDown size={15} color={colors.textMuted} />}
             </TouchableOpacity>
             {showGallery ? (
@@ -400,14 +380,23 @@ export default function ImageGenScreen() {
   );
 }
 
-const createStStyles = (colors: any) => StyleSheet.create({
+const createStStyles = (colors: any, isWin11: boolean, isDark: boolean) => StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   glow: { position: "absolute", top: 0, left: 0, right: 0, height: 260, backgroundColor: "rgba(220,38,38,0.025)" },
   topRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, paddingTop: 12, marginBottom: 14 },
   title: { fontSize: 24, fontWeight: "900", color: colors.text, letterSpacing: -0.8 },
-  wallpaperBtn: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "rgba(147,51,234,0.15)", paddingHorizontal: 12, paddingVertical: 7, borderRadius: 12, borderWidth: 1, borderColor: "rgba(147,51,234,0.3)" },
+  wallpaperBtn: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "rgba(147,51,234,0.15)", paddingHorizontal: 12, paddingVertical: 7, borderRadius: isWin11 ? 6 : 12, borderWidth: 1, borderColor: "rgba(147,51,234,0.3)" },
   wallpaperBtnTxt: { fontSize: 12, fontWeight: "700", color: "#C084FC" },
-  preview: { marginHorizontal: 16, marginBottom: 14, padding: 14, backgroundColor: "rgba(220,38,38,0.05)", borderRadius: 20, borderWidth: 1, borderColor: "rgba(220,38,38,0.12)", overflow: "hidden" },
+  preview: {
+    marginHorizontal: 16, marginBottom: 14, padding: 14,
+    backgroundColor: isWin11
+      ? (isDark ? "rgba(45,45,45,0.60)" : "rgba(255,255,255,0.70)")
+      : "rgba(220,38,38,0.05)",
+    borderRadius: isWin11 ? 8 : 20,
+    borderWidth: 1,
+    borderColor: isWin11 ? colors.border : "rgba(220,38,38,0.12)",
+    overflow: "hidden",
+  },
   previewGlow: { position: "absolute", top: -40, right: -40, width: 140, height: 140, borderRadius: 70, backgroundColor: "rgba(220,38,38,0.07)" },
   statusRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 10 },
   dot: { width: 7, height: 7, borderRadius: 4 },
@@ -415,60 +404,92 @@ const createStStyles = (colors: any) => StyleSheet.create({
   timeTxt: { fontSize: 11, color: colors.textMuted, flex: 1 },
   modelTag: { fontSize: 10, color: colors.textMuted, backgroundColor: "rgba(255,255,255,0.05)", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 5 },
   zoomBtn: { width: 26, height: 26, borderRadius: 8, backgroundColor: colors.surfaceLight, alignItems: "center", justifyContent: "center" },
-  imgBox: { width: "100%", borderRadius: 14, overflow: "hidden", backgroundColor: "rgba(255,255,255,0.03)", alignItems: "center", justifyContent: "center" },
+  imgBox: { width: "100%", borderRadius: isWin11 ? 6 : 14, overflow: "hidden", backgroundColor: "rgba(255,255,255,0.03)", alignItems: "center", justifyContent: "center" },
   img: { width: "100%", height: "100%" },
   imgCenter: { alignItems: "center", gap: 10, padding: 20 },
   genTxt: { fontSize: 14, fontWeight: "700", color: colors.accent, textAlign: "center" },
   genPrompt: { fontSize: 12, color: colors.textMuted, textAlign: "center" },
   promptPrev: { fontSize: 13, color: colors.textSecondary, lineHeight: 18, marginTop: 10 },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 8 },
-  chip: { backgroundColor: "rgba(255,255,255,0.05)", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 7, borderWidth: 1, borderColor: "rgba(255,255,255,0.07)" },
+  chip: { backgroundColor: "rgba(255,255,255,0.05)", paddingHorizontal: 8, paddingVertical: 3, borderRadius: isWin11 ? 4 : 7, borderWidth: 1, borderColor: "rgba(255,255,255,0.07)" },
   chipTxt: { fontSize: 11, color: colors.textMuted, fontWeight: "600" },
   actRow: { flexDirection: "row", gap: 8, marginTop: 12 },
-  act: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5, paddingVertical: 9, borderRadius: 10, borderWidth: 1 },
+  act: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5, paddingVertical: 9, borderRadius: isWin11 ? 6 : 10, borderWidth: 1 },
   actSave: { backgroundColor: "rgba(52,211,153,0.08)", borderColor: "rgba(52,211,153,0.2)" },
   actSaved: { backgroundColor: "rgba(52,211,153,0.05)", borderColor: "rgba(52,211,153,0.1)" },
   actStar: { flex: 0.5, backgroundColor: "rgba(251,191,36,0.08)", borderColor: "rgba(251,191,36,0.2)" },
-  actDel:  { flex: 0.5, backgroundColor: "rgba(248,113,113,0.06)", borderColor: "rgba(248,113,113,0.15)" },
+  actDel: { flex: 0.5, backgroundColor: "rgba(248,113,113,0.06)", borderColor: "rgba(248,113,113,0.15)" },
   actTxt: { fontSize: 13, fontWeight: "700" },
-  emptyPreview: { marginHorizontal: 16, height: 180, backgroundColor: "rgba(220,38,38,0.02)", borderRadius: 20, borderWidth: 1, borderColor: "rgba(220,38,38,0.07)", borderStyle: "dashed", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 14 },
+  emptyPreview: {
+    marginHorizontal: 16, height: 180,
+    backgroundColor: isWin11
+      ? (isDark ? "rgba(45,45,45,0.40)" : "rgba(255,255,255,0.60)")
+      : "rgba(220,38,38,0.02)",
+    borderRadius: isWin11 ? 8 : 20,
+    borderWidth: 1, borderColor: isWin11 ? colors.border : "rgba(220,38,38,0.07)",
+    borderStyle: "dashed", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 14,
+  },
   emptyTxt: { fontSize: 15, fontWeight: "700", color: colors.textMuted },
   emptySub: { fontSize: 12, color: colors.textMuted, opacity: 0.6, textAlign: "center", paddingHorizontal: 24 },
-  keypad: { marginHorizontal: 16, marginBottom: 20, padding: 16, backgroundColor: "rgba(220,38,38,0.04)", borderRadius: 20, borderWidth: 1, borderColor: colors.accentDim, overflow: "hidden" },
+  keypad: {
+    marginHorizontal: 16, marginBottom: 20, padding: 16,
+    backgroundColor: isWin11
+      ? (isDark ? "rgba(45,45,45,0.60)" : "rgba(255,255,255,0.70)")
+      : "rgba(220,38,38,0.04)",
+    borderRadius: isWin11 ? 8 : 20,
+    borderWidth: 1,
+    borderColor: isWin11 ? colors.border : colors.accentDim,
+    overflow: "hidden",
+  },
   keypadGlow: { position: "absolute", bottom: -40, left: -40, width: 130, height: 130, borderRadius: 65, backgroundColor: "rgba(220,38,38,0.05)" },
   keypadHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
   keypadTitle: { fontSize: 17, fontWeight: "900", color: colors.text },
-  inspireBtn: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: colors.accentDim, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10, borderWidth: 1, borderColor: "rgba(220,38,38,0.2)" },
+  inspireBtn: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: colors.accentDim, paddingHorizontal: 10, paddingVertical: 5, borderRadius: isWin11 ? 6 : 10, borderWidth: 1, borderColor: isWin11 ? colors.accentGlow : "rgba(220,38,38,0.2)" },
   inspireTxt: { fontSize: 12, fontWeight: "700", color: colors.accent },
-  promptIn: { backgroundColor: colors.surface, borderRadius: 14, padding: 14, color: colors.text, fontSize: 15, lineHeight: 22, minHeight: 88, textAlignVertical: "top", borderWidth: 1, borderColor: "rgba(255,255,255,0.07)", marginBottom: 6 },
+  promptIn: {
+    backgroundColor: isWin11
+      ? (isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.03)")
+      : colors.surface,
+    borderRadius: isWin11 ? 6 : 14, padding: 14, color: colors.text, fontSize: 15, lineHeight: 22, minHeight: 88, textAlignVertical: "top",
+    borderWidth: 1, borderColor: isWin11 ? colors.border : "rgba(255,255,255,0.07)", marginBottom: 6,
+  },
   charCount: { fontSize: 10, color: colors.textMuted, alignSelf: "flex-end", marginBottom: 12 },
   secLabel: { fontSize: 10, fontWeight: "700", color: colors.textMuted, letterSpacing: 1.2, marginBottom: 8, textTransform: "uppercase" },
-  modelRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "rgba(255,255,255,0.05)", borderRadius: 14, padding: 12, marginBottom: 4, borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
+  modelRow: {
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    backgroundColor: isWin11 ? (isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.03)") : "rgba(255,255,255,0.05)",
+    borderRadius: isWin11 ? 6 : 14, padding: 12, marginBottom: 4,
+    borderWidth: 1, borderColor: isWin11 ? colors.border : "rgba(255,255,255,0.08)",
+  },
   modelLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
   modelName: { fontSize: 14, fontWeight: "700", color: colors.text },
   modelTag2: { fontSize: 11, color: colors.textMuted },
-  modelDrop: { backgroundColor: "rgba(10,10,10,0.97)", borderRadius: 14, marginBottom: 4, borderWidth: 1, borderColor: "rgba(255,255,255,0.08)", overflow: "hidden" },
-  modelOption: { flexDirection: "row", alignItems: "center", gap: 10, padding: 12, borderBottomWidth: 1, borderBottomColor: colors.surface },
-  modelOptionActive: { backgroundColor: "rgba(220,38,38,0.08)" },
+  modelDrop: { backgroundColor: isDark ? "rgba(10,10,10,0.97)" : "rgba(243,243,243,0.98)", borderRadius: isWin11 ? 8 : 14, marginBottom: 4, borderWidth: 1, borderColor: isWin11 ? colors.border : "rgba(255,255,255,0.08)", overflow: "hidden" },
+  modelOption: { flexDirection: "row", alignItems: "center", gap: 10, padding: 12, borderBottomWidth: 1, borderBottomColor: isWin11 ? colors.border : colors.surface },
+  modelOptionActive: { backgroundColor: isWin11 ? colors.accentDim : "rgba(220,38,38,0.08)" },
   modelOptionName: { fontSize: 14, fontWeight: "600", color: colors.text },
   modelOptionTag: { fontSize: 11, color: colors.textMuted },
-  chip2: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 10, backgroundColor: colors.surface, borderWidth: 1, borderColor: "rgba(255,255,255,0.07)" },
+  chip2: {
+    flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, paddingVertical: 7, borderRadius: isWin11 ? 6 : 10,
+    backgroundColor: isWin11 ? (isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.03)") : colors.surface,
+    borderWidth: 1, borderColor: isWin11 ? colors.border : "rgba(255,255,255,0.07)",
+  },
   chip2On: { backgroundColor: colors.accent, borderColor: colors.accent },
   chip2Txt: { fontSize: 12, fontWeight: "600", color: colors.textMuted },
-  qToggle: { flexDirection: "row", backgroundColor: colors.surface, borderRadius: 10, padding: 3, borderWidth: 1, borderColor: "rgba(255,255,255,0.07)" },
-  qBtn: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 8 },
+  qToggle: { flexDirection: "row", backgroundColor: isWin11 ? (isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.03)") : colors.surface, borderRadius: isWin11 ? 6 : 10, padding: 3, borderWidth: 1, borderColor: isWin11 ? colors.border : "rgba(255,255,255,0.07)" },
+  qBtn: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: isWin11 ? 4 : 8 },
   qBtnOn: { backgroundColor: colors.accent },
   qTxt: { fontSize: 12, fontWeight: "700", color: colors.textMuted },
   advToggle: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 10, marginBottom: 4 },
   advTxt: { fontSize: 12, fontWeight: "600", color: colors.textMuted },
-  genBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, backgroundColor: colors.accent, borderRadius: 16, paddingVertical: 16, marginTop: 8, shadowColor: colors.accent, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 12, elevation: 8 },
+  genBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, backgroundColor: colors.accent, borderRadius: isWin11 ? 6 : 16, paddingVertical: 16, marginTop: 8, shadowColor: colors.accent, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 12, elevation: 8 },
   genBtnOff: { backgroundColor: "rgba(220,38,38,0.3)", shadowOpacity: 0 },
   genBtnTxt: { fontSize: 15, fontWeight: "800", color: "#fff" },
   gallery: { marginHorizontal: 16, marginBottom: 20 },
   galleryHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
   galleryTitle: { fontSize: 17, fontWeight: "800", color: colors.text },
   galleryGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  thumb: { width: THUMB, height: THUMB, borderRadius: 12, overflow: "hidden", backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.surfaceLight },
+  thumb: { width: THUMB, height: THUMB, borderRadius: isWin11 ? 6 : 12, overflow: "hidden", backgroundColor: colors.surface, borderWidth: 1, borderColor: isWin11 ? colors.border : colors.surfaceLight },
   thumbImg: { width: "100%", height: "100%" },
   thumbPh: { flex: 1, alignItems: "center", justifyContent: "center" },
   thumbStar: { position: "absolute", top: 4, right: 4, backgroundColor: "rgba(0,0,0,0.7)", borderRadius: 5, padding: 2 },

@@ -154,16 +154,22 @@ export default function UnifiedSettings() {
   const { user, signOut } = useAuthStore();
   const { colors, theme } = useTheme();
   const isDark = theme.dark;
+  const isWin11 = theme.id === "win11_dark" || theme.id === "win11_light";
   const [apiKey, setApiKey] = useState<MasterApiKey | null>(null);
   const [showKey, setShowKey] = useState(false);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [copiedDocs, setCopiedDocs] = useState(false);
 
+  const subtleBg = isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)";
+  const subtleBorder = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)";
+  const cardBg = isWin11
+    ? (isDark ? "rgba(45,45,45,0.60)" : "rgba(255,255,255,0.70)")
+    : undefined;
+
   const fetchKey = useCallback(async () => {
     if (!user) return;
     const { data } = await supabase.from("master_api_keys").select("*").eq("user_id", user.id).maybeSingle();
-
     if (data) {
       const mergedPermissions: Record<string, boolean> = {
         ...DEFAULT_MASTER_PERMISSIONS,
@@ -171,11 +177,9 @@ export default function UnifiedSettings() {
       };
       const currentPermissions = data.permissions ?? {};
       const permissionsChanged = Object.keys(mergedPermissions).some(key => mergedPermissions[key] !== currentPermissions[key]);
-
       if (permissionsChanged) {
         await supabase.from("master_api_keys").update({ permissions: mergedPermissions }).eq("id", data.id);
       }
-
       setApiKey({
         id: data.id,
         key_value: data.key_value,
@@ -185,13 +189,10 @@ export default function UnifiedSettings() {
     } else {
       setApiKey(null);
     }
-
     setLoading(false);
   }, [user]);
 
-  useEffect(() => {
-    void fetchKey();
-  }, [fetchKey]);
+  useEffect(() => { void fetchKey(); }, [fetchKey]);
 
   const generateKey = async () => {
     if (!user) return;
@@ -221,9 +222,6 @@ export default function UnifiedSettings() {
   const masked = apiKey ? apiKey.key_value.slice(0, 6) + "••••••••••••" + apiKey.key_value.slice(-4) : "";
   const mono = Platform.OS === "ios" ? "Menlo" : "monospace";
 
-  const subtleBg = isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)";
-  const subtleBorder = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)";
-
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       <ColorfulBackground variant="detail" />
@@ -250,7 +248,7 @@ export default function UnifiedSettings() {
 
         <Text style={[styles.secLabel, { color: colors.textMuted }]}>MASTER API KEY</Text>
         {loading ? <ActivityIndicator color={colors.accent} style={{ marginTop: 20 }} /> : !apiKey ? (
-          <GlassCard style={styles.emptyCard}>
+          <GlassCard style={[styles.emptyCard, isWin11 && { borderRadius: 8 }]}>
             <Key size={36} color={colors.accent} />
             <Text style={[styles.emptyTitle, { color: colors.text }]}>No master key yet</Text>
             <Text style={[styles.emptyDesc, { color: colors.textMuted }]}>Generate one key that gives your agent access to all tools — OpenClaw, Tweeter, ImageGen, Vault, Analytics, Pages, Swarm.</Text>
@@ -260,7 +258,7 @@ export default function UnifiedSettings() {
             </TouchableOpacity>
           </GlassCard>
         ) : (
-          <GlassCard style={styles.keyCard}>
+          <GlassCard style={[styles.keyCard, isWin11 && { borderRadius: 8 }]}>
             <View style={styles.keyHeader}>
               <Key size={18} color={colors.accent} />
               <Text style={[styles.keyLabel, { color: colors.text }]}>ok_ Master Key</Text>
@@ -292,7 +290,7 @@ export default function UnifiedSettings() {
           </GlassCard>
         )}
 
-        <GlassCard style={styles.endpointCard}>
+        <GlassCard style={[styles.endpointCard, isWin11 && { borderRadius: 8 }]}>
           <Text style={[styles.endpointLabel, { color: colors.textMuted }]}>ENDPOINT</Text>
           <TouchableOpacity onPress={async () => { await Clipboard.setStringAsync(API_URL); Alert.alert("Copied", "Endpoint copied"); }} activeOpacity={0.7}>
             <Text style={[styles.endpointUrl, { fontFamily: mono, color: colors.accent }]}>POST {API_URL}</Text>
@@ -300,7 +298,7 @@ export default function UnifiedSettings() {
         </GlassCard>
 
         <Text style={[styles.secLabel, { color: colors.textMuted }]}>AGENT DOCS</Text>
-        <GlassCard style={styles.docsCard}>
+        <GlassCard style={[styles.docsCard, isWin11 && { borderRadius: 8 }]}>
           <View style={styles.docsHeader}>
             <Text style={[styles.docsTitle, { color: colors.text }]}>📋 Agent Instructions</Text>
             <TouchableOpacity style={[styles.copyAllBtn, { backgroundColor: colors.accent, shadowColor: colors.accent }]} onPress={copyDocs} activeOpacity={0.7}>
@@ -315,7 +313,7 @@ export default function UnifiedSettings() {
         </GlassCard>
 
         <Text style={[styles.secLabel, { color: colors.textMuted }]}>ACCOUNT</Text>
-        <GlassCard style={styles.accountCard}>
+        <GlassCard style={[styles.accountCard, isWin11 && { borderRadius: 8 }]}>
           <View style={[styles.accountRow, { borderBottomWidth: 1, borderBottomColor: subtleBorder }]}>
             <User size={14} color={colors.textMuted} />
             <Text style={[styles.accountLabel, { color: colors.text }]}>Email</Text>

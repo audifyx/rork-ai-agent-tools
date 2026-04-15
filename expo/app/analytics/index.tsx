@@ -15,7 +15,8 @@ function formatBytes(b: number) {
 export default function AnalyticsDashboard() {
   const { colors, theme } = useTheme();
   const isDark = theme.dark;
-  const styles = createStylesStyles(colors);
+  const isWin11 = theme.id === "win11_dark" || theme.id === "win11_light";
+  const styles = createStylesStyles(colors, isWin11, isDark);
   const _insets = useSafeAreaInsets();
   const { user } = useAuthStore();
   const [refreshing, setRefreshing] = useState(false);
@@ -66,7 +67,6 @@ export default function AnalyticsDashboard() {
       <Text style={styles.title}>📊 Analytics</Text>
       <Text style={styles.subtitle}>Cross-tool performance overview</Text>
 
-      {/* Stats grid */}
       <View style={styles.grid}>
         {stats.map(s => (
           <View key={s.label} style={styles.statCard}>
@@ -77,7 +77,6 @@ export default function AnalyticsDashboard() {
         ))}
       </View>
 
-      {/* Storage meter */}
       <View style={styles.card}>
         <View style={styles.cardRow}>
           <HardDrive size={16} color={colors.info} />
@@ -89,7 +88,6 @@ export default function AnalyticsDashboard() {
         </View>
       </View>
 
-      {/* Recent activity */}
       <Text style={styles.secLabel}>RECENT ACTIVITY</Text>
       <View style={styles.card}>
         {(data?.activity ?? []).length === 0 ? (
@@ -112,23 +110,38 @@ export default function AnalyticsDashboard() {
 }
 
 const mono = Platform.OS === "ios" ? "Menlo" : "monospace";
-const createStylesStyles = (colors: any) => StyleSheet.create({
+const createStylesStyles = (colors: any, isWin11: boolean, isDark: boolean) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background, paddingHorizontal: 16 },
   title: { fontSize: 24, fontWeight: "800", color: colors.text, letterSpacing: -0.8 },
   subtitle: { fontSize: 12, color: colors.textMuted, marginTop: 3, marginBottom: 20 },
   secLabel: { fontSize: 11, fontWeight: "700", color: colors.textMuted, letterSpacing: 1.5, marginTop: 20, marginBottom: 10 },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
-  statCard: { width: "31%" as any, backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 16, padding: 14, borderWidth: 1, borderColor: colors.surfaceLight, alignItems: "center", gap: 6 },
+  statCard: {
+    width: "31%" as any,
+    backgroundColor: isWin11
+      ? (isDark ? "rgba(45,45,45,0.60)" : "rgba(255,255,255,0.70)")
+      : "rgba(255,255,255,0.03)",
+    borderRadius: isWin11 ? 8 : 16, padding: 14,
+    borderWidth: 1,
+    borderColor: isWin11 ? colors.border : colors.surfaceLight,
+    alignItems: "center", gap: 6,
+  },
   statVal: { fontSize: 22, fontWeight: "800" },
   statLabel: { fontSize: 10, color: colors.textMuted },
-  card: { backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.surfaceLight, marginTop: 12 },
+  card: {
+    backgroundColor: isWin11
+      ? (isDark ? "rgba(45,45,45,0.60)" : "rgba(255,255,255,0.70)")
+      : "rgba(255,255,255,0.03)",
+    borderRadius: isWin11 ? 8 : 16, padding: 16,
+    borderWidth: 1, borderColor: isWin11 ? colors.border : colors.surfaceLight, marginTop: 12,
+  },
   cardRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 },
   cardTitle: { fontSize: 14, fontWeight: "600", color: colors.text, flex: 1 },
   cardValue: { fontSize: 14, fontWeight: "700", color: colors.text, fontFamily: mono },
-  meter: { height: 4, backgroundColor: colors.surfaceLight, borderRadius: 2, overflow: "hidden" },
+  meter: { height: 4, backgroundColor: isWin11 ? colors.border : colors.surfaceLight, borderRadius: 2, overflow: "hidden" },
   meterFill: { height: 4, borderRadius: 2, backgroundColor: colors.info },
   actRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 10 },
-  actBorder: { borderBottomWidth: 1, borderBottomColor: colors.surface },
+  actBorder: { borderBottomWidth: 1, borderBottomColor: isWin11 ? colors.border : colors.surface },
   actIcon: { fontSize: 16 },
   actDesc: { fontSize: 13, color: colors.text },
   actMeta: { fontSize: 10, color: colors.textMuted, fontFamily: mono, marginTop: 1 },

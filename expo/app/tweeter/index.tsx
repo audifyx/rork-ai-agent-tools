@@ -29,10 +29,11 @@ function timeAgo(d: string) {
   return `${Math.floor(h / 24)}d`;
 }
 
-// ─── Stats Banner ──────────────────────────────────────
 function StatsBanner({ tweets, personality }: { tweets: any[]; personality: any }) {
-  const { colors } = useTheme();
-  const st = createStStyles(colors);
+  const { colors, theme } = useTheme();
+  const isWin11 = theme.id === "win11_dark" || theme.id === "win11_light";
+  const isDark = theme.dark;
+  const st = createStStyles(colors, isWin11, isDark);
   const totalLikes = tweets.reduce((s, t) => s + (t.likes || 0), 0);
   const totalRts = tweets.reduce((s, t) => s + (t.retweets || 0), 0);
   const mood = personality?.current_mood || "—";
@@ -66,42 +67,36 @@ function StatsBanner({ tweets, personality }: { tweets: any[]; personality: any 
   );
 }
 
-// ─── Tweet Card ────────────────────────────────────────
-function TweetCard({ tweet, agentName, agentEmoji }: { tweet: any; agentName: string; agentEmoji: string }) {
+function TweetCard({ tweet, agentName, agentEmoji, isWin11, isDark }: { tweet: any; agentName: string; agentEmoji: string; isWin11: boolean; isDark: boolean }) {
   const { colors } = useTheme();
-  const st = createStStyles(colors);
+  const st = createStStyles(colors, isWin11, isDark);
   const moodEmoji = MOOD_EMOJI[tweet.mood] || "🤖";
 
   return (
     <View style={st.tweetCard}>
       <View style={st.tweetRow}>
-        {/* Avatar */}
         <View style={st.avatar}>
           <Text style={st.avatarEmoji}>{agentEmoji}</Text>
-          <View style={st.avatarGlow} />
+          {isWin11 && <View style={st.avatarRing} />}
         </View>
 
         <View style={st.tweetContent}>
-          {/* Header */}
           <View style={st.tweetHeader}>
             <Text style={st.tweetName}>{agentName}</Text>
-            <View style={st.verifiedBadge}><Bot size={10} color="#000" /></View>
+            <View style={st.verifiedBadge}><Bot size={10} color={isWin11 ? "#fff" : "#000"} /></View>
             <Text style={st.tweetHandle}>@agent</Text>
             <Text style={st.tweetDot}>·</Text>
             <Text style={st.tweetTime}>{timeAgo(tweet.created_at)}</Text>
             {tweet.is_edited && <Text style={st.editedBadge}>edited</Text>}
           </View>
 
-          {/* Mood pill */}
           <View style={st.moodPill}>
             <Text style={st.moodEmoji}>{moodEmoji}</Text>
             <Text style={st.moodText}>{tweet.mood}</Text>
           </View>
 
-          {/* Content */}
           <Text style={st.tweetText}>{tweet.content}</Text>
 
-          {/* Tags */}
           {tweet.tags && tweet.tags.length > 0 && (
             <View style={st.tagsRow}>
               {tweet.tags.map((tag: string) => (
@@ -112,7 +107,6 @@ function TweetCard({ tweet, agentName, agentEmoji }: { tweet: any; agentName: st
             </View>
           )}
 
-          {/* Engagement bar */}
           <View style={st.engRow}>
             <View style={st.engItem}>
               <MessageCircle size={13} color={colors.textMuted} />
@@ -134,7 +128,6 @@ function TweetCard({ tweet, agentName, agentEmoji }: { tweet: any; agentName: st
         </View>
       </View>
 
-      {/* Agent-only lock */}
       <View style={st.lockBadge}>
         <Lock size={7} color={colors.accent} />
         <Text style={st.lockText}>AGENT</Text>
@@ -143,11 +136,11 @@ function TweetCard({ tweet, agentName, agentEmoji }: { tweet: any; agentName: st
   );
 }
 
-// ─── Main Feed ─────────────────────────────────────────
 export default function TweeterFeed() {
   const { colors, theme } = useTheme();
   const isDark = theme.dark;
-  const st = createStStyles(colors);
+  const isWin11 = theme.id === "win11_dark" || theme.id === "win11_light";
+  const st = createStStyles(colors, isWin11, isDark);
   const insets = useSafeAreaInsets();
   const { user } = useAuthStore();
   const [tweets, setTweets] = useState<any[]>([]);
@@ -186,7 +179,6 @@ export default function TweeterFeed() {
   const agentName = personality?.agent_name || "Agent Tweeter";
   const agentEmoji = personality?.avatar_emoji || "🦞";
 
-  // Mood counts for filter
   const moodCounts = useMemo(() => {
     const c: Record<string, number> = {};
     tweets.forEach(t => { c[t.mood] = (c[t.mood] || 0) + 1; });
@@ -202,10 +194,9 @@ export default function TweeterFeed() {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
       showsVerticalScrollIndicator={false}
     >
-      <View style={st.redGlow} />
-      <LobsterWatermark />
+      {!isWin11 && <View style={st.redGlow} />}
+      {!isWin11 && <LobsterWatermark />}
 
-      {/* Header */}
       <View style={st.header}>
         <View>
           <Text style={st.title}>🦞 Agent <Text style={{ color: colors.accent }}>Feed</Text></Text>
@@ -213,10 +204,9 @@ export default function TweeterFeed() {
         </View>
       </View>
 
-      {/* Agent profile card */}
       {personality && (
         <View style={st.profileCard}>
-          <View style={st.profileGlow} />
+          {!isWin11 && <View style={st.profileGlow} />}
           <View style={st.profileRow}>
             <View style={st.profileAvatar}>
               <Text style={{ fontSize: 34 }}>{agentEmoji}</Text>
@@ -224,7 +214,7 @@ export default function TweeterFeed() {
             <View style={st.profileInfo}>
               <View style={st.profileNameRow}>
                 <Text style={st.profileName}>{agentName}</Text>
-                <View style={st.verifiedBadge}><Bot size={10} color="#000" /></View>
+                <View style={st.verifiedBadge}><Bot size={10} color={isWin11 ? "#fff" : "#000"} /></View>
               </View>
               <Text style={st.profileBio} numberOfLines={2}>{personality.bio}</Text>
               <View style={st.profileMeta}>
@@ -237,10 +227,8 @@ export default function TweeterFeed() {
         </View>
       )}
 
-      {/* Stats banner */}
       <StatsBanner tweets={tweets} personality={personality} />
 
-      {/* Mood filter chips */}
       {Object.keys(moodCounts).length > 0 && (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={st.filterRow} contentContainerStyle={{ paddingHorizontal: 16, gap: 6 }}>
           <TouchableOpacity
@@ -262,7 +250,6 @@ export default function TweeterFeed() {
         </ScrollView>
       )}
 
-      {/* Tweets */}
       {filteredTweets.length === 0 ? (
         <View style={st.empty}>
           <Flame size={48} color={colors.accent} style={{ opacity: 0.4 }} />
@@ -273,7 +260,7 @@ export default function TweeterFeed() {
         </View>
       ) : (
         filteredTweets.map(tweet => (
-          <TweetCard key={tweet.id} tweet={tweet} agentName={agentName} agentEmoji={agentEmoji} />
+          <TweetCard key={tweet.id} tweet={tweet} agentName={agentName} agentEmoji={agentEmoji} isWin11={isWin11} isDark={isDark} />
         ))
       )}
     </ScrollView>
@@ -282,24 +269,36 @@ export default function TweeterFeed() {
 
 const mono = Platform.OS === "ios" ? "Menlo" : "monospace";
 
-const createStStyles = (colors: any) => StyleSheet.create({
+const createStStyles = (colors: any, isWin11: boolean, isDark: boolean) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   redGlow: { position: "absolute", top: 0, left: 0, right: 0, height: 300, backgroundColor: "rgba(220,38,38,0.03)" },
   header: { paddingHorizontal: 20, marginBottom: 16 },
   title: { fontSize: 26, fontWeight: "900", color: colors.text, letterSpacing: -1 },
   subtitle: { fontSize: 12, color: colors.textMuted, marginTop: 3 },
 
-  // Profile
   profileCard: {
     marginHorizontal: 16, marginBottom: 12, padding: 16,
-    backgroundColor: "rgba(220,38,38,0.04)", borderRadius: 20,
-    borderWidth: 1, borderColor: "rgba(220,38,38,0.12)", overflow: "hidden",
+    backgroundColor: isWin11
+      ? (isDark ? "rgba(45,45,45,0.60)" : "rgba(255,255,255,0.70)")
+      : "rgba(220,38,38,0.04)",
+    borderRadius: isWin11 ? 8 : 20,
+    borderWidth: 1,
+    borderColor: isWin11
+      ? colors.border
+      : "rgba(220,38,38,0.12)",
+    overflow: "hidden",
   },
   profileGlow: { position: "absolute", top: -40, right: -40, width: 120, height: 120, borderRadius: 60, backgroundColor: "rgba(220,38,38,0.08)" },
   profileRow: { flexDirection: "row", gap: 14 },
   profileAvatar: {
     width: 58, height: 58, borderRadius: 29,
-    backgroundColor: "rgba(220,38,38,0.12)", borderWidth: 2, borderColor: "rgba(220,38,38,0.25)",
+    backgroundColor: isWin11
+      ? colors.accentDim
+      : "rgba(220,38,38,0.12)",
+    borderWidth: 2,
+    borderColor: isWin11
+      ? colors.accentGlow
+      : "rgba(220,38,38,0.25)",
     alignItems: "center", justifyContent: "center",
   },
   profileInfo: { flex: 1, justifyContent: "center" },
@@ -309,7 +308,7 @@ const createStStyles = (colors: any) => StyleSheet.create({
   profileMeta: { flexDirection: "row", flexWrap: "wrap", gap: 5, marginTop: 8 },
   metaChip: {
     fontSize: 10, fontWeight: "600", color: colors.textMuted,
-    backgroundColor: colors.surface, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8,
+    backgroundColor: colors.surface, paddingHorizontal: 8, paddingVertical: 3, borderRadius: isWin11 ? 4 : 8,
   },
 
   verifiedBadge: {
@@ -317,43 +316,52 @@ const createStStyles = (colors: any) => StyleSheet.create({
     alignItems: "center", justifyContent: "center",
   },
 
-  // Stats banner
   banner: {
     flexDirection: "row", marginHorizontal: 16, marginBottom: 14,
-    backgroundColor: "rgba(220,38,38,0.06)", borderRadius: 16,
-    borderWidth: 1, borderColor: colors.accentDim, padding: 14,
+    backgroundColor: isWin11
+      ? (isDark ? "rgba(45,45,45,0.60)" : "rgba(255,255,255,0.70)")
+      : "rgba(220,38,38,0.06)",
+    borderRadius: isWin11 ? 8 : 16,
+    borderWidth: 1,
+    borderColor: isWin11 ? colors.border : colors.accentDim,
+    padding: 14,
   },
   bannerItem: { flex: 1, alignItems: "center", gap: 4 },
-  bannerDivider: { width: 1, backgroundColor: colors.accentDim },
+  bannerDivider: { width: 1, backgroundColor: isWin11 ? colors.border : colors.accentDim },
   bannerVal: { fontSize: 16, fontWeight: "800", color: colors.text },
   bannerLabel: { fontSize: 9, fontWeight: "600", color: colors.textMuted, textTransform: "uppercase", letterSpacing: 0.5 },
 
-  // Mood filters
   filterRow: { marginBottom: 14 },
   filterChip: {
     flexDirection: "row", alignItems: "center", gap: 4,
-    paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10,
-    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.surfaceLight,
+    paddingHorizontal: 12, paddingVertical: 7, borderRadius: isWin11 ? 6 : 10,
+    backgroundColor: isWin11
+      ? (isDark ? "rgba(45,45,45,0.60)" : "rgba(255,255,255,0.70)")
+      : colors.surface,
+    borderWidth: 1,
+    borderColor: isWin11 ? colors.border : colors.surfaceLight,
   },
   filterChipActive: { backgroundColor: colors.accent, borderColor: colors.accent },
   filterChipText: { fontSize: 11, fontWeight: "600", color: colors.textMuted },
-  filterChipTextActive: { color: "#000" },
+  filterChipTextActive: { color: "#fff" },
   filterEmoji: { fontSize: 12 },
 
-  // Tweet card
   tweetCard: {
     paddingHorizontal: 16, paddingVertical: 14,
-    borderBottomWidth: 1, borderBottomColor: "rgba(220,38,38,0.06)",
+    borderBottomWidth: 1,
+    borderBottomColor: isWin11 ? colors.border : "rgba(220,38,38,0.06)",
   },
   tweetRow: { flexDirection: "row", gap: 12 },
   avatar: {
     width: 42, height: 42, borderRadius: 21, position: "relative",
-    backgroundColor: colors.accentDim, borderWidth: 1.5, borderColor: "rgba(220,38,38,0.2)",
+    backgroundColor: colors.accentDim,
+    borderWidth: 1.5,
+    borderColor: isWin11 ? colors.accentGlow : "rgba(220,38,38,0.2)",
     alignItems: "center", justifyContent: "center",
   },
-  avatarGlow: {
+  avatarRing: {
     position: "absolute", width: 42, height: 42, borderRadius: 21,
-    backgroundColor: "rgba(220,38,38,0.06)",
+    backgroundColor: "transparent",
   },
   avatarEmoji: { fontSize: 20, zIndex: 1 },
   tweetContent: { flex: 1 },
@@ -362,12 +370,16 @@ const createStStyles = (colors: any) => StyleSheet.create({
   tweetHandle: { fontSize: 12, color: colors.textMuted },
   tweetDot: { fontSize: 12, color: colors.textMuted },
   tweetTime: { fontSize: 12, color: colors.textMuted },
-  editedBadge: { fontSize: 9, fontWeight: "700", color: colors.accent, backgroundColor: colors.accentDim, paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4 },
+  editedBadge: { fontSize: 9, fontWeight: "700", color: colors.accent, backgroundColor: colors.accentDim, paddingHorizontal: 5, paddingVertical: 1, borderRadius: isWin11 ? 3 : 4 },
 
   moodPill: {
     flexDirection: "row", alignItems: "center", gap: 4, alignSelf: "flex-start",
-    backgroundColor: "rgba(220,38,38,0.08)", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8,
-    marginBottom: 6, borderWidth: 1, borderColor: colors.accentDim,
+    backgroundColor: isWin11
+      ? (isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)")
+      : "rgba(220,38,38,0.08)",
+    paddingHorizontal: 8, paddingVertical: 3, borderRadius: isWin11 ? 4 : 8,
+    marginBottom: 6, borderWidth: 1,
+    borderColor: isWin11 ? colors.border : colors.accentDim,
   },
   moodEmoji: { fontSize: 11 },
   moodText: { fontSize: 10, fontWeight: "600", color: colors.accent },
@@ -375,25 +387,36 @@ const createStStyles = (colors: any) => StyleSheet.create({
   tweetText: { fontSize: 15, color: colors.text, lineHeight: 22 },
 
   tagsRow: { flexDirection: "row", flexWrap: "wrap", gap: 5, marginTop: 8 },
-  tagChip: { backgroundColor: "rgba(220,38,38,0.08)", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  tagChip: {
+    backgroundColor: isWin11
+      ? (isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)")
+      : "rgba(220,38,38,0.08)",
+    paddingHorizontal: 8, paddingVertical: 3, borderRadius: isWin11 ? 4 : 6,
+  },
   tagText: { fontSize: 12, fontWeight: "600", color: colors.accent },
 
-  engRow: { flexDirection: "row", gap: 20, marginTop: 10, paddingTop: 8, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.03)" },
+  engRow: { flexDirection: "row", gap: 20, marginTop: 10, paddingTop: 8, borderTopWidth: 1, borderTopColor: isWin11 ? colors.border : "rgba(255,255,255,0.03)" },
   engItem: { flexDirection: "row", alignItems: "center", gap: 4 },
   engText: { fontSize: 11, color: colors.textMuted, fontFamily: mono },
 
   lockBadge: {
     position: "absolute", top: 14, right: 16,
     flexDirection: "row", alignItems: "center", gap: 3,
-    backgroundColor: "rgba(220,38,38,0.08)", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6,
+    backgroundColor: isWin11
+      ? (isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)")
+      : "rgba(220,38,38,0.08)",
+    paddingHorizontal: 6, paddingVertical: 2, borderRadius: isWin11 ? 4 : 6,
   },
   lockText: { fontSize: 8, fontWeight: "800", color: colors.accent, letterSpacing: 0.5 },
 
-  // Empty
   empty: {
     margin: 20, padding: 48, alignItems: "center",
-    backgroundColor: "rgba(220,38,38,0.03)", borderRadius: 20,
-    borderWidth: 1, borderColor: "rgba(220,38,38,0.08)",
+    backgroundColor: isWin11
+      ? (isDark ? "rgba(45,45,45,0.40)" : "rgba(255,255,255,0.60)")
+      : "rgba(220,38,38,0.03)",
+    borderRadius: isWin11 ? 8 : 20,
+    borderWidth: 1,
+    borderColor: isWin11 ? colors.border : "rgba(220,38,38,0.08)",
   },
   emptyTitle: { fontSize: 16, fontWeight: "700", color: colors.textSecondary, marginTop: 16 },
   emptySub: { fontSize: 13, color: colors.textMuted, marginTop: 4, textAlign: "center", lineHeight: 20 },

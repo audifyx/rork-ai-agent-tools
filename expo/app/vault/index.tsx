@@ -35,18 +35,18 @@ const SERVICES = ["openai", "anthropic", "stripe", "github", "discord", "telegra
 export default function SecretsScreen() {
   const { colors, theme } = useTheme();
   const isDark = theme.dark;
-  const styles = createStylesStyles(colors);
+  const isWin11 = theme.id === "win11_dark" || theme.id === "win11_light";
+  const styles = createStylesStyles(colors, isWin11, isDark);
   const insets = useSafeAreaInsets();
   const { user } = useAuthStore();
   const [secrets, setSecrets] = useState<any[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
-  const [showOnce, setShowOnce] = useState<string | null>(null); // show key once after adding
+  const [showOnce, setShowOnce] = useState<string | null>(null);
   const [form, setForm] = useState({ name: "", service: "other", key_value: "", description: "" });
 
   const fetchSecrets = useCallback(async () => {
     if (!user) return;
-    // Select everything EXCEPT key_value — we never show it in the app after creation
     const { data } = await supabase
       .from("vault_entries")
       .select("id, name, service, key_prefix, key_suffix, description, tags, is_active, is_revealed, read_count, last_read_at, expires_at, created_at")
@@ -62,7 +62,6 @@ export default function SecretsScreen() {
     if (!user || !form.name || !form.key_value) {
       return Alert.alert("Error", "Name and secret value are required");
     }
-
     const { data, error } = await supabase.from("vault_entries").insert({
       user_id: user.id,
       name: form.name,
@@ -70,31 +69,18 @@ export default function SecretsScreen() {
       key_value: form.key_value,
       description: form.description || null,
     }).select().single();
-
     if (error) return Alert.alert("Error", error.message);
-
-    // Show the key ONE TIME only
     setShowOnce(form.key_value);
     setForm({ name: "", service: "other", key_value: "", description: "" });
     setShowAdd(false);
     fetchSecrets();
-
-    Alert.alert(
-      "🔐 Secret Stored",
-      "Your secret is saved. You can see it once now — after this, only your agent can read it via the API.",
-    );
+    Alert.alert("🔐 Secret Stored", "Your secret is saved. You can see it once now — after this, only your agent can read it via the API.");
   };
 
   const handleDelete = (id: string, name: string) => {
     Alert.alert("Delete Secret", `Permanently delete "${name}"? This cannot be undone.`, [
       { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete", style: "destructive",
-        onPress: async () => {
-          await supabase.from("vault_entries").delete().eq("id", id);
-          fetchSecrets();
-        },
-      },
+      { text: "Delete", style: "destructive", onPress: async () => { await supabase.from("vault_entries").delete().eq("id", id); fetchSecrets(); } },
     ]);
   };
 
@@ -123,17 +109,10 @@ export default function SecretsScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Show once banner */}
       {showOnce && (
         <View style={styles.showOnceBanner}>
           <Text style={styles.showOnceTitle}>⚠️ Shown once — tap to copy</Text>
-          <TouchableOpacity
-            onPress={async () => {
-              await Clipboard.setStringAsync(showOnce);
-              Alert.alert("Copied!", "Secret copied to clipboard");
-            }}
-            activeOpacity={0.7}
-          >
+          <TouchableOpacity onPress={async () => { await Clipboard.setStringAsync(showOnce); Alert.alert("Copied!", "Secret copied to clipboard"); }} activeOpacity={0.7}>
             <View style={styles.showOnceKeyRow}>
               <Text style={styles.showOnceKey} numberOfLines={1}>{showOnce}</Text>
               <Copy size={14} color="#FBBF24" />
@@ -145,60 +124,43 @@ export default function SecretsScreen() {
         </View>
       )}
 
-      {/* Add form */}
       {showAdd && (
         <View style={styles.formCard}>
           <Text style={styles.formTitle}>Store a Secret</Text>
-
           <Text style={styles.inputLabel}>Name *</Text>
           <TextInput style={styles.input} value={form.name} onChangeText={v => setForm(p => ({ ...p, name: v }))}
             placeholder="e.g. OpenAI Production Key" placeholderTextColor={colors.textMuted} />
-
           <Text style={styles.inputLabel}>Service</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.serviceRow}>
             {SERVICES.map(s => (
-              <TouchableOpacity
-                key={s}
-                style={[styles.servicePill, form.service === s && styles.servicePillActive]}
-                onPress={() => setForm(p => ({ ...p, service: s }))}
-                activeOpacity={0.7}
-              >
+              <TouchableOpacity key={s} style={[styles.servicePill, form.service === s && styles.servicePillActive]} onPress={() => setForm(p => ({ ...p, service: s }))} activeOpacity={0.7}>
                 <Text style={styles.serviceEmoji}>{SERVICE_EMOJI[s]}</Text>
                 <Text style={[styles.serviceText, form.service === s && styles.serviceTextActive]}>{s}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
-
           <Text style={styles.inputLabel}>Secret Value *</Text>
           <TextInput style={[styles.input, styles.secretInput]} value={form.key_value}
             onChangeText={v => setForm(p => ({ ...p, key_value: v }))}
             placeholder="sk-..." placeholderTextColor={colors.textMuted}
             secureTextEntry autoCapitalize="none" autoCorrect={false} />
-
           <Text style={styles.inputLabel}>Description</Text>
           <TextInput style={styles.input} value={form.description}
             onChangeText={v => setForm(p => ({ ...p, description: v }))}
             placeholder="What's this key for?" placeholderTextColor={colors.textMuted} />
-
           <TouchableOpacity style={styles.saveBtn} onPress={handleAdd} activeOpacity={0.7}>
             <Shield size={16} color="#fff" />
             <Text style={styles.saveBtnText}>Store Secret</Text>
           </TouchableOpacity>
-
-          <Text style={styles.disclaimer}>
-            After storing, the value is hidden forever in the app. Only your agent can read it via the ClawVault API.
-          </Text>
+          <Text style={styles.disclaimer}>After storing, the value is hidden forever in the app. Only your agent can read it via the ClawVault API.</Text>
         </View>
       )}
 
-      {/* Secret cards */}
       {activeSecrets.length === 0 && !showAdd ? (
         <View style={styles.empty}>
           <KeyRound size={48} color={colors.textMuted} />
           <Text style={styles.emptyTitle}>No secrets stored</Text>
-          <Text style={styles.emptySub}>
-            Store API keys here. Tell your agent "read my OpenAI key" and it'll fetch it from the vault.
-          </Text>
+          <Text style={styles.emptySub}>Store API keys here. Tell your agent "read my OpenAI key" and it'll fetch it from the vault.</Text>
         </View>
       ) : (
         activeSecrets.map(secret => (
@@ -209,30 +171,20 @@ export default function SecretsScreen() {
               </View>
               <View style={styles.secretInfo}>
                 <Text style={styles.secretName}>{secret.name}</Text>
-                <Text style={styles.secretMasked}>
-                  {secret.key_prefix}••••••••{secret.key_suffix}
-                </Text>
-                {secret.description && (
-                  <Text style={styles.secretDesc} numberOfLines={1}>{secret.description}</Text>
-                )}
+                <Text style={styles.secretMasked}>{secret.key_prefix}••••••••{secret.key_suffix}</Text>
+                {secret.description && <Text style={styles.secretDesc} numberOfLines={1}>{secret.description}</Text>}
               </View>
             </View>
-
             <View style={styles.secretMeta}>
-              <View style={styles.metaChip}>
-                <Text style={styles.metaText}>{secret.service}</Text>
-              </View>
+              <View style={styles.metaChip}><Text style={styles.metaText}>{secret.service}</Text></View>
               {secret.is_revealed && (
                 <View style={[styles.metaChip, { backgroundColor: "rgba(251,191,36,0.1)" }]}>
                   <Bot size={10} color="#FBBF24" />
                   <Text style={[styles.metaText, { color: "#FBBF24" }]}>Read {secret.read_count}x</Text>
                 </View>
               )}
-              {secret.last_read_at && (
-                <Text style={styles.metaTime}>Last: {timeAgo(secret.last_read_at)}</Text>
-              )}
+              {secret.last_read_at && <Text style={styles.metaTime}>Last: {timeAgo(secret.last_read_at)}</Text>}
             </View>
-
             <View style={styles.secretActions}>
               <TouchableOpacity style={styles.actionBtn} onPress={() => handleDeactivate(secret.id)}>
                 <EyeOff size={14} color={colors.textMuted} />
@@ -247,7 +199,6 @@ export default function SecretsScreen() {
         ))
       )}
 
-      {/* Inactive secrets */}
       {inactiveSecrets.length > 0 && (
         <>
           <View style={styles.dividerRow}>
@@ -258,9 +209,7 @@ export default function SecretsScreen() {
           {inactiveSecrets.map(secret => (
             <View key={secret.id} style={[styles.secretCard, { opacity: 0.4 }]}>
               <View style={styles.secretRow}>
-                <View style={styles.secretIcon}>
-                  <Text style={{ fontSize: 20 }}>{SERVICE_EMOJI[secret.service] || "🔑"}</Text>
-                </View>
+                <View style={styles.secretIcon}><Text style={{ fontSize: 20 }}>{SERVICE_EMOJI[secret.service] || "🔑"}</Text></View>
                 <View style={styles.secretInfo}>
                   <Text style={styles.secretName}>{secret.name}</Text>
                   <Text style={styles.secretMasked}>{secret.key_prefix}••••{secret.key_suffix}</Text>
@@ -279,90 +228,96 @@ export default function SecretsScreen() {
 
 const mono = Platform.OS === "ios" ? "Menlo" : "monospace";
 
-const createStylesStyles = (colors: any) => StyleSheet.create({
+const createStylesStyles = (colors: any, isWin11: boolean, isDark: boolean) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background, paddingHorizontal: 16 },
   headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 },
   title: { fontSize: 24, fontWeight: "800", color: colors.text, letterSpacing: -0.8 },
   subtitle: { fontSize: 12, color: colors.textMuted, marginTop: 3 },
-  addBtn: { width: 44, height: 44, borderRadius: 14, backgroundColor: colors.accent, alignItems: "center", justifyContent: "center" },
+  addBtn: { width: 44, height: 44, borderRadius: isWin11 ? 8 : 14, backgroundColor: colors.accent, alignItems: "center", justifyContent: "center" },
 
   showOnceBanner: {
-    backgroundColor: "rgba(251,191,36,0.08)", borderRadius: 16, padding: 16,
+    backgroundColor: "rgba(251,191,36,0.08)", borderRadius: isWin11 ? 8 : 16, padding: 16,
     borderWidth: 1, borderColor: "rgba(251,191,36,0.2)", marginBottom: 16,
   },
   showOnceTitle: { fontSize: 14, fontWeight: "700", color: "#FBBF24", marginBottom: 8 },
-  showOnceKeyRow: {
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    backgroundColor: "rgba(0,0,0,0.3)", padding: 12, borderRadius: 8, marginBottom: 10,
-  },
+  showOnceKeyRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "rgba(0,0,0,0.3)", padding: 12, borderRadius: isWin11 ? 6 : 8, marginBottom: 10 },
   showOnceKey: { fontSize: 12, fontFamily: mono, color: colors.text, flex: 1, marginRight: 8 },
   showOnceDismiss: { alignSelf: "center" },
   showOnceDismissText: { fontSize: 13, fontWeight: "600", color: "#FBBF24" },
 
   formCard: {
-    backgroundColor: "rgba(244,114,182,0.04)", borderRadius: 18, padding: 18,
-    borderWidth: 1, borderColor: "rgba(244,114,182,0.12)", marginBottom: 16,
+    backgroundColor: isWin11
+      ? (isDark ? "rgba(45,45,45,0.60)" : "rgba(255,255,255,0.70)")
+      : "rgba(244,114,182,0.04)",
+    borderRadius: isWin11 ? 8 : 18, padding: 18,
+    borderWidth: 1,
+    borderColor: isWin11 ? colors.border : "rgba(244,114,182,0.12)",
+    marginBottom: 16,
   },
   formTitle: { fontSize: 16, fontWeight: "700", color: colors.text, marginBottom: 14 },
   inputLabel: { fontSize: 12, fontWeight: "600", color: colors.textSecondary, marginBottom: 4, marginTop: 10 },
   input: {
-    backgroundColor: colors.surface, borderRadius: 12,
+    backgroundColor: isWin11
+      ? (isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.03)")
+      : colors.surface,
+    borderRadius: isWin11 ? 6 : 12,
     paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: colors.text,
-    borderWidth: 1, borderColor: colors.surfaceLight,
+    borderWidth: 1,
+    borderColor: isWin11 ? colors.border : colors.surfaceLight,
   },
   secretInput: { fontFamily: mono, fontSize: 13 },
   serviceRow: { marginVertical: 6 },
   servicePill: {
     flexDirection: "row", alignItems: "center", gap: 4,
-    paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, marginRight: 6,
-    backgroundColor: "rgba(255,255,255,0.03)", borderWidth: 1, borderColor: colors.surfaceLight,
+    paddingHorizontal: 10, paddingVertical: 6, borderRadius: isWin11 ? 6 : 10, marginRight: 6,
+    backgroundColor: isWin11
+      ? (isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.03)")
+      : "rgba(255,255,255,0.03)",
+    borderWidth: 1, borderColor: isWin11 ? colors.border : colors.surfaceLight,
   },
-  servicePillActive: { backgroundColor: "rgba(244,114,182,0.12)", borderColor: "rgba(244,114,182,0.25)" },
+  servicePillActive: { backgroundColor: isWin11 ? colors.accentDim : "rgba(244,114,182,0.12)", borderColor: isWin11 ? colors.accentGlow : "rgba(244,114,182,0.25)" },
   serviceEmoji: { fontSize: 14 },
   serviceText: { fontSize: 11, fontWeight: "600", color: colors.textMuted, textTransform: "capitalize" },
   serviceTextActive: { color: colors.accent },
-  saveBtn: {
-    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
-    backgroundColor: colors.accent, borderRadius: 14, paddingVertical: 14, marginTop: 14,
-  },
+  saveBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: colors.accent, borderRadius: isWin11 ? 6 : 14, paddingVertical: 14, marginTop: 14 },
   saveBtnText: { fontSize: 15, fontWeight: "700", color: "#fff" },
   disclaimer: { fontSize: 11, color: colors.textMuted, textAlign: "center", marginTop: 10, lineHeight: 16 },
 
   empty: {
     padding: 48, alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.02)", borderRadius: 20,
-    borderWidth: 1, borderColor: colors.surfaceLight,
+    backgroundColor: isWin11
+      ? (isDark ? "rgba(45,45,45,0.40)" : "rgba(255,255,255,0.60)")
+      : "rgba(255,255,255,0.02)",
+    borderRadius: isWin11 ? 8 : 20,
+    borderWidth: 1, borderColor: isWin11 ? colors.border : colors.surfaceLight,
   },
   emptyTitle: { fontSize: 16, fontWeight: "600", color: colors.textSecondary, marginTop: 16 },
   emptySub: { fontSize: 13, color: colors.textMuted, marginTop: 4, textAlign: "center", lineHeight: 20 },
 
   secretCard: {
-    backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 16, padding: 14,
-    borderWidth: 1, borderColor: colors.surfaceLight, marginBottom: 10,
+    backgroundColor: isWin11
+      ? (isDark ? "rgba(45,45,45,0.60)" : "rgba(255,255,255,0.70)")
+      : "rgba(255,255,255,0.03)",
+    borderRadius: isWin11 ? 8 : 16, padding: 14,
+    borderWidth: 1, borderColor: isWin11 ? colors.border : colors.surfaceLight, marginBottom: 10,
   },
   secretRow: { flexDirection: "row", gap: 12, marginBottom: 10 },
-  secretIcon: {
-    width: 44, height: 44, borderRadius: 12,
-    backgroundColor: "rgba(244,114,182,0.08)", alignItems: "center", justifyContent: "center",
-  },
+  secretIcon: { width: 44, height: 44, borderRadius: isWin11 ? 8 : 12, backgroundColor: isWin11 ? colors.accentDim : "rgba(244,114,182,0.08)", alignItems: "center", justifyContent: "center" },
   secretInfo: { flex: 1 },
   secretName: { fontSize: 15, fontWeight: "700", color: colors.text },
   secretMasked: { fontSize: 12, fontFamily: mono, color: colors.textMuted, marginTop: 2 },
   secretDesc: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
 
   secretMeta: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10, flexWrap: "wrap" },
-  metaChip: {
-    flexDirection: "row", alignItems: "center", gap: 4,
-    backgroundColor: "rgba(244,114,182,0.08)", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8,
-  },
+  metaChip: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: isWin11 ? colors.accentDim : "rgba(244,114,182,0.08)", paddingHorizontal: 8, paddingVertical: 3, borderRadius: isWin11 ? 4 : 8 },
   metaText: { fontSize: 10, fontWeight: "600", color: colors.accent, textTransform: "capitalize" },
   metaTime: { fontSize: 10, color: colors.textMuted },
 
-  secretActions: { flexDirection: "row", gap: 12, borderTopWidth: 1, borderTopColor: colors.surface, paddingTop: 10 },
+  secretActions: { flexDirection: "row", gap: 12, borderTopWidth: 1, borderTopColor: isWin11 ? colors.border : colors.surface, paddingTop: 10 },
   actionBtn: { flexDirection: "row", alignItems: "center", gap: 5 },
   actionText: { fontSize: 12, fontWeight: "600", color: colors.textMuted },
 
   dividerRow: { flexDirection: "row", alignItems: "center", marginVertical: 16, gap: 10 },
-  dividerLine: { flex: 1, height: 1, backgroundColor: colors.surface },
-  dividerText: { fontSize: 10, fontWeight: "700", color: "rgba(255,255,255,0.15)", letterSpacing: 1.5 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: isWin11 ? colors.border : colors.surface },
+  dividerText: { fontSize: 10, fontWeight: "700", color: colors.textMuted, letterSpacing: 1.5 },
 });
