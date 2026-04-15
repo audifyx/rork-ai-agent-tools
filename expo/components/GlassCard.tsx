@@ -12,13 +12,29 @@ interface GlassCardProps {
 
 export default function GlassCard({ children, style, intensity = 40, strong = false }: GlassCardProps) {
   const { colors, theme } = useTheme();
+  const isWin11 = theme.id === "win11_dark" || theme.id === "win11_light";
   const bg = strong ? colors.glassBgStrong : colors.glassBg;
   const tint = theme.dark ? "dark" : "light";
 
   if (Platform.OS === "web") {
+    if (isWin11) {
+      return (
+        <View style={[
+          {
+            borderRadius: 8,
+            borderWidth: 1,
+            borderColor: colors.border,
+            backgroundColor: strong ? colors.surfaceSolid : colors.surface,
+            overflow: "hidden" as const,
+          },
+          style,
+        ]}>
+          {children}
+        </View>
+      );
+    }
     return (
       <View style={[
-        webStyles.glass,
         {
           borderRadius: 20,
           borderWidth: 1,
@@ -34,6 +50,24 @@ export default function GlassCard({ children, style, intensity = 40, strong = fa
     );
   }
 
+  if (isWin11) {
+    return (
+      <View style={[
+        {
+          overflow: "hidden" as const,
+          borderRadius: 8,
+          borderWidth: 1,
+          borderColor: colors.border,
+        },
+        style,
+      ]}>
+        <BlurView intensity={30} tint={tint} style={StyleSheet.absoluteFill} />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: strong ? colors.surfaceSolid : colors.surface }]} />
+        {children}
+      </View>
+    );
+  }
+
   return (
     <View style={[{ overflow: "hidden" as const, borderRadius: 20, borderWidth: 1, borderColor: colors.glassBorder }, style]}>
       <BlurView intensity={intensity} tint={tint} style={StyleSheet.absoluteFill} />
@@ -42,7 +76,3 @@ export default function GlassCard({ children, style, intensity = 40, strong = fa
     </View>
   );
 }
-
-const webStyles = StyleSheet.create({
-  glass: {},
-});

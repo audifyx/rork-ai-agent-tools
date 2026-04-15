@@ -62,11 +62,12 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 
 function ThemedStack() {
   const { colors, theme } = useTheme();
+  const isWin11 = theme.id === "win11_dark" || theme.id === "win11_light";
 
   const glassHeader = (title: string, tintColor: string) => ({
     headerShown: true,
     headerTitle: title,
-    headerBackTitle: "Home",
+    headerBackTitle: "Back",
     headerStyle: {
       backgroundColor: theme.dark ? "rgba(10, 10, 10, 0.92)" : "rgba(242, 240, 245, 0.85)",
     },
@@ -75,6 +76,21 @@ function ThemedStack() {
     headerShadowVisible: false,
     headerBlurEffect: theme.headerBlur,
   });
+
+  const win11Header = (title: string) => ({
+    headerShown: true,
+    headerTitle: title,
+    headerBackTitle: "Back",
+    headerStyle: {
+      backgroundColor: "transparent",
+    },
+    headerTintColor: colors.text,
+    headerTitleStyle: { fontSize: 14, fontWeight: "500" as const, color: colors.text },
+    headerShadowVisible: false,
+    headerBlurEffect: theme.headerBlur,
+  });
+
+  const makeHeader = isWin11 ? win11Header : glassHeader;
 
   return (
     <Stack
@@ -89,18 +105,18 @@ function ThemedStack() {
       <Stack.Screen name="index" />
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="hub" />
-      <Stack.Screen name="activity"      options={glassHeader("⚡ Activity",      colors.text)} />
-      <Stack.Screen name="notifications" options={glassHeader("🔔 Alerts",       colors.text)} />
-      <Stack.Screen name="settings"      options={glassHeader("⚙️ Settings",     colors.text)} />
-      <Stack.Screen name="profile"       options={glassHeader("👤 Profile",      colors.text)} />
-      <Stack.Screen name="openclaw"  options={glassHeader("🦞 OpenClaw",      colors.accent)} />
-      <Stack.Screen name="tweeter"   options={glassHeader("🐦 Agent Tweeter", "#6366F1")} />
-      <Stack.Screen name="vault"     options={glassHeader("🔐 ClawVault",     "#A855F7")} />
-      <Stack.Screen name="analytics" options={glassHeader("📊 ClawAnalytics", colors.success)} />
-      <Stack.Screen name="pages"     options={glassHeader("🌐 ClawPages",     colors.info)} />
-      <Stack.Screen name="swarm"     options={glassHeader("🐝 ClawSwarm",     "#F59E0B")} />
-      <Stack.Screen name="imagegen"  options={glassHeader("🎨 ClawImageGen",  "#EC4899")} />
-      <Stack.Screen name="clawbg"    options={glassHeader("🎨 ClawBG",         colors.accent)} />
+      <Stack.Screen name="activity"      options={makeHeader("Activity")} />
+      <Stack.Screen name="notifications" options={makeHeader("Alerts")} />
+      <Stack.Screen name="settings"      options={makeHeader("Settings")} />
+      <Stack.Screen name="profile"       options={makeHeader("Profile")} />
+      <Stack.Screen name="openclaw"  options={makeHeader("OpenClaw")} />
+      <Stack.Screen name="tweeter"   options={makeHeader("Agent Tweeter")} />
+      <Stack.Screen name="vault"     options={makeHeader("ClawVault")} />
+      <Stack.Screen name="analytics" options={makeHeader("ClawAnalytics")} />
+      <Stack.Screen name="pages"     options={makeHeader("ClawPages")} />
+      <Stack.Screen name="swarm"     options={makeHeader("ClawSwarm")} />
+      <Stack.Screen name="imagegen"  options={makeHeader("ClawImageGen")} />
+      <Stack.Screen name="clawbg"    options={makeHeader("ClawBG")} />
       <Stack.Screen name="theme-settings" options={{ headerShown: false }} />
     </Stack>
   );

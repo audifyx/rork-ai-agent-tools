@@ -9,6 +9,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { useTheme } from "@/providers/ThemeProvider";
 import ColorfulBackground from "@/components/ColorfulBackground";
 import GlassCard from "@/components/GlassCard";
+import { Wifi, Battery, Signal, ChevronUp } from "lucide-react-native";
 
 const { height } = Dimensions.get("window");
 
@@ -41,6 +42,7 @@ export default function LoginScreen() {
   const { signIn, signUp } = useAuthStore();
   const { colors, theme } = useTheme();
   const isDark = theme.dark;
+  const isWin11 = theme.id === "win11_dark" || theme.id === "win11_light";
 
   const [locked, setLocked] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -114,6 +116,123 @@ export default function LoginScreen() {
   const inputBg = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)";
   const inputBorder = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)";
 
+  if (isWin11) {
+    const win11InputBg = isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.03)";
+    const win11InputBorder = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.05)";
+
+    return (
+      <View style={[wl.root, { backgroundColor: colors.background }]}>
+        <StatusBar barStyle={theme.statusBar} />
+        <ColorfulBackground variant="login" />
+
+        {locked && (
+          <Animated.View
+            style={[StyleSheet.absoluteFill, { opacity: lockOpacity, transform: [{ translateY: swipeY }] }]}
+            {...panResponder.panHandlers}
+          >
+            <TouchableOpacity
+              activeOpacity={1}
+              onPress={Platform.OS === "web" ? unlock : undefined}
+              style={[wl.lockScreen, { paddingTop: insets.top + 40 }]}
+            >
+              <View style={[wl.win11ClockWrap, { backgroundColor: isDark ? "rgba(32,32,32,0.60)" : "rgba(255,255,255,0.60)" }]}>
+                <Clock />
+                <View style={wl.trayIcons}>
+                  <Signal size={14} color={colors.textMuted} />
+                  <Wifi size={14} color={colors.textMuted} />
+                  <Battery size={14} color={colors.textMuted} />
+                </View>
+              </View>
+
+              <View style={[wl.notifArea, { paddingHorizontal: 20 }]}>
+                <View style={[wl.notifCard, { backgroundColor: isDark ? "rgba(45,45,45,0.80)" : "rgba(255,255,255,0.80)", borderColor: colors.border }]}>
+                  <Text style={{ fontSize: 22, marginRight: 12 }}>🦞</Text>
+                  <View>
+                    <Text style={[wl.notifTitle, { color: colors.text }]}>OpenClaw</Text>
+                    <Text style={[wl.notifBody, { color: colors.textSecondary }]}>Your agents are ready</Text>
+                  </Text>
+                </View>
+              </View>
+
+              <View style={[wl.swipeArea, { paddingBottom: insets.bottom + 20 }]}>
+                <Animated.View style={{ transform: [{ translateY: arrowAnim }], opacity: hintPulse }}>
+                  <ChevronUp size={20} color={colors.textMuted} />
+                </Animated.View>
+                <Animated.Text style={[wl.swipeText, { color: colors.textMuted, opacity: hintPulse }]}>
+                  {Platform.OS === "web" ? "Tap to sign in" : "Swipe up to sign in"}
+                </Animated.Text>
+              </View>
+            </TouchableOpacity>
+          </Animated.View>
+        )}
+
+        {showForm && (
+          <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+            <Animated.View style={[wl.formScreen, { paddingTop: insets.top + 20, opacity: formOpacity, transform: [{ translateY: formY }] }]}>
+              <View style={wl.formHeader}>
+                <View style={[wl.formIconWrap, { backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.70)", borderColor: colors.border, borderRadius: 12 }]}>
+                  <Text style={{ fontSize: 40 }}>🦞</Text>
+                </View>
+                <Text style={[wl.formTitle, { color: colors.text }]}>OpenClaw</Text>
+                <Text style={[wl.formSub, { color: colors.textSecondary }]}>{isSignUp ? "Create your account" : "Welcome back"}</Text>
+              </View>
+
+              <View style={[wl.formCard, { backgroundColor: isDark ? "rgba(45,45,45,0.60)" : "rgba(255,255,255,0.70)", borderColor: colors.border, borderRadius: 8 }]}>
+                <View style={wl.inputsWrap}>
+                  <View style={[wl.inputRow, { backgroundColor: win11InputBg, borderColor: win11InputBorder }]}>
+                    <Text style={wl.inputIcon}>📧</Text>
+                    <TextInput
+                      style={[wl.input, { color: colors.text }]}
+                      placeholder="Email address"
+                      placeholderTextColor={colors.textMuted}
+                      value={email}
+                      onChangeText={setEmail}
+                      autoCapitalize="none"
+                      keyboardType="email-address"
+                      autoFocus
+                    />
+                  </View>
+                  <View style={[wl.inputRow, { backgroundColor: win11InputBg, borderColor: win11InputBorder }]}>
+                    <Text style={wl.inputIcon}>🔐</Text>
+                    <TextInput
+                      style={[wl.input, { color: colors.text }]}
+                      placeholder="Password"
+                      placeholderTextColor={colors.textMuted}
+                      value={password}
+                      onChangeText={setPassword}
+                      secureTextEntry
+                    />
+                  </View>
+
+                  <TouchableOpacity
+                    style={[wl.submitBtn, { backgroundColor: colors.accent, borderRadius: 6 }, loading && { opacity: 0.6 }]}
+                    onPress={handleSubmit}
+                    disabled={loading}
+                    activeOpacity={0.85}
+                  >
+                    {loading
+                      ? <ActivityIndicator color="#fff" />
+                      : <Text style={wl.submitBtnText}>{isSignUp ? "Create Account" : "Sign In"}</Text>
+                    }
+                  </TouchableOpacity>
+
+                  <TouchableOpacity onPress={() => setIsSignUp(!isSignUp)} style={wl.switchBtn}>
+                    <Text style={[wl.switchText, { color: colors.textSecondary }]}>
+                      {isSignUp ? "Already have an account? " : "Don't have an account? "}
+                      <Text style={{ color: colors.accent, fontWeight: "700" as const }}>
+                        {isSignUp ? "Sign In" : "Sign Up"}
+                      </Text>
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </Animated.View>
+          </KeyboardAvoidingView>
+        )}
+      </View>
+    );
+  }
+
   return (
     <View style={[st.root, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={theme.statusBar} />
@@ -166,10 +285,7 @@ export default function LoginScreen() {
       )}
 
       {showForm && (
-        <KeyboardAvoidingView
-          style={{ flex: 1 }}
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-        >
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
           <Animated.View style={[st.formScreen, { paddingTop: insets.top + 20, opacity: formOpacity, transform: [{ translateY: formY }] }]}>
             <View style={st.formHeader}>
               <View style={[st.formIconWrap, { backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.5)", borderColor: isDark ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.6)" }]}>
@@ -183,47 +299,21 @@ export default function LoginScreen() {
               <View style={st.inputsWrap}>
                 <View style={[st.inputRow, { backgroundColor: inputBg, borderColor: inputBorder }]}>
                   <Text style={st.inputIcon}>📧</Text>
-                  <TextInput
-                    style={[st.input, { color: colors.text }]}
-                    placeholder="Email address"
-                    placeholderTextColor={colors.textMuted}
-                    value={email}
-                    onChangeText={setEmail}
-                    autoCapitalize="none"
-                    keyboardType="email-address"
-                    autoFocus
-                  />
+                  <TextInput style={[st.input, { color: colors.text }]} placeholder="Email address" placeholderTextColor={colors.textMuted} value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" autoFocus />
                 </View>
                 <View style={[st.inputRow, { backgroundColor: inputBg, borderColor: inputBorder }]}>
                   <Text style={st.inputIcon}>🔐</Text>
-                  <TextInput
-                    style={[st.input, { color: colors.text }]}
-                    placeholder="Password"
-                    placeholderTextColor={colors.textMuted}
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry
-                  />
+                  <TextInput style={[st.input, { color: colors.text }]} placeholder="Password" placeholderTextColor={colors.textMuted} value={password} onChangeText={setPassword} secureTextEntry />
                 </View>
 
-                <TouchableOpacity
-                  style={[st.submitBtn, { backgroundColor: colors.accent, shadowColor: colors.accent }, loading && { opacity: 0.6 }]}
-                  onPress={handleSubmit}
-                  disabled={loading}
-                  activeOpacity={0.85}
-                >
-                  {loading
-                    ? <ActivityIndicator color="#fff" />
-                    : <Text style={st.submitBtnText}>{isSignUp ? "Create Account" : "Sign In"}</Text>
-                  }
+                <TouchableOpacity style={[st.submitBtn, { backgroundColor: colors.accent, shadowColor: colors.accent }, loading && { opacity: 0.6 }]} onPress={handleSubmit} disabled={loading} activeOpacity={0.85}>
+                  {loading ? <ActivityIndicator color="#fff" /> : <Text style={st.submitBtnText}>{isSignUp ? "Create Account" : "Sign In"}</Text>}
                 </TouchableOpacity>
 
                 <TouchableOpacity onPress={() => setIsSignUp(!isSignUp)} style={st.switchBtn}>
                   <Text style={[st.switchText, { color: colors.textSecondary }]}>
                     {isSignUp ? "Already have an account? " : "Don't have an account? "}
-                    <Text style={{ color: colors.accent, fontWeight: "700" as const }}>
-                      {isSignUp ? "Sign In" : "Sign Up"}
-                    </Text>
+                    <Text style={{ color: colors.accent, fontWeight: "700" as const }}>{isSignUp ? "Sign In" : "Sign Up"}</Text>
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -235,51 +325,84 @@ export default function LoginScreen() {
   );
 }
 
+const wl = StyleSheet.create({
+  root: { flex: 1 },
+  lockScreen: { flex: 1, alignItems: "center", justifyContent: "space-between" },
+  win11ClockWrap: {
+    alignItems: "center",
+    justifyContent: "space-between",
+    flexDirection: "row",
+    width: "100%",
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  trayIcons: { flexDirection: "row", gap: 8 },
+  notifArea: { width: "100%", gap: 8, marginTop: "auto" },
+  notifCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  notifTitle: { fontSize: 13, fontWeight: "600" as const },
+  notifBody: { fontSize: 12, marginTop: 2 },
+  swipeArea: { alignItems: "center", gap: 8, marginTop: 20 },
+  swipeText: { fontSize: 13, fontWeight: "500" as const, letterSpacing: 0.5 },
+  formScreen: { flex: 1, paddingHorizontal: 24, justifyContent: "center" },
+  formHeader: { alignItems: "center", marginBottom: 32 },
+  formIconWrap: {
+    width: 80, height: 80,
+    borderWidth: 1,
+    alignItems: "center", justifyContent: "center", marginBottom: 16,
+    shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3,
+  },
+  formTitle: { fontSize: 28, fontWeight: "600" as const, letterSpacing: -0.5 },
+  formSub: { fontSize: 15, marginTop: 6 },
+  formCard: {
+    padding: 24,
+    borderWidth: 1,
+  },
+  inputsWrap: { gap: 12 },
+  inputRow: { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 6, paddingHorizontal: 14, borderWidth: 1 },
+  inputIcon: { fontSize: 18 },
+  input: { flex: 1, paddingVertical: 14, fontSize: 15 },
+  submitBtn: {
+    borderRadius: 6, paddingVertical: 14, alignItems: "center", marginTop: 8,
+  },
+  submitBtnText: { fontSize: 15, fontWeight: "600" as const, color: "#fff" },
+  switchBtn: { alignItems: "center", marginTop: 14 },
+  switchText: { fontSize: 14 },
+});
+
 const st = StyleSheet.create({
   root: { flex: 1 },
-
   lockScreen: { flex: 1, alignItems: "center", justifyContent: "space-between" },
   lockIconWrap: { alignItems: "center", justifyContent: "center", position: "relative" },
   lockEmoji: { fontSize: 52, zIndex: 1 },
   lockIconRing: { position: "absolute", width: 80, height: 80, borderRadius: 40, borderWidth: 1.5 },
-
   notifArea: { width: "100%", paddingHorizontal: 20, gap: 10 },
-  notifPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 20,
-  },
+  notifPill: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 12 },
   notifIcon: { fontSize: 22 },
   notifTitle: { fontSize: 13, fontWeight: "700" as const },
   notifBody: { fontSize: 12 },
-
   swipeHintArea: { alignItems: "center", gap: 8 },
   swipeArrow: { fontSize: 24 },
   swipeHint: { fontSize: 14, fontWeight: "500" as const, letterSpacing: 0.5 },
-
   formScreen: { flex: 1, paddingHorizontal: 24, justifyContent: "center" },
   formHeader: { alignItems: "center", marginBottom: 36 },
   formIconWrap: { width: 80, height: 80, borderRadius: 24, borderWidth: 1, alignItems: "center", justifyContent: "center", marginBottom: 16, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 12, elevation: 4 },
   formTitle: { fontSize: 32, fontWeight: "800" as const, letterSpacing: -0.5 },
   formSubtitle: { fontSize: 15, marginTop: 6 },
-
-  formCard: { padding: 24, borderRadius: 28 },
+  formCard: { padding: 24 },
   inputsWrap: { gap: 12 },
   inputRow: { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 16, paddingHorizontal: 16, borderWidth: 1 },
   inputIcon: { fontSize: 18 },
   input: { flex: 1, paddingVertical: 16, fontSize: 16 },
-
-  submitBtn: {
-    borderRadius: 16, paddingVertical: 18,
-    alignItems: "center", marginTop: 8,
-    shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 16,
-    elevation: 8,
-  },
+  submitBtn: { borderRadius: 16, paddingVertical: 18, alignItems: "center", marginTop: 8, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 16, elevation: 8 },
   submitBtnText: { fontSize: 17, fontWeight: "700" as const, color: "#fff" },
-
   switchBtn: { alignItems: "center", marginTop: 12 },
   switchText: { fontSize: 14 },
 });

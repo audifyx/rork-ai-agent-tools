@@ -1276,6 +1276,92 @@ const WITCH: ThemeDefinition = {
   ],
 };
 
+const WIN11_DARK: ThemeDefinition = {
+  id: "win11_dark",
+  name: "Windows 11",
+  emoji: "🪟",
+  preview: ["#202020", "#0078D4", "#60CDFF"],
+  dark: true,
+  statusBar: "light-content",
+  headerBlur: "dark",
+  colors: {
+    background: "#202020",
+    surface: "rgba(255, 255, 255, 0.06)",
+    surfaceLight: "rgba(255, 255, 255, 0.04)",
+    surfaceSolid: "#2D2D2D",
+    accent: "#60CDFF",
+    accentDim: "rgba(96, 205, 255, 0.12)",
+    accentGlow: "rgba(96, 205, 255, 0.22)",
+    accentBright: "#7DD6FF",
+    text: "#FFFFFF",
+    textSecondary: "#C5C5C5",
+    textMuted: "#8B8B8B",
+    border: "rgba(255, 255, 255, 0.08)",
+    borderLight: "rgba(255, 255, 255, 0.05)",
+    glassBorder: "rgba(255, 255, 255, 0.08)",
+    glassBg: "rgba(32, 32, 32, 0.80)",
+    glassBgStrong: "rgba(45, 45, 45, 0.90)",
+    success: "#6CCB5F",
+    warning: "#FCE100",
+    info: "#60CDFF",
+    danger: "#FF4444",
+    gradientPink: "#C586C0",
+    gradientBlue: "#0078D4",
+    gradientOrange: "#CA6F1E",
+    gradientTeal: "#60CDFF",
+    gradientPurple: "#B180D7",
+    gradientYellow: "#FCE100",
+  },
+  blobs: [
+    { color: "rgba(0, 120, 212, 0.15)", size: 1.2, top: -0.3, right: -0.4 },
+    { color: "rgba(96, 205, 255, 0.08)", size: 0.8, bottom: -0.2, left: -0.3 },
+    { color: "rgba(197, 134, 192, 0.06)", size: 0.6, top: 0.3, left: -0.2 },
+  ],
+};
+
+const WIN11_LIGHT: ThemeDefinition = {
+  id: "win11_light",
+  name: "Win11 Light",
+  emoji: "☁️",
+  preview: ["#F3F3F3", "#0078D4", "#005A9E"],
+  dark: false,
+  statusBar: "dark-content",
+  headerBlur: "light",
+  colors: {
+    background: "#F3F3F3",
+    surface: "rgba(255, 255, 255, 0.70)",
+    surfaceLight: "rgba(255, 255, 255, 0.85)",
+    surfaceSolid: "#FFFFFF",
+    accent: "#005A9E",
+    accentDim: "rgba(0, 90, 158, 0.08)",
+    accentGlow: "rgba(0, 90, 158, 0.15)",
+    accentBright: "#0078D4",
+    text: "#1A1A1A",
+    textSecondary: "#5C5C5C",
+    textMuted: "#9A9A9A",
+    border: "rgba(0, 0, 0, 0.06)",
+    borderLight: "rgba(0, 0, 0, 0.04)",
+    glassBorder: "rgba(0, 0, 0, 0.06)",
+    glassBg: "rgba(255, 255, 255, 0.55)",
+    glassBgStrong: "rgba(255, 255, 255, 0.78)",
+    success: "#107C10",
+    warning: "#FF8C00",
+    info: "#0078D4",
+    danger: "#E81123",
+    gradientPink: "#C586C0",
+    gradientBlue: "#0078D4",
+    gradientOrange: "#CA6F1E",
+    gradientTeal: "#00B7C3",
+    gradientPurple: "#8764B8",
+    gradientYellow: "#FCE100",
+  },
+  blobs: [
+    { color: "rgba(0, 120, 212, 0.08)", size: 1.2, top: -0.3, right: -0.4 },
+    { color: "rgba(0, 183, 195, 0.06)", size: 0.8, bottom: -0.2, left: -0.3 },
+    { color: "rgba(135, 100, 184, 0.04)", size: 0.6, top: 0.3, left: -0.2 },
+  ],
+};
+
 const SNOW_WHITE: ThemeDefinition = {
   id: "snow_white",
   name: "Snow White",
@@ -1366,6 +1452,8 @@ const IOS_GLASS: ThemeDefinition = {
 };
 
 export const ALL_THEMES: ThemeDefinition[] = [
+  WIN11_DARK,
+  WIN11_LIGHT,
   BLOOD_GOLD,
   CRIMSON_BLADE,
   VAMPIRE,
@@ -1398,7 +1486,7 @@ export const ALL_THEMES: ThemeDefinition[] = [
   SANDSTORM,
 ];
 
-export const DEFAULT_THEME_ID = "blood_gold";
+export const DEFAULT_THEME_ID = "win11_dark";
 
 export function getThemeById(id: string): ThemeDefinition {
   return ALL_THEMES.find(t => t.id === id) ?? BLOOD_GOLD;
