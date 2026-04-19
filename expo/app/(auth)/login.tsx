@@ -150,7 +150,7 @@ export default function LoginScreen() {
                   <View>
                     <Text style={[wl.notifTitle, { color: colors.text }]}>OpenClaw</Text>
                     <Text style={[wl.notifBody, { color: colors.textSecondary }]}>Your agents are ready</Text>
-                  </Text>
+                  </View>
                 </View>
               </View>
 

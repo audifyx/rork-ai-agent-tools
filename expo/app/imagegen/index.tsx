@@ -350,7 +350,7 @@ export default function ImageGenScreen() {
         {images.length > 0 && (
           <View style={st.gallery}>
             <TouchableOpacity style={st.galleryHead} onPress={() => setShowGallery(!showGallery)}>
-              <Text style={st.galleryTitle}>🖼️ Gallery <Text style={{ color: colors.textMuted, fontSize: 13 }}>({images.length})</Text>
+              <Text style={st.galleryTitle}>🖼️ Gallery <Text style={{ color: colors.textMuted, fontSize: 13 }}>({images.length})</Text></Text>
               {showGallery ? <ChevronUp size={15} color={colors.textMuted} /> : <ChevronDown size={15} color={colors.textMuted} />}
             </TouchableOpacity>
             {showGallery ? (
